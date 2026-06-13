@@ -1,0 +1,16 @@
+{
+  "id": "com.xcplayer.app",
+  "version": "1.0.0",
+  "vendor": "XC Player",
+  "type": "web",
+  "main": "index.html",
+  "title": "XC Player",
+  "icon": "icon.png",
+  "largeIcon": "largeIcon.png",
+  "iconColor": "#07090f",
+  "resolution": "1920x1080",
+  "transparent": false,
+  "requiredPermissions": ["all"],
+  "noSplashOnLaunch": false,
+  "disableBackHistoryAPI": true
+}

@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1920">
+<title>XC Player Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="icon" href="data:;base64,iVBORw0KGgo=">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<script>
+// Universal Scaling: Stellt sicher, dass das 1920x1080 Layout auf jedem TV 
+// (z.B. ältere TVs mit 1280x720 Browser-Viewport) korrekt skaliert wird.
+function applyUniversalScale() {
+  var w = window.innerWidth;
+  var h = window.innerHeight;
+  if (w > 0 && (w !== 1920 || h !== 1080)) {
+    var scale = Math.min(w / 1920, h / 1080);
+    document.body.style.transform = 'scale(' + scale + ')';
+    document.body.style.transformOrigin = 'top left';
+    document.body.style.width = '1920px';
+    document.body.style.height = '1080px';
+  }
+}
+window.addEventListener('resize', applyUniversalScale);
+applyUniversalScale();
+</script>
+
+<script src="js/bootsplash.js"></script>
+
+<!-- WIZARD BILDSCHIRM -->
+<div id="wizard-screen" class="screen hidden">
+  <div class="wiz-box">
+    <!-- Schritt 1: Cloud Sync -->
+    <div id="wiz-step-1" class="wiz-step active">
+      <div class="wiz-title">Willkommen bei XC Player Pro</div>
+      <div class="wiz-sub">Scanne den QR-Code mit deinem Smartphone, um<br>deine Playlist bequem hinzuzufügen.</div>
+      <div class="wiz-qr-wrap"><img id="wiz-qr" src="" alt="QR" width="220" height="220"></div>
+      <div class="wiz-mac" id="wiz-mac">MAC LÄDT...</div>
+      <button class="wiz-btn" id="wiz-btn-sync" data-focusable onclick="Wizard.sync()">Playlist geladen -> Weiter</button>
+    </div>
+    
+    <!-- Schritt 2: Steuerkreuz Tutorial -->
+    <div id="wiz-step-2" class="wiz-step">
+      <div class="wiz-title">Steuerung</div>
+      <div class="wiz-dpad-ill">
+        <div class="wiz-dpad-btn wiz-dpad-up">&#x25B2;</div>
+        <div class="wiz-dpad-btn wiz-dpad-down">&#x25BC;</div>
+        <div class="wiz-dpad-btn wiz-dpad-left">&#x25C0;</div>
+        <div class="wiz-dpad-btn wiz-dpad-right">&#x25B6;</div>
+        <div class="wiz-dpad-btn wiz-dpad-ok">OK</div>
+      </div>
+      <div class="wiz-tut-grid">
+        <div class="wiz-tut-col"><h4>Navigation</h4>
+          <p><b>Steuerkreuz:</b> Bewegen</p>
+          <p><b>OK-Taste:</b> Auswählen</p>
+          <p><b>BACK-Taste:</b> Zurück / Menü schließen</p></div>
+        <div class="wiz-tut-col"><h4>Live TV</h4>
+          <p><b>OK:</b> Senderliste anzeigen</p>
+          <p><b>Hoch/Runter:</b> Sender wechseln</p>
+          <p><b>Links/Rechts:</b> Duplikate anzeigen</p>
+          <p><b>Gelbe Taste:</b> EPG anzeigen</p></div>
+        <div class="wiz-tut-col"><h4>VOD</h4>
+          <p><b>OK:</b> Play / Pause</p>
+          <p><b>Links/Rechts:</b> Zurück- / Vorspulen</p>
+          <p><b>Gelbe Taste:</b> Untertitel</p>
+          <p><b>Blaue Taste:</b> Audiospur</p></div>
+      </div>
+      <button class="wiz-btn" id="wiz-btn-next" data-focusable onclick="Wizard.next()">Weiter zum Playlist-Editor</button>
+    </div>
+
+    <!-- Schritt 3: Module (Inhalte) -->
+    <div id="wiz-step-modules" class="wiz-step" style="width:100%;">
+      <div class="wiz-title">Schritt 1: Inhalte auswählen</div>
+      <div class="wiz-sub">Was möchtest du in der App anzeigen? (VOD und Serien laden etwas länger)</div>
+      <div style="display:flex;gap:30px;margin-bottom:40px;width:100%;justify-content:center;">
+        <button class="wiz-mod-btn selected" id="wiz-mod-live" data-focusable onclick="WizFlow.toggleMod('live')">
+          <span style="font-size:48px;">📺</span><span>Live TV</span>
+        </button>
+        <button class="wiz-mod-btn selected" id="wiz-mod-vod" data-focusable onclick="WizFlow.toggleMod('vod')">
+          <span style="font-size:48px;">🎬</span><span>Filme (VOD)</span>
+        </button>
+        <button class="wiz-mod-btn selected" id="wiz-mod-series" data-focusable onclick="WizFlow.toggleMod('series')">
+          <span style="font-size:48px;">🍿</span><span>Serien</span>
+        </button>
+      </div>
+      <button class="wiz-btn" id="wiz-btn-step3-next" style="margin-top:auto" data-focusable onclick="WizFlow.nextToCats()">Weiter zu den Kategorien</button>
+    </div>
+
+    <!-- Schritt 4: Kategorien -->
+    <div id="wiz-step-cats" class="wiz-step" style="width:100%;flex:1;overflow:hidden;">
+      <div class="wiz-title" style="flex-shrink:0;">Schritt 2: Live TV Kategorien</div>
+      <div class="wiz-sub" style="flex-shrink:0;">Abgewählte Kategorien werden komplett ausgeblendet und beim Scan übersprungen.</div>
+      <div id="wiz-cat-grid" style="display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; width:100%; flex:1; overflow-y:auto; margin-bottom:20px; text-align:left; padding:4px;"></div>
+      <div style="display:flex;gap:12px;margin-bottom:30px;width:100%;">
+        <button class="wiz-btn-mini" data-focusable onclick="WizFlow.selectAllCats(true)">Alle auswählen</button>
+        <button class="wiz-btn-mini" data-focusable onclick="WizFlow.selectAllCats(false)">Keine auswählen</button>
+      </div>
+      <button class="wiz-btn" id="wiz-btn-step4-next" style="flex-shrink:0;" data-focusable onclick="WizFlow.doScan()">Weiter zur Analyse</button>
+    </div>
+
+    <!-- Schritt 5: Regeln / Analyse -->
+    <div id="wiz-step-rules" class="wiz-step" style="width:100%;">
+      <div class="wiz-title">Schritt 3: Optimierungen</div>
+      <div class="wiz-sub">Wir haben deine Sender analysiert. Wähle aus, was bereinigt werden soll.</div>
+	  <div id="wiz-detect-results" style="width:100%;max-height:400px;overflow-x:hidden;overflow-y:auto;display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:12px;text-align:left;margin-bottom:24px;padding:4px;"></div>      <button class="wiz-btn" id="btn-wiz-finish" data-focusable onclick="Wizard.finishDetect()">Setup abschließen</button>
+    </div>
+  </div>
+</div>
+
+<!-- PROFIL BILDSCHIRM -->
+<div id="profile-screen" class="screen">
+  <div class="ps-logo">XC Player Pro</div>
+  <div class="ps-sub">Profil wählen</div>
+  <div class="mac-info" style="margin-bottom:40px; text-align:center; background:rgba(0,0,0,0.2); padding:16px 32px; border-radius:12px; border:1px solid var(--border);">
+    <div style="font-size:var(--fs-sm); color:var(--mid); margin-bottom:6px;">Geräte-MAC für die Webseite:</div>
+    <div id="tv-mac-address" style="font-family:'Sora',sans-serif; font-size:var(--fs-xl); font-weight:700; color:var(--accent); letter-spacing:2px;">Laden...</div>
+    <div style="font-size:var(--fs-xs); color:var(--lo); margin-top:8px;">dein-server.de</div>
+  </div>
+  <div class="profile-grid" id="profile-grid"></div>
+</div>
+
+<!-- PROFIL MODAL -->
+<div id="profile-modal" class="hidden">
+  <div class="pmodal-box">
+    <div class="pmodal-title" id="pmodal-title">Neues Profil</div>
+    <div class="fg"><label>Profilname</label>
+      <input id="pf-name" type="text" data-focusable placeholder="z.B. Zuhause" spellcheck="false"></div>
+    <div class="pmodal-tabs">
+      <div class="ptab active" id="ptab-xc" data-focusable onclick="switchPTab('xc')">Xtream Codes</div>
+      <div class="ptab" id="ptab-m3u" data-focusable onclick="switchPTab('m3u')">M3U URL</div>
+    </div>
+    <div id="pf-xc-fields">
+      <div class="fg"><label>Server URL</label>
+        <input id="pf-host" type="url" data-focusable placeholder="http://server.com:8080" spellcheck="false"></div>
+      <div class="fg"><label>Benutzername</label>
+        <input id="pf-user" type="text" data-focusable placeholder="username" autocomplete="off"></div>
+      <div class="fg"><label>Passwort</label>
+        <input id="pf-pass" type="password" data-focusable placeholder="password" autocomplete="off"></div>
+    </div>
+    <div id="pf-m3u-fields" class="hidden">
+      <div class="fg"><label>M3U URL</label>
+        <input id="pf-m3u" type="url" data-focusable placeholder="http://server.com/playlist.m3u" spellcheck="false"></div>
+    </div>
+    <div class="pmodal-btns">
+      <button class="btn btn-primary" id="pmodal-save" data-focusable>Speichern</button>
+      <button class="btn btn-secondary" id="pmodal-cancel" data-focusable>Abbrechen</button>
+    </div>
+    <div class="modal-error hidden" id="pmodal-error"></div>
+  </div>
+</div>
+
+<!-- EINSTELLUNGEN BILDSCHIRM (Vollbild) -->
+<div id="settings-screen" class="screen hidden">
+  
+  <!-- HAUPTSEITE -->
+  <div id="set-view-main">
+    <h2 class="set-main-title">Einstellungen</h2>
+    
+    <div class="ios-settings-wrap">
+      <!-- Block 1: Account & System -->
+      <div class="ios-group">
+        <div class="ios-row" data-focusable onclick="openSettingsCategory('system')">
+          <div class="ios-icon">👤</div>
+          <div class="ios-label">Profile, Konto & System</div>
+          <div class="ios-arrow">›</div>
+        </div>
+      </div>
+      
+      <!-- Block 2: Optik & Bedienung -->
+      <div class="ios-group">
+        <div class="ios-row" data-focusable onclick="openSettingsCategory('ansicht')">
+          <div class="ios-icon">🎨</div>
+          <div class="ios-label">Design & Navigation</div>
+          <div class="ios-arrow">›</div>
+        </div>
+        <div class="ios-row" data-focusable onclick="openSettingsCategory('osd')">
+          <div class="ios-icon">📺</div>
+          <div class="ios-label">Senderlisten & OSD</div>
+          <div class="ios-arrow">›</div>
+        </div>
+      </div>
+      
+      <!-- Block 3: Technik & Inhalte -->
+      <div class="ios-group">
+        <div class="ios-row" data-focusable onclick="openSettingsCategory('player')">
+          <div class="ios-icon">▶️</div>
+          <div class="ios-label">Wiedergabe & Player</div>
+          <div class="ios-arrow">›</div>
+        </div>
+        <div class="ios-row" data-focusable onclick="openSettingsCategory('playlist')">
+          <div class="ios-icon">📋</div>
+          <div class="ios-label">Playlist & Filter</div>
+          <div class="ios-arrow">›</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DETAILSEITE (Split Pane) -->
+  <div id="set-view-detail" class="hidden">
+    <div class="set-detail-header">
+      <button class="set-back-btn" data-focusable onclick="closeSettings()">‹</button>
+      <h2 id="set-title">Einstellungen</h2>
+    </div>
+    
+    <div class="set-detail-split">
+      <!-- Linke Spalte: Die Schalter -->
+      <div class="set-detail-left">
+        
+        <!-- Kategorie: Ansicht -->
+        <div id="set-cat-ansicht" class="set-cat-group hidden">
+          <div class="ios-group">
+            <div class="ios-row" data-focusable onmouseover="setFocus(this)" data-preview="hell" onclick="toggleSetting('lightTheme')">
+              <div class="ios-label">Helles Design</div>
+              <div class="ios-toggle sp-toggle" id="toggle-light-theme"><div class="sp-toggle-knob"></div></div>
+            </div>
+            <div class="ios-row" data-focusable onmouseover="setFocus(this)" data-preview="netflix" onclick="toggleSetting('useNetflixStyle')">
+              <div class="ios-label">Netflix-Ansicht (Filme/Serien)</div>
+              <div class="ios-toggle sp-toggle on" id="toggle-netflix-style"><div class="sp-toggle-knob"></div></div>
+            </div>
+            <div class="ios-row" data-focusable onmouseover="setFocus(this)" data-preview="sidebar" onclick="toggleSetting('useSidebar')">
+              <div class="ios-label">Klassische Seitenleiste statt Top-Tabs</div>
+              <div class="ios-toggle sp-toggle" id="toggle-use-sidebar"><div class="sp-toggle-knob"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Kategorie: OSD -->
+        <div id="set-cat-osd" class="set-cat-group hidden">
+          <div class="ios-group">
+            <div class="ios-row" data-focusable onmouseover="setFocus(this)" data-preview="kompakt_liste" onclick="toggleSetting('compactList')">
+              <div class="ios-label">Kompakte Senderliste</div>
+              <div class="ios-toggle sp-toggle" id="toggle-epg-list"><div class="sp-toggle-knob"></div></div>
+            </div>
+            <div id="sub-compactList" class="ios-sub-group">
+              <div class="ios-row ios-sub-row" data-focusable onmouseover="setFocus(this)" data-preview="kompakt_epg" onclick="toggleSetting('compactListEpg')">
+                <div class="ios-label">EPG in kompakter Liste anzeigen</div>
+                <div class="ios-toggle sp-toggle" id="toggle-compact-list-epg"><div class="sp-toggle-knob"></div></div>
+              </div>
+            </div>
+          </div>
+          <div class="ios-group">
+            <div class="ios-row" data-focusable onmouseover="setFocus(this)" data-preview="split" onclick="toggleSetting('splitList')">
+              <div class="ios-label">Zweispaltige Senderliste</div>
+              <div class="ios-toggle sp-toggle" id="toggle-split-list"><div class="sp-toggle-knob"></div></div>
+            </div>
+          </div>
+          
+          <div class="ios-group">
+            <div class="ios-row" data-focusable onmouseover="setFocus(this)" data-preview="kompakt_osd" onclick="toggleSetting('compactOsd')">
+              <div class="ios-label">Kompaktes Player-OSD</div>
+              <div class="ios-toggle sp-toggle" id="toggle-compact-osd"><div class="sp-toggle-knob"></div></div>
+            </div>
+          <div class="ios-row" data-focusable onmouseover="setFocus(this)" data-preview="osd_hints" onclick="toggleSetting('compactOsdHints')">
+            <div class="ios-label">Steuerungs-Hinweise anzeigen</div>
+            <div class="ios-toggle sp-toggle" id="toggle-compact-osd-hints"><div class="sp-toggle-knob"></div></div>
+          </div>
+            <div class="ios-row" data-focusable onmouseover="setFocus(this)" data-preview="epg_grid" onclick="toggleSetting('extendedEpg')">
+              <div class="ios-label">Erweitertes EPG-Grid nutzen</div>
+              <div class="ios-toggle sp-toggle" id="toggle-extended-epg"><div class="sp-toggle-knob"></div></div>
+            </div>
+          </div>
+
+          <div class="ios-group">
+            <div class="ios-row" data-focusable onmouseover="setFocus(this)" data-preview="ch_numbers" onclick="toggleSetting('showChNumbers')">
+              <div class="ios-label">Kanalnummern anzeigen</div>
+              <div class="ios-toggle sp-toggle" id="toggle-ch-numbers"><div class="sp-toggle-knob"></div></div>
+            </div>
+            <div class="ios-row" data-focusable onmouseover="setFocus(this)" data-preview="ch_logos" onclick="toggleSetting('showChLogos')">
+              <div class="ios-label">Senderlogos anzeigen</div>
+              <div class="ios-toggle sp-toggle" id="toggle-ch-logos"><div class="sp-toggle-knob"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Kategorie: Player -->
+        <div id="set-cat-player" class="set-cat-group hidden">
+          <div class="ios-group">
+            <div class="ios-row" data-focusable onmouseover="setFocus(this)" onclick="toggleSetting('nativePlayer')">
+              <div style="flex:1">
+                  <div class="ios-label">Nativer TV-Player (MPEG-TS)</div>
+                  <div style="font-size:var(--fs-xs);color:var(--lo);margin-top:4px" id="native-player-sub">TV-Decoder mit MPEG-TS · geringste CPU, beste Kompatibilität</div>
+              </div>
+              <div class="ios-toggle sp-toggle" id="toggle-native-player"><div class="sp-toggle-knob"></div></div>
+            </div>
+            <div class="ios-row" data-focusable onmouseover="setFocus(this)" onclick="changeEpgShift()">
+              <div style="flex:1">
+                  <div class="ios-label">EPG Timeshift</div>
+                  <div style="font-size:var(--fs-xs);color:var(--lo);margin-top:4px" id="epg-shift-sub">Zeitversatz: 0 Stunden</div>
+              </div>
+              <div class="ios-arrow" style="font-size:24px;padding-right:8px;">↻</div>
+            </div>
+            <div class="ios-row" data-focusable onmouseover="setFocus(this)" onclick="toggleSetting('startFirstChannel')">
+              <div class="ios-label">Beim App-Start mit Kanal 1 starten</div>
+              <div class="ios-toggle sp-toggle" id="toggle-start-first"><div class="sp-toggle-knob"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Kategorie: Playlist -->
+        <div id="set-cat-playlist" class="set-cat-group hidden">
+          <div class="ios-group">
+            <div class="ios-row" data-focusable onmouseover="setFocus(this)" data-preview="varianten" onclick="toggleSetting('groupVariants')">
+              <div class="ios-label">Duplikate/Qualitäten gruppieren</div>
+              <div class="ios-toggle sp-toggle" id="toggle-group-variants"><div class="sp-toggle-knob"></div></div>
+            </div>
+          </div>
+          <div class="ios-group">
+            <div class="ios-row" data-focusable onmouseover="setFocus(this)" onclick="manualPlaylistRefresh()">
+              <div class="ios-icon" style="color:var(--accent)">🔄</div>
+              <div class="ios-label" style="color:var(--accent)">Playlist jetzt aktualisieren</div>
+            </div>
+            <div class="ios-row" data-focusable onmouseover="setFocus(this)" onclick="openPEModal()">
+              <div class="ios-icon" style="color:var(--hi)">🛠️</div>
+              <div class="ios-label">Playlist Editor öffnen</div>
+              <div class="ios-arrow">›</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Kategorie: System -->
+        <div id="set-cat-system" class="set-cat-group hidden">
+          <div class="ios-group" id="sp-profile-list">
+            <!-- Rendered by JS -->
+          </div>
+          
+          <div class="ios-group">
+            <div class="ios-row" data-focusable onmouseover="setFocus(this)" onclick="openProfileModal(null)">
+              <div class="ios-icon" style="color:var(--accent)">+</div>
+              <div class="ios-label" style="color:var(--accent)">Neues Profil hinzufügen</div>
+            </div>
+            <div class="ios-row" data-focusable onmouseover="setFocus(this)" onclick="syncCloudProfile()">
+              <div class="ios-icon" style="color:var(--hi)">☁️</div>
+              <div class="ios-label">Cloud Sync</div>
+            </div>
+          </div>
+
+          <div class="ios-group">
+            <div class="ios-row" style="cursor:default">
+              <div class="ios-label">TV MAC-Adresse</div>
+              <div style="font-family:monospace; color:var(--mid)" id="sp-mac-address">Laden...</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Rechte Spalte: Mini-Preview Mockup -->
+      <div class="set-detail-right">
+        <div class="set-preview-box" id="set-preview-box">
+          <svg viewBox="0 0 400 225" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block;">
+            <rect width="400" height="225" fill="var(--bg)"/>
+            <text x="50%" y="50%" fill="var(--lo)" font-size="24" font-family="sans-serif" font-weight="600" text-anchor="middle" dominant-baseline="middle">Vorschau</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SYSTEM SEITENLEISTE -->
+<!-- Wird optional über Settings.useSidebar wieder verwendet -->
+<div id="sys-overlay" onclick="closeSysSidebar()"></div>
+<div id="sys-sidebar">
+  <div class="sys-header">XC Player Pro</div>
+  <div class="sys-item" data-focusable id="sys-search" onclick="navTabClick('search')">
+    <div class="sys-icon">&#x1F50D;</div><div class="sys-label">Suchen</div><div class="sys-spacer"></div>
+    <div class="sys-dot" style="width:10px;height:10px;border-radius:50%;background:#3b82f6;box-shadow:0 0 8px rgba(59,130,246,.7)"></div>
+  </div>
+  <div class="sys-item active" data-focusable id="sys-live" onclick="navTabClick('live')">
+    <div class="sys-icon">&#x1F4FA;</div><div class="sys-label">Live TV</div>
+  </div>
+  <div class="sys-item" data-focusable id="sys-vod" onclick="navTabClick('vod')">
+    <div class="sys-icon">&#x1F3AC;</div><div class="sys-label">Filme</div>
+  </div>
+  <div class="sys-item" data-focusable id="sys-series" onclick="navTabClick('series')">
+    <div class="sys-icon">&#x1F3A5;</div><div class="sys-label">Serien</div>
+  </div>
+  <div class="sys-item" data-focusable id="sys-continue" onclick="navTabClick('continue')">
+    <div class="sys-icon">&#x25B6;</div><div class="sys-label">Weiterschauen</div>
+  </div>
+  <div class="sys-item" data-focusable id="sys-settings" onclick="navTabClick('settings')">
+    <div class="sys-icon">&#x1F527;</div><div class="sys-label">Einstellungen</div>
+  </div>
+  <div class="sys-item" data-focusable id="sys-exit" onclick="navTabClick('exit')" style="margin-top:auto; color:rgba(239,68,68,.8)">
+    <div class="sys-icon">&#x2716;</div><div class="sys-label">Beenden</div>
+  </div>
+</div>
+
+
+<!-- WEITERSCHAUEN BILDSCHIRM -->
+<div id="continue-screen" class="screen hidden">
+   <div class="cs-title" style="display:none;">Weiterschauen</div>
+   <div class="cs-grid" id="cs-grid"></div>
+</div>
+
+<!-- HAUPTBILDSCHIRM -->
+<!-- GLOBALE TOP-TAB-LEISTE — ersetzt die alte sys-sidebar.
+     Sichtbar in Live TV, Filme/Serien und im Live-Player (mit OSD-Stil). -->
+<div id="navbar-container"></div>
+<script src="js/navbar.js"></script>
+
+<div id="main-screen" class="screen hidden">
+  <div id="content-area">
+    <div id="sidebar-container"></div>
+    <div id="main-content">
+      <div id="search-bar">
+        <div class="search-wrap">
+          <span class="si">&#x1F50D;</span>
+          <input id="search-input" type="text" data-focusable placeholder="Suchen…" autocomplete="off">
+        </div>
+        <span class="ct" id="ct">Live TV</span>
+        <span class="cc" id="cc"></span>
+        <div class="sort-wrap hidden" id="sort-wrap">
+          <button class="sort-btn" id="sort-btn" data-focusable onclick="toggleSortMenu()">&#x21C5; Sortierung</button>
+          <div class="sort-menu" id="sort-menu">
+            <div class="sort-opt active" data-sort="default" data-focusable onclick="setSort('default')">Standard</div>
+            <div class="sort-opt" data-sort="az" data-focusable onclick="setSort('az')">A → Z</div>
+            <div class="sort-opt" data-sort="za" data-focusable onclick="setSort('za')">Z → A</div>
+            <div class="sort-opt" data-sort="rating" data-focusable onclick="setSort('rating')">Bewertung</div>
+          </div>
+        </div>
+        <button id="layout-btn" data-focusable onclick="cycleGridLayout()" style="display:none">▦ Ansicht</button>
+      </div>
+      <div id="stream-grid" style="position:relative">
+        <div class="grid-watermark" id="grid-watermark"></div>
+        <div id="grid-content"></div>
+      </div>
+      <div id="netflix-grid" class="hidden"></div>
+      <div id="nf-sidebar-container"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PLAYER -->
+<div id="player-screen" class="hidden">
+  <video id="video-el" preload="auto" playsinline autoplay></video>
+  <div id="buf-overlay" class="hidden">
+    <div class="buf-ring"></div>
+    <div id="buf-info">Buffering…</div>
+  </div>
+</div>
+
+<!-- PLAYER OVERLAYS (Verschoben aus player-screen) -->
+<div id="player-topbar-container"></div>
+<div id="sub-panel-container"></div>
+<div id="audio-panel-container"></div>
+<div id="variant-bar-container"></div>
+<div id="ch-list-overlay-container"></div>
+<div id="epg-panel-container"></div>
+<div id="epg-grid-overlay-container"></div>
+<div id="live-osd-container"></div>
+<div id="ctrl-vod-container"></div>
+
+<!-- SERIEN DETAILS -->
+<div id="series-detail" class="hidden">
+  <div class="shero-bg" id="shero-bg"></div>
+  <div class="s-left-col">
+    <button class="s-back" onclick="closeSeries()" data-focusable>&#x2190;</button>
+    <div class="s-meta-top">
+      <img class="s-cover" id="s-cover" src="" alt="">
+      <div class="s-title-wrap">
+        <h2 id="s-title"></h2>
+        <div class="season-tabs" id="season-tabs"></div>
+      </div>
+    </div>
+    <div class="s-plot-wrap" id="s-plot-wrap">
+      <p id="s-plot"></p>
+    </div>
+  </div>
+  <div id="episode-list"></div>
+</div>
+
+<!-- PLAYLIST EDITOR MODAL -->
+<div id="pe-modal" class="hidden screen" style="background:rgba(7,9,15,0.85); backdrop-filter:blur(16px); z-index:2300; display:flex; flex-direction:column;">
+  <div style="height:80px; padding:0 40px; display:flex; align-items:center; border-bottom:1px solid var(--border); background:transparent;">
+    <div style="font-family:'Sora',sans-serif; font-size:var(--fs-xl); font-weight:700; color:var(--hi);">Playlist Editor</div>
+    <div class="pmodal-tabs" style="margin:0 0 0 50px;">
+      <div class="ptab active" id="pe-tab-btn-rules" data-focusable onclick="peSwitchMain('rules')">Regeln</div>
+      <div class="ptab" id="pe-tab-btn-manage" data-focusable onclick="peSwitchMain('manage')">Verwalten</div>
+    </div>
+    <div style="flex:1;"></div>
+    <button id="pe-btn-apply" class="btn btn-primary" data-focusable onclick="closePEModal(true)">Fertig & Anwenden</button>
+  </div>
+  
+  <!-- REGEL-ANSICHT -->
+  <div id="pe-view-rules" style="flex:1; display:flex; flex-direction:column; padding:30px 40px; gap:20px; overflow:hidden;">
+    <div style="display:flex; gap:20px; flex-shrink:0;">
+      <button id="pe-btn-wizard" class="btn btn-primary" data-focusable onclick="Wizard.startOptimization()" style="flex:1; font-size:var(--fs-lg); height:70px; display:flex; align-items:center; justify-content:center; gap:12px;">
+        <span style="font-size:32px;">⚡</span> Schnell-Optimierung starten
+      </button>
+      <button id="pe-btn-manual" class="btn btn-secondary" data-focusable onclick="openPEManualModal()" style="flex:1; font-size:var(--fs-lg); height:70px; display:flex; align-items:center; justify-content:center; gap:12px; background:rgba(255,255,255,.05); border:1px solid var(--border);">
+        <span style="font-size:32px;">➕</span> Manuelle Regel
+      </button>
+    </div>
+
+    <div style="flex:1; display:flex; flex-direction:column; background:rgba(255,255,255,.02); border:1px solid var(--border); border-radius:16px;overflow:hidden;">
+      <div style="padding:16px 20px; border-bottom:1px solid var(--border); font-weight:600; color:var(--hi);">Aktive Regeln</div>
+      <div id="pe-rules-list" style="flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:8px;"></div>
+    </div>
+  </div>
+  
+  <!-- VERWALTUNGS-ANSICHT (Sortieren & Umbenennen) -->
+  <div id="pe-view-manage" class="hidden" style="flex:1; display:flex; flex-direction:column; padding:30px 40px; overflow:hidden;">
+    <div class="pmodal-tabs" style="margin-bottom:20px;">
+      <div class="ptab active" id="man-tab-live" data-focusable onclick="manSetTab('live')">Live TV</div>
+      <div class="ptab" id="man-tab-vod" data-focusable onclick="manSetTab('vod')">Filme</div>
+      <div class="ptab" id="man-tab-series" data-focusable onclick="manSetTab('series')">Serien</div>
+    </div>
+    <div style="display:flex; flex:1; gap:20px; overflow:hidden;">
+      <div style="flex:1; display:flex; flex-direction:column; border:1px solid var(--border); border-radius:16px; background:rgba(255,255,255,.02);">
+         <div style="padding:16px; border-bottom:1px solid var(--border); font-weight:600; color:var(--mid);">Kategorien (Sortieren)</div>
+         <div id="man-cat-list" style="flex:1; overflow-y:auto; padding:12px;"></div>
+      </div>
+      <div style="flex:1; display:flex; flex-direction:column; border:1px solid var(--border); border-radius:16px; background:rgba(255,255,255,.02);">
+         <div style="padding:16px; border-bottom:1px solid var(--border); font-weight:600; color:var(--mid);" id="man-stream-title">Sender / Streams</div>
+         <div id="man-stream-list" style="flex:1; overflow-y:auto; padding:12px;"></div>
+      </div>
+      <div style="width:360px; display:flex; flex-direction:column; border:1px solid var(--border); border-radius:16px; background:rgba(255,255,255,.02); padding:24px; overflow-y:auto;">
+         <div style="font-weight:600; margin-bottom:20px; font-size:var(--fs-md); color:var(--hi);">Umbenennen</div>
+         <div id="man-edit-wrap" style="opacity:0.3; pointer-events:none;">
+           <div class="fg"><label>Name</label>
+             <input id="man-inp-name" type="text" data-focusable></div>
+           <div class="fg" id="man-epg-wrap"><label>EPG Channel ID</label>
+             <input id="man-inp-epg" type="text" data-focusable></div>
+           <button class="btn btn-primary" data-focusable onclick="manSaveEdit()">Speichern</button>
+           <div id="man-edit-msg" style="margin-top:14px;font-size:14px;color:var(--accent);"></div>
+         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PE MANUELLE REGEL MODAL -->
+<div id="pe-manual-modal" class="hidden" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);backdrop-filter:blur(10px);z-index:2400;display:flex;align-items:center;justify-content:center;">
+  <div style="width:500px; background:var(--bg-card); border:1px solid var(--border); border-radius:20px; padding:30px; box-shadow:0 20px 60px rgba(0,0,0,.8);">
+     <div style="font-weight:700; margin-bottom:20px; font-size:var(--fs-xl); color:var(--hi); font-family:'Sora',sans-serif;">Neue Regel</div>
+     
+     <div class="fg"><label>Anwenden auf</label>
+        <select id="pe-sel-target" data-focusable style="width:100%; height:50px; background:rgba(255,255,255,.05); color:white; border:1px solid var(--border); border-radius:10px; font-size:var(--fs-sm); padding:0 12px; outline:none;">
+          <option value="both">Beides (Kategorie &amp; Sender)</option>
+          <option value="cat">Kategorien</option>
+          <option value="stream">Sender / Streams</option>
+        </select>
+     </div>
+     
+     <div class="fg"><label>Aktion / Typ</label>
+        <select id="pe-sel-type" data-focusable onchange="peUpdateFormFields()" style="width:100%; height:50px; background:rgba(255,255,255,.05); color:white; border:1px solid var(--border); border-radius:10px; font-size:var(--fs-sm); padding:0 12px; outline:none;">
+          <option value="prefix">Prefix entfernen</option>
+          <option value="suffix">Suffix entfernen</option>
+          <option value="replace">Text ersetzen</option>
+          <option value="regex">RegEx ersetzen</option>
+          <option value="hide">Verstecken</option>
+        </select>
+     </div>
+     
+     <div class="fg"><label id="pe-lbl-pattern">Muster (Text)</label>
+        <input id="pe-pattern" type="text" data-focusable placeholder="z.B. DE: " oninput="peUpdatePreview()">
+     </div>
+     
+     <div class="fg hidden" id="pe-repl-wrap"><label id="pe-lbl-replace">Ersetzen durch</label>
+        <input id="pe-replace" type="text" data-focusable placeholder="Neuer Text" oninput="peUpdatePreview()">
+     </div>
+
+     <div id="pe-preview-bar"></div>
+     
+     <div style="display:flex;gap:14px;margin-top:30px;">
+       <button class="btn btn-primary" data-focusable onclick="peAddRule()" style="flex:1;">Speichern</button>
+       <button class="btn btn-secondary" data-focusable onclick="closePEManualModal()" style="flex:1;">Abbrechen</button>
+     </div>
+  </div>
+</div>
+
+<div id="ch-osd"><div class="ch-lbl">Kanal</div><div id="ch-osd-num"></div></div>
+<div id="toast"></div>
+
+<!-- SENDER SUCHE OSD (Senderlisten Schnellsuche) -->
+<div id="ch-search-osd"><div class="chs-label">Kanal</div><span id="ch-search-num"></span></div>
+
+<!-- BINGE MODUS LEISTE (im Player für SpatialNav) -->
+<div id="binge-bar">
+  <div class="binge-title">Nächste Episode in <span class="binge-countdown" id="binge-countdown">8</span>s</div>
+  <div class="binge-ep-name" id="binge-ep-name">—</div>
+  <div class="binge-progress"><div class="binge-progress-fill" id="binge-prog-fill" style="width:100%"></div></div>
+  <div class="binge-btns">
+    <button class="binge-btn" id="binge-skip" data-focusable onclick="bingeSkipNow()">&#x25B6; Jetzt</button>
+    <button class="binge-btn" id="binge-stop" data-focusable onclick="bingeStop()">&#x25A0; Stopp</button>
+  </div>
+</div>
+
+<!-- TRAILER OVERLAY -->
+<div id="trailer-overlay"></div>
+
+<!-- ZAPPING HISTORIE OSD -->
+<div id="zap-history-osd">
+  <div class="zh-title">Zuletzt angesehen</div>
+  <div id="zh-list"></div>
+</div>
+
+<!-- STREAM FEHLER TOAST -->
+<div id="stream-error-toast">
+  <div class="set-icon">&#x26A0;</div>
+  <div class="set-msg" id="set-msg">Stream lädt nicht</div>
+  <div class="set-detail" id="set-detail"></div>
+</div>
+
+<!-- BENUTZERDEFINIERTES BESTÄTIGUNGS-MODAL -->
+<div id="confirm-modal" class="hidden" style="position:fixed;top:0;left:0;right:0;bottom:0;width:1920px;height:1080px;background:rgba(0,0,0,.85);z-index:9000;display:flex;align-items:center;justify-content:center">
+  <div style="width:520px;background:rgba(15,21,35,0.85);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:22px;padding:40px;box-shadow:0 40px 80px rgba(0,0,0,.7)">
+    <div id="confirm-title" style="font-family:'Sora',sans-serif;font-size:var(--fs-xl);font-weight:700;color:var(--hi);margin-bottom:14px"></div>
+    <div id="confirm-msg" style="font-size:var(--fs-md);color:var(--mid);margin-bottom:30px;line-height:1.5"></div>
+    <div style="display:flex;gap:14px">
+      <button class="btn btn-primary" id="confirm-yes" data-focusable style="background:rgba(239,68,68,.8)">Löschen</button>
+      <button class="btn btn-secondary" id="confirm-no" data-focusable>Abbrechen</button>
+    </div>
+  </div>
+</div>
+
+<!-- VOLLBILD LADEBILDSCHIRM -->
+<div id="full-loader">
+  <div class="fl-spinner"></div>
+  <div class="fl-msg" id="fl-msg">Bitte warten...</div>
+  <div class="fl-sub" id="fl-sub"></div>
+</div>
+
+<div id="nf-search-overlay-container"></div>
+<div id="live-search-overlay-container"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.15/dist/hls.min.js"></script>
+<script src="js/player-ui.js"></script>
+<script src="js/sidebars.js"></script>
+<script src="js/player-nav.js"></script>
+<script src="js/search-overlays.js"></script>
+<script src="js/config.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/api.js"></script>
+<script src="js/epg.js"></script>
+<script src="js/epggrid.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/playlist-editor.js"></script>
+<script src="js/wizard.js"></script>
+<script src="js/zaphistory.js"></script>
+<script src="js/binge.js"></script>
+<script src="js/trailer.js"></script>
+<script src="js/settings-ui.js"></script>
+<script src="js/modals.js"></script>
+<script src="js/profile.js"></script>
+<script src="js/continue-ui.js"></script>
+<script src="js/series-ui.js"></script>
+<script src="js/grid-ui.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/netflix-grid.js"></script>
+<script src="js/search.js"></script>
+<script src="js/chlist.js"></script>
+<script src="js/variants.js"></script>
+<script src="js/grid.js"></script>
+<script src="js/player.js"></script>
+<script src="js/spatialnav.js"></script>
+<script src="js/keyhandler.js"></script>
+<script src="js/main.js"></script>
+
+</body>
+</html>

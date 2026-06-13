@@ -1,0 +1,15 @@
+# macOS
+.DS_Store
+
+# Build-Artefakte (webOS-Paket)
+*.ipk
+
+# Editor / IDE
+.vscode/
+.idea/
+
+# Lokale Test-/Medien-Dateien
+*.heic
+
+# Logs
+*.log

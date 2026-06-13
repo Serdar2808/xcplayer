@@ -358,7 +358,7 @@ var EPGStore = {
           if (m && Date.now() - m.ts < CONFIG.EPG_CACHE_TTL) {
             var out = { channels: {}, programmes: {} };
             if (typeof m.channels === 'string') {
-               try { out.channels = JSON.parse(m.channels); } catch(e) {}
+               try { out.channels = JSON.parse(m.channels); } catch(e) { Logger.warn('[EPGStore] channels-Meta beschädigt:', e.message); }
             } else { out.channels = m.channels || {}; }
 
             var prefix = 'p_'+pId+'_';
@@ -374,7 +374,7 @@ var EPGStore = {
                      out.programmes[keys[k]] = parsed[keys[k]];
                   }
                   chunksFound++;
-                } catch(ex) {}
+                } catch(ex) { Logger.warn('[EPGStore] EPG-Chunk beschädigt, übersprungen:', ex.message); }
                 cursor.continue();
               } else {
                 if (chunksFound > 0 || m.chunkCount === 0) {

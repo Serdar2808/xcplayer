@@ -1,0 +1,100 @@
+diff --git a/js/epg.js b/js/epg.js
+index 9ebfa3d..b9f54a7 100644
+--- a/js/epg.js
++++ b/js/epg.js
+@@ -1,9 +1,9 @@
+ // ── EPG LOGO FALLBACK ────────────────────────────────────────────
+ function getStreamLogoWithEpgFallback(stream){
+   if(stream.stream_icon) return stream.stream_icon;
+-  if(EpgData.loaded && EpgData._channelMap){
+-    var epgId = (stream.epg_channel_id||'').toLowerCase().trim() || stream.name.toLowerCase().trim();
+-    var ch = EpgData._channelMap[epgId];
++  if(EpgData.loaded){
++    var id = EpgData.findId(stream);
++    var ch = id ? EpgData.channels[id] : null;
+     if(ch && ch.icon) return ch.icon;
+   }
+   return '';
+diff --git a/js/grid.js b/js/grid.js
+index d588bda..b425056 100644
+--- a/js/grid.js
++++ b/js/grid.js
+@@ -319,11 +319,11 @@ async function loadCats(){
+ }
+ 
+ async function getAllStreamsForTab() {
+-  if (S.fullStreams[S.tab]) return S.fullStreams[S.tab];
++  if (S.fullStreams[S.tab] && S.fullStreams[S.tab].length) return S.fullStreams[S.tab];
+   var data = await getOrFetchData('streams', S.tab) || [];
+   var arr = Array.isArray(data) ? data : [];
+   arr = processStreamsFilter(arr);
+-  S.fullStreams[S.tab] = arr;
++  if (arr.length) S.fullStreams[S.tab] = arr;
+   return arr;
+ }
+ 
+diff --git a/js/storage.js b/js/storage.js
+index 265dbde..73f7770 100644
+--- a/js/storage.js
++++ b/js/storage.js
+@@ -358,7 +358,7 @@ var EPGStore = {
+           if (m && Date.now() - m.ts < CONFIG.EPG_CACHE_TTL) {
+             var out = { channels: {}, programmes: {} };
+             if (typeof m.channels === 'string') {
+-               try { out.channels = JSON.parse(m.channels); } catch(e) {}
++               try { out.channels = JSON.parse(m.channels); } catch(e) { Logger.warn('[EPGStore] channels-Meta beschädigt:', e.message); }
+             } else { out.channels = m.channels || {}; }
+ 
+             var prefix = 'p_'+pId+'_';
+@@ -374,7 +374,7 @@ var EPGStore = {
+                      out.programmes[keys[k]] = parsed[keys[k]];
+                   }
+                   chunksFound++;
+-                } catch(ex) {}
++                } catch(ex) { Logger.warn('[EPGStore] EPG-Chunk beschädigt, übersprungen:', ex.message); }
+                 cursor.continue();
+               } else {
+                 if (chunksFound > 0 || m.chunkCount === 0) {
+diff --git a/js/ui.js b/js/ui.js
+index d43ea30..05e8110 100644
+--- a/js/ui.js
++++ b/js/ui.js
+@@ -89,7 +89,7 @@ var FocusTrap = {
+ 
+ // ── BESSERE STREAM FEHLERMELDUNGEN ─────────────────────────────
+ var _streamLoadStart = 0;
+-var _catchupJustStarted = 0; // Zeitstempel: Senderliste nach Catchup-Start kurz unterdrücken
++// _catchupJustStarted wird zentral in config.js deklariert
+ 
+ function showStreamError(msg, detail){
+   $('set-msg').textContent = msg;
+diff --git a/js/wizard.js b/js/wizard.js
+index 1cf143d..5a5f436 100644
+--- a/js/wizard.js
++++ b/js/wizard.js
+@@ -287,7 +287,7 @@ var WizFlow = {
+       var liveCats = await getOrFetchData('cats', 'live');
+       // Original unberührt laden, um Kategorien-Namen sauber zu haben
+       this._cats = liveCats || [];
+-    } catch(e) {}
++    } catch(e) { Logger.warn('[Wizard] Live-Kategorien konnten nicht geladen werden:', e.message); }
+ 
+     var hiddenLive = Settings.hiddenCats.live || [];
+     this._selectedCatIds = this._cats.map(function(c){ return String(c.category_id); }).filter(function(id){ return hiddenLive.indexOf(id) === -1; });
+@@ -405,14 +405,14 @@ var WizFlow = {
+       var liveStreams = await getOrFetchData('streams', 'live');
+       rawLive = Array.isArray(liveStreams) ? liveStreams : [];
+       S.rawStreams.live = rawLive;
+-    } catch(e) {}
++    } catch(e) { Logger.warn('[Wizard] Live-Streams konnten nicht geladen werden:', e.message); }
+ 
+     if (this._mods.vod) {
+        try {
+           var vodStreams = await getOrFetchData('streams', 'vod');
+           rawVod = Array.isArray(vodStreams) ? vodStreams : [];
+           S.rawStreams.vod = rawVod;
+-       } catch(e) {}
++       } catch(e) { Logger.warn('[Wizard] VOD-Streams konnten nicht geladen werden:', e.message); }
+     }
+ 
+     this.detectRules();

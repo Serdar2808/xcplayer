@@ -1,9 +1,9 @@
 // ── EPG LOGO FALLBACK ────────────────────────────────────────────
 function getStreamLogoWithEpgFallback(stream){
   if(stream.stream_icon) return stream.stream_icon;
-  if(EpgData.loaded && EpgData._channelMap){
-    var epgId = (stream.epg_channel_id||'').toLowerCase().trim() || stream.name.toLowerCase().trim();
-    var ch = EpgData._channelMap[epgId];
+  if(EpgData.loaded){
+    var id = EpgData.findId(stream);
+    var ch = id ? EpgData.channels[id] : null;
     if(ch && ch.icon) return ch.icon;
   }
   return '';

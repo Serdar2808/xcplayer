@@ -89,7 +89,7 @@ var FocusTrap = {
 
 // ── BESSERE STREAM FEHLERMELDUNGEN ─────────────────────────────
 var _streamLoadStart = 0;
-var _catchupJustStarted = 0; // Zeitstempel: Senderliste nach Catchup-Start kurz unterdrücken
+// _catchupJustStarted wird zentral in config.js deklariert
 
 function showStreamError(msg, detail){
   $('set-msg').textContent = msg;

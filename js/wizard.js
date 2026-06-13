@@ -287,7 +287,7 @@ var WizFlow = {
       var liveCats = await getOrFetchData('cats', 'live');
       // Original unberührt laden, um Kategorien-Namen sauber zu haben
       this._cats = liveCats || [];
-    } catch(e) {}
+    } catch(e) { Logger.warn('[Wizard] Live-Kategorien konnten nicht geladen werden:', e.message); }
 
     var hiddenLive = Settings.hiddenCats.live || [];
     this._selectedCatIds = this._cats.map(function(c){ return String(c.category_id); }).filter(function(id){ return hiddenLive.indexOf(id) === -1; });
@@ -405,14 +405,14 @@ var WizFlow = {
       var liveStreams = await getOrFetchData('streams', 'live');
       rawLive = Array.isArray(liveStreams) ? liveStreams : [];
       S.rawStreams.live = rawLive;
-    } catch(e) {}
+    } catch(e) { Logger.warn('[Wizard] Live-Streams konnten nicht geladen werden:', e.message); }
 
     if (this._mods.vod) {
        try {
           var vodStreams = await getOrFetchData('streams', 'vod');
           rawVod = Array.isArray(vodStreams) ? vodStreams : [];
           S.rawStreams.vod = rawVod;
-       } catch(e) {}
+       } catch(e) { Logger.warn('[Wizard] VOD-Streams konnten nicht geladen werden:', e.message); }
     }
 
     this.detectRules();

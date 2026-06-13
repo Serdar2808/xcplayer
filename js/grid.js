@@ -319,11 +319,11 @@ async function loadCats(){
 }
 
 async function getAllStreamsForTab() {
-  if (S.fullStreams[S.tab]) return S.fullStreams[S.tab];
+  if (S.fullStreams[S.tab] && S.fullStreams[S.tab].length) return S.fullStreams[S.tab];
   var data = await getOrFetchData('streams', S.tab) || [];
   var arr = Array.isArray(data) ? data : [];
   arr = processStreamsFilter(arr);
-  S.fullStreams[S.tab] = arr;
+  if (arr.length) S.fullStreams[S.tab] = arr;
   return arr;
 }
 

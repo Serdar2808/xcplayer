@@ -106,15 +106,34 @@ var SpatialNav = {
     if(!this.focused){ this.focus(items[0]); return; }
     var inList = false; for(var ii=0; ii<items.length; ii++) if(items[ii]===this.focused){ inList=true; break; }
     if(!inList){ this.focus(items[0]); return; }
-    var rect = this.focused.getBoundingClientRect(); var cx = rect.left + rect.width/2; var cy = rect.top + rect.height/2; var best=null, bestScore=Infinity;
+    var fr = this.focused.getBoundingClientRect();
+    var fcx = fr.left + fr.width/2, fcy = fr.top + fr.height/2;
+    var vert = (dir==='up' || dir==='down');
+    var best=null, bestScore=Infinity;
     for(var i=0; i<items.length; i++){
       var item=items[i]; if(item===this.focused) continue;
-      var r=item.getBoundingClientRect(); var ix=r.left+r.width/2, iy=r.top+r.height/2; var dx=ix-cx, dy=iy-cy; var valid=false, primary=0, secondary=0;
-      if(dir==='up')   { valid = dy < 0 && Math.abs(dy) > Math.abs(dx)*0.5; primary=Math.abs(dy); secondary=Math.abs(dx); }
-      if(dir==='down') { valid = dy > 0 && Math.abs(dy) > Math.abs(dx)*0.5; primary=Math.abs(dy); secondary=Math.abs(dx); }
-      if(dir==='left') { valid = dx < 0 && Math.abs(dx) > Math.abs(dy)*0.5; primary=Math.abs(dx); secondary=Math.abs(dy); }
-      if(dir==='right'){ valid = dx > 0 && Math.abs(dx) > Math.abs(dy)*0.5; primary=Math.abs(dx); secondary=Math.abs(dy); }
-      if(!valid) continue; var score = primary + secondary*5; if(score<bestScore){ bestScore=score; best=item; }
+      var r=item.getBoundingClientRect();
+      var icx=r.left+r.width/2, icy=r.top+r.height/2;
+      var dx=icx-fcx, dy=icy-fcy;
+      var valid=false, primary=0, gap=0;
+      if(vert){
+        // Muss klar ober-/unterhalb liegen (Center-basiert: schließt Geschwister derselben Zeile aus)
+        valid = (dir==='down') ? (dy > 1) : (dy < -1);
+        if(!valid) continue;
+        primary = Math.abs(dy);
+        // Horizontale Überlappung → keine Seiten-Strafe (hält die Spalte); sonst Lücke bestrafen
+        var ox = Math.min(fr.right, r.right) - Math.max(fr.left, r.left);
+        gap = ox > 0 ? 0 : Math.abs(dx);
+      } else {
+        valid = (dir==='right') ? (dx > 1) : (dx < -1);
+        if(!valid) continue;
+        primary = Math.abs(dx);
+        // Vertikale Überlappung → keine Zeilen-Strafe (hält die Zeile)
+        var oy = Math.min(fr.bottom, r.bottom) - Math.max(fr.top, r.top);
+        gap = oy > 0 ? 0 : Math.abs(dy);
+      }
+      var score = primary + gap*5;
+      if(score<bestScore){ bestScore=score; best=item; }
     }
     if(best) { this.focus(best); }
   }

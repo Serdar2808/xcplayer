@@ -94,23 +94,29 @@ applyUniversalScale();
          möglich gleichzeitig sichtbar" wichtiger als ein Slot-Rollen-Effekt,
          und eine einzige Spalte braucht keine Spezial-Navigation mehr (Quelle
          der früheren "springt in falsche Spalte"-Bugs war das 2-Spalten-Raster). -->
-    <div id="wiz-step-cats" class="wiz-step" style="width:100%;flex:1;overflow:hidden;">
-      <div class="wiz-title" style="flex-shrink:0;">Schritt 2: Live TV Kategorien</div>
-      <div class="wiz-sub" style="flex-shrink:0;">Abgewählte Kategorien werden komplett ausgeblendet und beim Scan übersprungen.</div>
-      <div id="wiz-cat-grid" class="wiz-cat-col"></div>
-      <div style="display:flex;gap:12px;margin:16px 0 20px;width:100%;flex-shrink:0;">
-        <button class="wiz-btn-mini" data-focusable onclick="WizFlow.selectAllCats(true)">Alle auswählen</button>
-        <button class="wiz-btn-mini" data-focusable onclick="WizFlow.selectAllCats(false)">Keine auswählen</button>
+    <div id="wiz-step-cats" class="wiz-step wiz-step-list">
+      <div class="wiz-title">Schritt 2: Live TV Kategorien</div>
+      <div class="wiz-sub">Abgewählte Kategorien werden komplett ausgeblendet und beim Scan übersprungen.</div>
+      <div class="wiz-split">
+        <div id="wiz-cat-grid" class="wiz-cat-col"></div>
+        <div class="wiz-side">
+          <button class="wiz-btn-mini" data-focusable onclick="WizFlow.selectAllCats(true)">Alle auswählen</button>
+          <button class="wiz-btn-mini" data-focusable onclick="WizFlow.selectAllCats(false)">Keine auswählen</button>
+          <button class="wiz-btn" id="wiz-btn-step4-next" data-focusable onclick="WizFlow.doScan()">Weiter zur Analyse</button>
+        </div>
       </div>
-      <button class="wiz-btn" id="wiz-btn-step4-next" style="flex-shrink:0;" data-focusable onclick="WizFlow.doScan()">Weiter zur Analyse</button>
     </div>
 
-    <!-- Schritt 5: Regeln / Analyse -->
-    <div id="wiz-step-rules" class="wiz-step" style="width:100%;">
+    <!-- Schritt 5: Regeln / Analyse — gleiches Listen-Layout wie Schritt 4 -->
+    <div id="wiz-step-rules" class="wiz-step wiz-step-list">
       <div class="wiz-title">Schritt 3: Optimierungen</div>
       <div class="wiz-sub">Wir haben deine Sender analysiert. Wähle aus, was bereinigt werden soll.</div>
-	  <div id="wiz-detect-results" class="wiz-cat-col" style="max-height:420px;"></div>
-      <button class="wiz-btn" id="btn-wiz-finish" style="flex-shrink:0; margin-top:20px;" data-focusable onclick="Wizard.finishDetect()">Setup abschließen</button>
+      <div class="wiz-split">
+        <div id="wiz-detect-results" class="wiz-cat-col"></div>
+        <div class="wiz-side">
+          <button class="wiz-btn" id="btn-wiz-finish" data-focusable onclick="Wizard.finishDetect()">Setup abschließen</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>

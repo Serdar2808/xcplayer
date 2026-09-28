@@ -370,6 +370,7 @@ var WizFlow = {
   nextToCats: function() {
     $('wiz-step-modules').classList.remove('active');
     $('wiz-step-cats').classList.add('active');
+    document.querySelector('#wizard-screen .wiz-box').scrollTop = 0;
     this.renderCats();
     setTimeout(function(){ SpatialNav.focusBySelector('#wiz-step-cats [data-focusable]'); }, 100);
   },
@@ -441,6 +442,7 @@ var WizFlow = {
 
       $('wiz-step-cats').classList.remove('active');
       $('wiz-step-rules').classList.add('active');
+      document.querySelector('#wizard-screen .wiz-box').scrollTop = 0;
       this.renderRules();
       setTimeout(function(){ SpatialNav.focusBySelector('#wiz-step-rules [data-focusable]'); }, 100);
   }

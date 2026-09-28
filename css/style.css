@@ -1804,7 +1804,18 @@ body.focus-in-topbar .continue-tile.htile-focused::after {
 /* ── RUNDE 3: Wizard einspaltige Listen (Schritt 2 Kategorien, Schritt 3
    Optimierungen) — bewusst eine Spalte statt Raster, siehe Kommentar in
    index.html. Macht die frühere 2-Spalten-Navigationsfalle unnötig. ── */
-.wiz-cat-col{ display:flex; flex-direction:column; gap:10px; width:100%; flex:1; overflow-y:auto; padding:4px 4px 4px 2px; margin-bottom:6px; }
+/* Liste links, Aktions-Buttons rechts — so muss man nicht bis ans Listenende
+   scrollen. Abstände per margin statt flex-gap (ältere webOS-Chromium-Versionen
+   kennen gap bei Flexbox nicht). Feste Höhe, damit nur die Liste scrollt und
+   Titel/Untertitel stehen bleiben. */
+.wiz-step-list{ width:100%; }
+.wiz-step-list .wiz-sub{ margin-bottom:24px; }
+.wiz-split{ display:flex; width:100%; height:calc(90vh - 250px); min-height:0; text-align:left; }
+.wiz-cat-col{ display:flex; flex-direction:column; flex:1; min-width:0; min-height:0; overflow-y:auto; padding:6px 10px 6px 4px; }
+.wiz-cat-col > *{ flex-shrink:0; margin-bottom:14px; }
+.wiz-side{ width:300px; flex-shrink:0; margin-left:30px; display:flex; flex-direction:column; padding-top:6px; }
+.wiz-side .wiz-btn-mini{ flex:0 0 auto; height:56px; margin-bottom:14px; }
+.wiz-side .wiz-btn{ margin-top:auto; padding:0 20px; }
 .wiz-cat-item{ border-radius:26px; padding:16px 26px; }
 .wiz-cat-item.selected{ background:var(--accent); border-color:var(--accent); box-shadow:0 4px 20px rgba(59,130,246,.35); }
 .wiz-cat-item.selected .wiz-cat-cb{ background:rgba(255,255,255,.25); border-color:transparent; }

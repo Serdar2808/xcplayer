@@ -71,7 +71,7 @@ var SpatialNav = {
     }
     var fc = el.getAttribute('data-focus-class')||'focused';
     el.classList.add(fc);
-    var scrollContainerSel = '#episode-list, #epg-body, #sub-list, #audio-list, #clo-list';
+    var scrollContainerSel = '#episode-list, #epg-body, #sub-list, #audio-list, #clo-list, #wiz-cat-grid, #wiz-detect-results';
     var container = el.closest(scrollContainerSel);
     if(container){
       var elRect = el.getBoundingClientRect();

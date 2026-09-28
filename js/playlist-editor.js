@@ -79,9 +79,27 @@ function openPEManualModal(){
   $('pe-pattern').value = '';
   $('pe-replace').value = '';
   $('pe-preview-bar').classList.remove('show');
+  peSetTarget('both');
+  peSetType('prefix');
   $('pe-manual-modal').classList.remove('hidden');
   FocusTrap.trap('pe-manual-modal');
-  setTimeout(function(){ SpatialNav.focusBySelector('#pe-sel-target'); }, 50);
+  setTimeout(function(){ SpatialNav.focusBySelector('#pe-pill-target .pe-pill[data-val="both"]'); }, 50);
+}
+
+// Pillen-Auswahl statt <select> — auf TV-Fernbedienungen lässt sich ein
+// natives Dropdown oft nicht öffnen/schließen. Der gewählte Wert liegt im
+// data-value-Attribut der jeweiligen Reihe.
+function peSetTarget(val) {
+  var row = $('pe-pill-target');
+  row.setAttribute('data-value', val);
+  row.querySelectorAll('.pe-pill').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-val') === val); });
+}
+function peSetType(val) {
+  var row = $('pe-pill-type');
+  row.setAttribute('data-value', val);
+  row.querySelectorAll('.pe-pill').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-val') === val); });
+  peUpdateFormFields();
+  peUpdatePreview();
 }
 
 function closePEManualModal(){
@@ -179,7 +197,7 @@ function peSwitchMain(mode) {
 }
 
 function peUpdateFormFields() {
-  var typ = $('pe-sel-type').value;
+  var typ = $('pe-pill-type').getAttribute('data-value');
   if(typ === 'replace') $('pe-repl-wrap').classList.remove('hidden');
   else $('pe-repl-wrap').classList.add('hidden');
   
@@ -195,7 +213,7 @@ function peUpdateFormFields() {
 // LIVE RULE PREVIEW (counter while typing)
 function peUpdatePreview(){
   var pat = ($('pe-pattern') && $('pe-pattern').value) || '';
-  var typ = ($('pe-sel-type') && $('pe-sel-type').value) || 'prefix';
+  var typ = ($('pe-pill-type') && $('pe-pill-type').getAttribute('data-value')) || 'prefix';
   var bar = $('pe-preview-bar');
   if(!bar) return;
 
@@ -230,8 +248,8 @@ function peUpdatePreview(){
 }
 
 function peAddRule() {
-  var target = $('pe-sel-target').value;
-  var type = $('pe-sel-type').value;
+  var target = $('pe-pill-target').getAttribute('data-value');
+  var type = $('pe-pill-type').getAttribute('data-value');
   var pat = $('pe-pattern').value;
   var rep = $('pe-replace').value;
   if (!pat) { showToast('Muster darf nicht leer sein', 2000); return; }
@@ -413,23 +431,141 @@ function applyVariantGrouping(arr) {
   return res;
 }
 
-// ── VERWALTUNGS-EDITOR (Sortieren & Umbenennen) ───────────────────
-var manState = { tab: 'live', catId: null, streamId: null, editType: null, editId: null, rawCats: [], rawStreams: [] };
+// ── VERWALTUNGS-EDITOR (Fokus folgt Vorschau, OK greift & legt ab) ────
+// Bedienkonzept:
+//   - Hoch/Runter durch die Kategorien zeigt rechts sofort deren Sender an
+//     (Fokus = Vorschau, kein extra Auswahlschritt nötig).
+//   - OK auf einer Zeile "greift" sie (visuell hervorgehoben); solange
+//     gegriffen, verschieben Hoch/Runter genau diese eine Zeile direkt an
+//     ihre neue Position. OK legt wieder ab.
+//   - GELB blendet die fokussierte Zeile aus/ein, GRÜN springt in ihr
+//     Umbenennen-Feld. Das Umbenennen-Feld zeigt aber IMMER schon den Namen
+//     der gerade fokussierten Zeile (auch ohne GRÜN) — GRÜN ist nur die
+//     Abkürzung, um direkt ins Textfeld zu springen.
+var manState = {
+  tab: 'live', catId: null, streamId: null, editType: null, editId: null,
+  rawCats: [], rawStreams: [],
+  grabbed: null,   // null | { kind:'cats'|'streams', id:string }
+  previewId: null  // zuletzt ins Umbenennen-Feld übernommene Zeilen-ID
+};
 
 async function manSetTab(tab) {
-  manState.tab = tab; manState.catId = null; manState.streamId = null;
+  manState.tab = tab; manState.catId = null; manState.grabbed = null; manState.previewId = null;
   manDisableEdit();
   $('man-tab-live').classList.toggle('active', tab==='live');
   $('man-tab-vod').classList.toggle('active', tab==='vod');
   $('man-tab-series').classList.toggle('active', tab==='series');
   $('man-cat-list').innerHTML = '<div class="loading-c" style="height:100px"><div class="spinner"></div></div>';
-  $('man-stream-list').innerHTML = ''; $('man-stream-title').textContent = 'Sender / Streams';
+  $('man-stream-list').innerHTML = '<div class="empty-s">Wähle eine Kategorie aus.</div>';
+  $('man-stream-title').textContent = 'Sender / Streams';
 
   try {
       var cats = await getOrFetchData('cats', tab);
       manState.rawCats = PlaylistEditor.apply(cats, 'cat');
       renderManCats();
+      var orderArr = peDraftOrders.cats[tab] || [];
+      if (orderArr.length) await manSelectCat(orderArr[0]);
+      setTimeout(function(){
+        SpatialNav.focusBySelector('#man-cat-list [data-man-id]');
+        _manAutoPreview(); // Umbenennen-Feld sofort mit der ersten Kategorie befüllen
+      }, 50);
   } catch(e) { Logger.warn('[ManSetTab] error:', e.message); $('man-cat-list').innerHTML = '<div class="empty-s">Fehler</div>'; }
+}
+
+// Delegierte mouseover-Bindung (einmalig, Listen werden neu gerendert, aber
+// die Container-Elemente selbst bleiben bestehen), damit SpatialNav.focused
+// auch bei Maus-Interaktion zuverlässig der hervorgehobenen Zeile folgt.
+(function(){
+  var cl = document.getElementById('man-cat-list');
+  var sl = document.getElementById('man-stream-list');
+  if (cl) cl.addEventListener('mouseover', function(e){ var row = e.target.closest('.man-row'); if(row){ setFocus(row); _manAutoPreview(); } });
+  if (sl) sl.addEventListener('mouseover', function(e){ var row = e.target.closest('.man-row'); if(row){ setFocus(row); _manAutoPreview(); } });
+})();
+
+// Greift/legt eine Zeile ab. Wird sowohl vom Zeilen-Klick (Maus) als auch
+// vom OK-Tastendruck (über den normalen Click-Dispatch von SpatialNav.select)
+// ausgelöst — und beim Ablegen per Taste direkt aus dem Keyhandler.
+function manRowActivate(kind, id) {
+  if (manState.grabbed) {
+    if (manState.grabbed.kind === kind && manState.grabbed.id === id) {
+      manState.grabbed = null;
+      if (kind === 'cats') renderManCats(); else renderManStreams();
+      SpatialNav.focusBySelector('[data-man-id="'+id+'"]');
+      showToast('Position übernommen', 1200);
+    }
+    return; // ein anderes Item ist gerade gegriffen — erst dort ablegen
+  }
+  manState.grabbed = { kind: kind, id: id };
+  if (kind === 'cats') renderManCats(); else renderManStreams();
+  showToast('Verschieben: ↑/↓ bewegen · OK zum Ablegen', 2500);
+  SpatialNav.focusBySelector('[data-man-id="'+id+'"]');
+}
+
+function manCancelGrab() {
+  if (!manState.grabbed) return false;
+  var kind = manState.grabbed.kind;
+  manState.grabbed = null;
+  if (kind === 'cats') renderManCats(); else renderManStreams();
+  return true;
+}
+
+function manMoveGrabbed(dir) {
+  if (!manState.grabbed) return;
+  var kind = manState.grabbed.kind, id = manState.grabbed.id;
+  var arr = kind === 'cats' ? peDraftOrders.cats[manState.tab] : (manState.catId ? peDraftOrders.streams[manState.catId] : null);
+  if (!arr) return;
+  var idx = arr.indexOf(id);
+  var newIdx = idx + dir;
+  if (idx === -1 || newIdx < 0 || newIdx >= arr.length) return;
+  var tmp = arr[idx]; arr[idx] = arr[newIdx]; arr[newIdx] = tmp;
+  if (kind === 'cats') renderManCats(); else renderManStreams();
+  SpatialNav.focusBySelector('[data-man-id="'+id+'"]');
+}
+
+function manToggleSingleCatVisibility(cid) {
+  var hc = peDraftVisCats[manState.tab] || [];
+  var idx = hc.indexOf(cid);
+  if (idx === -1) hc.push(cid); else hc.splice(idx, 1);
+  peDraftVisCats[manState.tab] = hc;
+  renderManCats();
+  SpatialNav.focusBySelector('#man-cat-list [data-man-id="'+cid+'"]');
+}
+
+function manToggleSingleStreamVisibility(sid) {
+  var hs = peDraftVisStreams[manState.tab] || [];
+  var idx = hs.indexOf(sid);
+  if (idx === -1) hs.push(sid); else hs.splice(idx, 1);
+  peDraftVisStreams[manState.tab] = hs;
+  renderManStreams();
+  SpatialNav.focusBySelector('#man-stream-list [data-man-id="'+sid+'"]');
+}
+
+// Aktualisiert nur die "geöffnet"-Markierung, ohne die DOM-Knoten der Liste
+// zu ersetzen — sonst zeigt SpatialNav.focused auf einen entfernten Knoten
+// (Rect 0/0) und die nächste Bewegung springt an den oberen Bildschirmrand.
+function _manUpdateCatOpenHighlight() {
+  var rows = document.querySelectorAll('#man-cat-list .man-row');
+  for (var i = 0; i < rows.length; i++) {
+    rows[i].classList.toggle('man-open', rows[i].getAttribute('data-man-id') === manState.catId);
+  }
+}
+
+// Nach Fokusbewegung (Hoch/Runter/Links/Rechts/Maus) im Verwalten-Tab:
+//   - Kategorien-Liste: Sender-Vorschau rechts nachziehen.
+//   - In beiden Listen: Name der fokussierten Zeile sofort ins
+//     Umbenennen-Feld übernehmen (ohne GRÜN drücken zu müssen).
+function _manAutoPreview() {
+  if (!SpatialNav.focused) return;
+  if (SpatialNav.focused.closest('#man-cat-list')) {
+    var cid = SpatialNav.focused.getAttribute('data-man-id');
+    if (cid) {
+      if (cid !== manState.catId) manSelectCat(cid);
+      _manSyncEditPanel('cats', cid);
+    }
+  } else if (SpatialNav.focused.closest('#man-stream-list')) {
+    var sid = SpatialNav.focused.getAttribute('data-man-id');
+    if (sid) _manSyncEditPanel('streams', sid);
+  }
 }
 
 function renderManCats() {
@@ -448,46 +584,27 @@ function renderManCats() {
   orderArr = orderArr.filter(function(id) { return validIds[id]; });
   peDraftOrders.cats[manState.tab] = orderArr;
 
+  var grabbedId = (manState.grabbed && manState.grabbed.kind === 'cats') ? manState.grabbed.id : null;
   var html = '';
   for(var i=0; i<orderArr.length; i++) {
       var cid = orderArr[i];
       var c = catMap[cid];
       if(!c) continue;
-      var isActive = manState.catId === cid;
+      var isOpen = manState.catId === cid;
       var isHidden = hc.indexOf(cid) !== -1;
+      var isGrabbed = grabbedId === cid;
       var cname = peDraftNames.cats[cid] || c.category_name;
-      html += '<div class="vis-row">' +
-              '<button class="vis-name-btn '+(isActive?'active ':'')+(isHidden?'strike':'')+'" data-focusable id="mc-name-'+i+'" onclick="manSelectCat(\''+cid+'\')">' + esc(cname) + '</button>' +
-              '<button class="vis-toggle-btn" data-focusable id="mc-tog-'+i+'" onclick="manToggleCat(\''+cid+'\','+i+')"><div class="vis-toggle '+(isHidden?'off':'')+'"></div></button>' +
-              '<button class="man-btn-sm" data-focusable id="mc-up-'+i+'" onclick="manMoveCat('+i+', -1)">&#x25B2;</button>' +
-              '<button class="man-btn-sm" data-focusable id="mc-dn-'+i+'" onclick="manMoveCat('+i+', 1)">&#x25BC;</button>' +
-              '<button class="man-btn-sm" data-focusable id="mc-ed-'+i+'" onclick="manEditCat(\''+cid+'\')">&#x270E;</button>' +
-              '</div>';
+      html += '<div class="man-row'+(isOpen?' man-open':'')+(isHidden?' strike':'')+(isGrabbed?' man-grabbed':'')+'" '
+            + 'data-focusable data-man-id="'+esc(cid)+'" onclick="manRowActivate(\'cats\',\''+cid+'\')">'
+            + '<span class="man-handle">&#x2261;</span>'
+            + '<span class="man-row-name">'+esc(cname)+'</span>'
+            + '</div>';
   }
   $('man-cat-list').innerHTML = html || '<div class="empty-s">Keine Einträge</div>';
 }
 
-function manMoveCat(idx, dir) {
-  var arr = peDraftOrders.cats[manState.tab];
-  if(idx + dir < 0 || idx + dir >= arr.length) return;
-  var tmp = arr[idx]; arr[idx] = arr[idx+dir]; arr[idx+dir] = tmp;
-  renderManCats();
-  var newIdx = idx + dir;
-  setTimeout(function(){ SpatialNav.focusBySelector('#mc-up-'+newIdx) || SpatialNav.focusBySelector('#mc-dn-'+newIdx); }, 30);
-}
-
-function manToggleCat(cid, idx) { 
-  var hc = peDraftVisCats[manState.tab] || []; 
-  var pos = hc.indexOf(cid); 
-  if (pos === -1) hc.push(cid); else hc.splice(pos, 1); 
-  peDraftVisCats[manState.tab] = hc; 
-  renderManCats();
-  setTimeout(function(){ SpatialNav.focusBySelector('#mc-tog-'+idx); }, 30);
-}
-
 async function manSelectCat(cid) {
-  manState.catId = cid; renderManCats();
-  manDisableEdit();
+  manState.catId = cid; _manUpdateCatOpenHighlight();
   $('man-stream-list').innerHTML = '<div class="loading-c" style="height:100px"><div class="spinner"></div></div>';
   var cname = peDraftNames.cats[cid] || '';
   if(!cname) {
@@ -500,13 +617,10 @@ async function manSelectCat(cid) {
       var data = await getOrFetchData('streams', manState.tab);
       var arr = Array.isArray(data) ? data : [];
       if (cid && cid !== 'fav') {
-          arr = arr.filter(function(s) { return String(s.category_id) === String(cid); });
+          arr = arr.filter(function(s) { return String(s.category_id) === cid; });
       }
       manState.rawStreams = PlaylistEditor.apply(arr, 'stream');
       renderManStreams();
-      setTimeout(function() {
-          if (manState.rawStreams.length > 0) SpatialNav.focusBySelector('#man-str-0');
-      }, 50);
   } catch(e) { Logger.warn('[ManSelectCat] error:', e.message); $('man-stream-list').innerHTML = '<div class="empty-s">Fehler</div>'; }
 }
 
@@ -526,69 +640,65 @@ function renderManStreams() {
   orderArr = orderArr.filter(function(id) { return validIds[id]; });
   peDraftOrders.streams[cid] = orderArr;
 
+  var grabbedId = (manState.grabbed && manState.grabbed.kind === 'streams') ? manState.grabbed.id : null;
   var html = '';
   for(var i=0; i<orderArr.length; i++) {
       var sid = orderArr[i];
       var s = sMap[sid];
       if(!s) continue;
       var isHidden = hs.indexOf(sid) !== -1;
+      var isGrabbed = grabbedId === sid;
       var sname = peDraftNames.streams[sid] || s.name || s.title || '';
-      html += '<div class="vis-row">' +
-              '<button id="man-str-'+i+'" class="vis-name-btn '+(isHidden?'strike':'')+'" data-focusable>' + esc(sname) + '</button>' +
-              '<button class="vis-toggle-btn" data-focusable id="ms-tog-'+i+'" onclick="manToggleStream(\''+sid+'\','+i+')"><div class="vis-toggle '+(isHidden?'off':'')+'"></div></button>' +
-              '<button class="man-btn-sm" data-focusable id="ms-up-'+i+'" onclick="manMoveStream('+i+', -1)">&#x25B2;</button>' +
-              '<button class="man-btn-sm" data-focusable id="ms-dn-'+i+'" onclick="manMoveStream('+i+', 1)">&#x25BC;</button>' +
-              '<button class="man-btn-sm" data-focusable id="ms-ed-'+i+'" onclick="manEditStream(\''+sid+'\')">&#x270E;</button>' +
-              '</div>';
+      html += '<div class="man-row'+(isHidden?' strike':'')+(isGrabbed?' man-grabbed':'')+'" '
+            + 'data-focusable data-man-id="'+esc(sid)+'" onclick="manRowActivate(\'streams\',\''+sid+'\')">'
+            + '<span class="man-handle">&#x2261;</span>'
+            + '<span class="man-row-name">'+esc(sname)+'</span>'
+            + '</div>';
   }
   $('man-stream-list').innerHTML = html || '<div class="empty-s">Keine Einträge</div>';
 }
 
-function manMoveStream(idx, dir) {
-  var cid = manState.catId;
-  var arr = peDraftOrders.streams[cid];
-  if(idx + dir < 0 || idx + dir >= arr.length) return;
-  var tmp = arr[idx]; arr[idx] = arr[idx+dir]; arr[idx+dir] = tmp;
-  renderManStreams();
-  var newIdx = idx + dir;
-  setTimeout(function(){ SpatialNav.focusBySelector('#ms-up-'+newIdx) || SpatialNav.focusBySelector('#ms-dn-'+newIdx); }, 30);
-}
-
-function manToggleStream(sid, idx) { 
-  var hs = peDraftVisStreams[manState.tab] || []; 
-  var pos = hs.indexOf(sid); 
-  if (pos === -1) hs.push(sid); else hs.splice(pos, 1); 
-  peDraftVisStreams[manState.tab] = hs; 
-  renderManStreams();
-  setTimeout(function(){ SpatialNav.focusBySelector('#ms-tog-'+idx); }, 30);
-}
-
 function manDisableEdit() {
-  manState.editType = null; manState.editId = null;
+  manState.editType = null; manState.editId = null; manState.previewId = null;
   $('man-edit-wrap').style.opacity = '0.3'; $('man-edit-wrap').style.pointerEvents = 'none';
   $('man-inp-name').value = ''; $('man-inp-epg').value = '';
   $('man-edit-msg').textContent = '';
 }
 
-function manEditCat(cid) {
-  manState.editType = 'cat'; manState.editId = cid;
+// Schreibt Name (und ggf. EPG-ID) der gegebenen Zeile ins Umbenennen-Feld,
+// ohne dass GRÜN gedrückt werden musste. Überschreibt eine laufende Eingabe
+// nicht erneut, solange dieselbe Zeile weiterhin die Vorschau stellt.
+function _manSyncEditPanel(kind, id) {
+  if (!id) { manDisableEdit(); return; }
+  if (manState.previewId === id && manState.editType === (kind === 'cats' ? 'cat' : 'stream')) return;
+  manState.previewId = id;
   $('man-edit-wrap').style.opacity = '1'; $('man-edit-wrap').style.pointerEvents = 'auto';
-  $('man-epg-wrap').classList.add('hidden'); $('man-edit-msg').textContent = '';
-  var c = manState.rawCats.find(function(x){ return String(x.category_id)===cid; });
-  $('man-inp-name').value = peDraftNames.cats[cid] || (c ? c.category_name : '');
+  $('man-edit-msg').textContent = '';
+  if (kind === 'cats') {
+    manState.editType = 'cat'; manState.editId = id;
+    $('man-epg-wrap').classList.add('hidden');
+    var c = manState.rawCats.find(function(x){ return String(x.category_id) === id; });
+    $('man-inp-name').value = peDraftNames.cats[id] || (c ? c.category_name : '');
+  } else {
+    manState.editType = 'stream'; manState.editId = id;
+    $('man-epg-wrap').classList.remove('hidden');
+    var s = manState.rawStreams.find(function(x){
+      var sid2 = String(manState.tab === 'series' ? x.series_id : x.stream_id); return sid2 === id;
+    });
+    $('man-inp-name').value = peDraftNames.streams[id] || (s ? (s.name || s.title) : '');
+    $('man-inp-epg').value = peDraftNames.epgs[id] || (s ? (s.epg_channel_id || '') : '');
+  }
+}
+
+// GRÜN-Taste: Vorschau ist schon aktiv (siehe _manAutoPreview) — springt nur
+// noch direkt ins Textfeld, damit man sofort tippen kann.
+function manEditCat(cid) {
+  _manSyncEditPanel('cats', cid);
   SpatialNav.focusBySelector('#man-inp-name');
   setTimeout(function(){ $('man-inp-name').focus(); }, 100);
 }
-
 function manEditStream(sid) {
-  manState.editType = 'stream'; manState.editId = sid;
-  $('man-edit-wrap').style.opacity = '1'; $('man-edit-wrap').style.pointerEvents = 'auto';
-  $('man-epg-wrap').classList.remove('hidden'); $('man-edit-msg').textContent = '';
-  var s = manState.rawStreams.find(function(x){ 
-      var sid2 = String(manState.tab === 'series' ? x.series_id : x.stream_id); return sid2 === sid; 
-  });
-  $('man-inp-name').value = peDraftNames.streams[sid] || (s ? (s.name || s.title) : '');
-  $('man-inp-epg').value = peDraftNames.epgs[sid] || (s ? (s.epg_channel_id || '') : '');
+  _manSyncEditPanel('streams', sid);
   SpatialNav.focusBySelector('#man-inp-name');
   setTimeout(function(){ $('man-inp-name').focus(); }, 100);
 }
@@ -599,13 +709,17 @@ function manSaveEdit() {
   var id = manState.editId;
   if(manState.editType === 'cat') {
       peDraftNames.cats[id] = name;
+      var _keepFocus = SpatialNav.focused;
       renderManCats();
+      if(_keepFocus && !document.body.contains(_keepFocus)) SpatialNav.focusBySelector('#man-inp-name');
       if(manState.catId === id) $('man-stream-title').textContent = name;
   } else if (manState.editType === 'stream') {
       peDraftNames.streams[id] = name;
       var epg = $('man-inp-epg').value.trim();
       peDraftNames.epgs[id] = epg;
+      var _keepFocus2 = SpatialNav.focused;
       renderManStreams();
+      if(_keepFocus2 && !document.body.contains(_keepFocus2)) SpatialNav.focusBySelector('#man-inp-name');
   }
   $('man-edit-msg').textContent = 'Gespeichert!';
   setTimeout(function(){ $('man-edit-msg').textContent=''; }, 2000);

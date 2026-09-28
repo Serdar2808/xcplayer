@@ -407,7 +407,7 @@ var Player = {
     // Zuerst natives HLS versuchen (webOS WebKit unterstützt es)
     var isHlsUrl=url.indexOf('.m3u8')!==-1||url.indexOf('/live/')!==-1;
 
-    if(isHlsUrl&&window.Hls&&Hls.isSupported()&&!Settings.nativePlayer){
+    if(isHlsUrl&&window.Hls&&Hls.isSupported()&&!Settings.nativePlayer&&!Settings.liveHls){
       this.hls=new Hls({
         maxBufferLength:isLive?10:30,
         maxMaxBufferLength:isLive?20:60,

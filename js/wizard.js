@@ -1,6 +1,12 @@
 // ── WIZARD ───────────────────────────────────────────────────────
 var Wizard = {
   start: function() {
+    // Reste eines vorherigen Wizard-Durchlaufs (z.B. Schritt 3 "Optimierungen")
+    // müssen weg, sonst zeigt der DOM beim nächsten Aufruf (Profil gelöscht,
+    // letztes Profil weg) noch den zuletzt aktiven Schritt statt Schritt 1.
+    document.querySelectorAll('.wiz-step').forEach(function(e){ e.classList.remove('active'); });
+    $('wiz-step-1').classList.add('active');
+    S.wizardMode = false; // Schritt 1 fragt QR-Code ab, kein Fortsetzen eines alten Sync-Laufs
     S.screen = 'wizard';
     if(typeof _updateNavbarVisibility === 'function') _updateNavbarVisibility();
     var mac = Device.getMac();
@@ -114,7 +120,9 @@ var Wizard = {
       launchLiveTv();
       setTimeout(function(){ showToast('Setup abgeschlossen! Weitere Regeln unter Einstellungen → Playlist Editor.', 5000); }, 1000);
     } else {
-      S.screen = 'main';
+      // Playlist Editor wurde aus den Einstellungen heraus gestartet (nicht
+      // aus dem App-Start-Wizard) — dorthin zurück, nie auf den Hauptbildschirm.
+      S.screen = 'settings';
       renderPERules();
       $('pe-modal').classList.remove('hidden');
       setTimeout(function(){ SpatialNav.focusBySelector('#pe-btn-wizard'); }, 50);
@@ -150,7 +158,12 @@ var AutoDetect = {
         }
       }
     });
+    // PPV-Sendernamen tragen diese Wörter oft als Namensbestandteil (Event-Status),
+    // keine Ländercodes — sonst würde z.B. "NEXT: Fight Night" fälschlich als
+    // Präfix-Regel "NEXT" vorgeschlagen und Teile echter Sendernamen abgeschnitten.
+    var PREFIX_BLACKLIST = { NEXT:1, ENDED:1, LIVE:1 };
     Object.keys(prefixCounts).forEach(function(countryCode){
+      if (PREFIX_BLACKLIST[countryCode.toUpperCase()]) return;
       var cnt = prefixCounts[countryCode];
       if(cnt > 0){
         var regexPattern = "^(?:\\|\\s*" + countryCode + "\\s*\\||" + countryCode + "\\s*[:\\|]|\\[\\s*" + countryCode + "\\s*\\]|" + countryCode + "\\s*[-–])\\s*";
@@ -316,7 +329,7 @@ var WizFlow = {
   renderRules: function() {
     var cont = $('wiz-detect-results');
     if(_wizDetectItems.length === 0){
-      cont.innerHTML = '<div style="color:var(--green);font-size:var(--fs-md);padding:40px;text-align:center;grid-column:span 2;">Perfekt! Keine Störfaktoren gefunden. Klicke auf "Setup abschließen".</div>';
+      cont.innerHTML = '<div style="color:var(--green);font-size:var(--fs-md);padding:40px;text-align:center;">Perfekt! Keine Störfaktoren gefunden. Klicke auf "Setup abschließen".</div>';
     } else {
       cont.innerHTML = '';
       _wizDetectItems.forEach(function(item, idx){
@@ -334,6 +347,9 @@ var WizFlow = {
           card.classList.toggle('selected', item.selected);
           card.querySelector('.wiz-det-check').innerHTML = item.selected ? '&#x2713;' : '';
         };
+        // Ohne mouseover-Bindung bleibt SpatialNav.focused bei Maus-Interaktion
+        // auf dem zuletzt fokussierten Element stehen (siehe wiz-cat-item unten).
+        card.addEventListener('mouseover', function(){ setFocus(card); });
         cont.appendChild(card);
       });
     }
@@ -368,7 +384,7 @@ var WizFlow = {
       var div = document.createElement('div');
       div.className = 'wiz-cat-item' + (sel ? ' selected' : '');
       div.setAttribute('data-focusable', '');
-      div.innerHTML = '<div class="wiz-cat-cb">&#x2713;</div><div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(c.category_name)+'</div>';
+      div.innerHTML = '<div class="wiz-cat-cb">&#x2713;</div><div style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(c.category_name)+'</div>';
       div.onclick = function(){
         var idx = self._selectedCatIds.indexOf(id);
         if(idx !== -1) self._selectedCatIds.splice(idx, 1);
@@ -376,6 +392,11 @@ var WizFlow = {
         var isSel = self._selectedCatIds.indexOf(id) !== -1;
         div.classList.toggle('selected', isSel);
       };
+      // Wichtig: ohne mouseover-Bindung bleibt SpatialNav.focused bei Maus-
+      // Interaktion (oder wenn der Fokus aus einem anderen Bildschirm wie den
+      // Einstellungen "mitgebracht" wird) auf dem zuletzt fokussierten Element
+      // eines ANDEREN Screens stehen, wodurch Pfeiltasten-Navigation ausfällt.
+      div.addEventListener('mouseover', function(){ setFocus(div); });
       cont.appendChild(div);
     });
   },

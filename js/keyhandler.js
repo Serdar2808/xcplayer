@@ -77,16 +77,43 @@ KeyRouter.register('sidebar', function(e, k) {
 
 // ── TASTEN- & EINGABE-STEUERUNG ───────────────────────────────────
 function handleBack(){
+  // Playlist-Editor Verwalten: BACK während des Greifens legt die Zeile an
+  // ihrer aktuellen Position ab, statt gleich den ganzen Editor zu verlassen.
+  if(typeof manCancelGrab === 'function' && manCancelGrab()){ return; }
   if($('confirm-modal')&&!$('confirm-modal').classList.contains('hidden')){ closeConfirm(false); return; }
   if($('pe-manual-modal')&&!$('pe-manual-modal').classList.contains('hidden')){ closePEManualModal(); return; }
   if(!$('wizard-screen').classList.contains('hidden')) {
-    if(S.wizardMode) {
-      if($('wiz-step-1').classList.contains('active') && Profiles.list.length > 0){
-          S.screen = 'profile';
-          S.focusArea = 'profile_grid';
-          updateFocus();
+    // Zurück-Verhalten hängt vom AKTUELL SICHTBAREN Schritt ab, nicht pauschal
+    // von S.wizardMode — sonst löst BACK auf jedem Schritt "Setup abschließen"
+    // aus (Wizard.finishDetect), sobald man nicht mehr im Cloud-Sync-Zwischenstand ist.
+    if($('wiz-step-1').classList.contains('active')){
+      if(Profiles.list.length > 0){
+        S.screen = 'profile';
+        S.focusArea = 'profile_grid';
+        updateFocus();
       }
-    } else { Wizard.finishDetect(); }
+      // Kein Profil vorhanden: Schritt 1 ist der Ausgangspunkt, nichts zu tun.
+    } else if($('wiz-step-2').classList.contains('active')){
+      $('wiz-step-2').classList.remove('active');
+      $('wiz-step-1').classList.add('active');
+      setTimeout(function(){ SpatialNav.focusBySelector('#wiz-btn-sync'); }, 50);
+    } else if($('wiz-step-modules').classList.contains('active')){
+      if(S.wizardMode){
+        $('wiz-step-modules').classList.remove('active');
+        $('wiz-step-2').classList.add('active');
+        setTimeout(function(){ SpatialNav.focusBySelector('#wiz-btn-next'); }, 50);
+      } else {
+        // Über die Einstellungen gestartet (Schnell-Optimierung) — dorthin zurück.
+        S.screen = 'settings';
+        setTimeout(function(){ SpatialNav.focusBySelector('#pe-btn-wizard'); }, 50);
+      }
+    } else if($('wiz-step-cats').classList.contains('active')){
+      $('wiz-step-cats').classList.remove('active');
+      $('wiz-step-modules').classList.add('active');
+      setTimeout(function(){ SpatialNav.focusBySelector('#wiz-mod-live'); }, 50);
+    } else if($('wiz-step-rules').classList.contains('active')){
+      Wizard.finishDetect();
+    }
     return;
   }
   if($('pe-modal')&&!$('pe-modal').classList.contains('hidden')){
@@ -214,12 +241,114 @@ window.addEventListener('keydown', function(e) {
        return;
     } else {
       e.preventDefault();
-      if(k===38){ SpatialNav.move('up'); return; }
-      if(k===40){ SpatialNav.move('down'); return; }
-      if(k===37){ SpatialNav.move('left'); return; }
+      var fId = SpatialNav.focused ? SpatialNav.focused.id : '';
+      var fEl = SpatialNav.focused;
+      var arrowKey = (k===38||k===40||k===37||k===39);
+
+      // ── Playlist-Editor "Verwalten": Greifen & Ablegen ──────────────
+      // OK auf einer Zeile greift sie (siehe manRowActivate); solange etwas
+      // gegriffen ist, verschieben Hoch/Runter genau diese eine Zeile direkt
+      // an ihre neue Position. OK legt wieder ab. Alles andere wird während
+      // des Greifens geschluckt, damit der Fokus nicht verloren geht.
+      if(isPE && typeof manState !== 'undefined' && manState.grabbed){
+        if(k===38){ manMoveGrabbed(-1); return; }
+        if(k===40){ manMoveGrabbed(1); return; }
+        if(k===13){ manRowActivate(manState.grabbed.kind, manState.grabbed.id); return; }
+        return;
+      }
+      // GELB = Ein-/Ausblenden, GRÜN = ins Umbenennen-Feld springen — auf der
+      // aktuell fokussierten Zeile, ohne vorherigen Auswahlschritt.
+      if(isPE && typeof manState !== 'undefined' && fEl && (k===KEYS.YELLOW||k===89||k===KEYS.GREEN||k===71)){
+        var manRowId = fEl.getAttribute('data-man-id');
+        if(manRowId){
+          var inCatList = !!fEl.closest('#man-cat-list');
+          var inStreamList = !!fEl.closest('#man-stream-list');
+          if((k===KEYS.YELLOW||k===89) && (inCatList||inStreamList)){
+            if(inCatList) manToggleSingleCatVisibility(manRowId); else manToggleSingleStreamVisibility(manRowId);
+            return;
+          }
+          if((k===KEYS.GREEN||k===71) && (inCatList||inStreamList)){
+            if(inCatList) manEditCat(manRowId); else manEditStream(manRowId);
+            return;
+          }
+        }
+      }
+      // Verwalten-Tab, Senderliste: LINKS soll immer zur gerade GEÖFFNETEN
+      // Kategorie zurückspringen — nicht zur geometrisch nächsten Zeile, die
+      // bei unabhängig scrollenden Spalten meist eine andere Kategorie ist.
+      if(isPE && typeof manState !== 'undefined' && k===37 && fEl && fEl.closest('#man-stream-list')){
+        if(manState.catId && SpatialNav.focusBySelector('#man-cat-list [data-man-id="'+manState.catId+'"]')) return;
+      }
+
+      // ── "Neue Regel"-Dialog: Pillen-Reihen statt <select> ────────────
+      // Links/Rechts läuft innerhalb der Reihe von Pille zu Pille (DOM-
+      // Reihenfolge); Hoch/Runter verlässt die Reihe zum Nachbarfeld.
+      if(fEl && fEl.classList.contains('pe-pill')){
+        var pillRow = fEl.closest('.pe-pill-row');
+        if(k===37 || k===39){
+          var sib = k===37 ? fEl.previousElementSibling : fEl.nextElementSibling;
+          if(sib){ SpatialNav.focus(sib); return; }
+          return; // Rand der Reihe: nichts tun, nicht in eine andere Spalte springen
+        }
+        if(k===38 || k===40){
+          // Zur nächsten/vorherigen Formularzeile wechseln (Zielreihenfolge:
+          // Anwenden-auf-Pillen → Aktion-Pillen → Muster-Feld → Speichern).
+          if(pillRow && pillRow.id === 'pe-pill-type'){
+            if(k===38){ SpatialNav.focusBySelector('#pe-pill-target .pe-pill.active'); return; }
+            if(k===40){ SpatialNav.focusBySelector('#pe-pattern'); return; }
+          } else if(pillRow && pillRow.id === 'pe-pill-target'){
+            if(k===40){ SpatialNav.focusBySelector('#pe-pill-type .pe-pill.active'); return; }
+          }
+        }
+      }
+
+      // ── Bestätigungsdialog (z.B. "Nicht gespeichert"): Links/Rechts wechselt
+      // explizit zwischen den beiden Buttons statt über die Geometrie-Suche,
+      // unabhängig davon, wo der Fokus gerade hängt, solange der Dialog offen ist.
+      if(!$('confirm-modal').classList.contains('hidden')){
+        if(k===37){ SpatialNav.focus($('confirm-yes')); return; }
+        if(k===39){ SpatialNav.focus($('confirm-no')); return; }
+        if(k===38 || k===40){ return; }
+        if(k===13){
+          if(fId!=='confirm-yes' && fId!=='confirm-no') SpatialNav.focus($('confirm-no'));
+          SpatialNav.select(); return;
+        }
+      }
+
+      // ── Playlist-Editor, Reiter "Regeln": Kopfzeile explizit verdrahtet.
+      // Die Geometrie-Suche sprang von "Fertig & Anwenden" nach LINKS auf die
+      // erste Regel statt auf den Tab "Verwalten" (und von "Schnell-
+      // Optimierung" nach RECHTS in die Kopfzeile statt zu "Manuelle Regel").
+      if(isPE && fId==='pe-btn-apply'){
+        if(k===37){ SpatialNav.focus($('pe-tab-btn-manage')); return; }
+      }
+      if(isPE && (fId==='pe-tab-btn-rules' || fId==='pe-tab-btn-manage')){
+        if(k===39 && fId==='pe-tab-btn-rules'){ SpatialNav.focus($('pe-tab-btn-manage')); return; }
+        if(k===37 && fId==='pe-tab-btn-manage'){ SpatialNav.focus($('pe-tab-btn-rules')); return; }
+        if(k===39 && fId==='pe-tab-btn-manage'){ SpatialNav.focus($('pe-btn-apply')); return; }
+      }
+      if(isPE && (fId==='pe-btn-wizard' || fId==='pe-btn-manual')){
+        var firstRule = document.querySelector('#pe-rules-list [data-focusable]');
+        if(fId==='pe-btn-wizard'){
+          if(k===39){ SpatialNav.focus($('pe-btn-manual')); return; }
+          if(k===40){ SpatialNav.focus(firstRule || $('pe-btn-manual')); return; }
+          if(k===38){ SpatialNav.focus($('pe-tab-btn-rules')); return; }
+          if(k===37){ return; }
+        } else {
+          if(k===37){ SpatialNav.focus($('pe-btn-wizard')); return; }
+          if(k===40){ SpatialNav.focus(firstRule || $('pe-btn-wizard')); return; }
+          if(k===38){ SpatialNav.focus($('pe-btn-apply')); return; }
+          if(k===39){ return; }
+        }
+      }
+
+      if(k===38){ SpatialNav.move('up'); if(isPE) _manAutoPreview(); return; }
+      if(k===40){ SpatialNav.move('down'); if(isPE) _manAutoPreview(); return; }
+      if(k===37){ SpatialNav.move('left'); if(isPE) _manAutoPreview(); return; }
       if(k===39){
          var oldFocusedR = SpatialNav.focused; SpatialNav.move('right');
          if(oldFocusedR === SpatialNav.focused && S.sysMenuOpen) { closeSysSidebar(); }
+         if(isPE) _manAutoPreview();
          return;
       }
       if(k===13){ SpatialNav.select(); return; }

@@ -11,6 +11,7 @@ var Settings = {
   showChLogos: true,
   startFirstChannel: false,
   nativePlayer: true,
+  liveHls: false,
   extendedEpg: false,
   lightTheme: false,
   useSidebar: false,
@@ -40,6 +41,7 @@ var Settings = {
         this.showChLogos    = d.showChLogos !== undefined ? !!d.showChLogos : true;
         this.startFirstChannel = !!d.startFirstChannel;
         this.nativePlayer   = d.nativePlayer !== undefined ? !!d.nativePlayer : true;
+        this.liveHls        = !!d.liveHls;
         this.extendedEpg    = !!d.extendedEpg;
         this.useSidebar     = !!d.useSidebar;
         this.lightTheme     = !!d.lightTheme;
@@ -92,6 +94,7 @@ var Settings = {
       showChNumbers:this.showChNumbers, showChLogos:this.showChLogos,
       startFirstChannel:this.startFirstChannel,
       nativePlayer:this.nativePlayer,
+      liveHls:this.liveHls,
       extendedEpg:this.extendedEpg, lightTheme:this.lightTheme,
       useSidebar:this.useSidebar,
       showVod: this.showVod,
@@ -139,7 +142,9 @@ var Settings = {
       npSub.textContent = this.nativePlayer
         ? 'TV-Decoder mit MPEG-TS · geringste CPU, beste Kompatibilität'
         : 'HLS.js mit m3u8 · Adaptive Bitrate, mehr Track-Optionen, höhere CPU';
-    }  
+    }
+    var tlh=$('toggle-live-hls');
+    if(tlh) tlh.classList.toggle('on',this.liveHls); 
 	var tee=$('toggle-extended-epg');
     if(tee) tee.classList.toggle('on',this.extendedEpg);
     var tlt=$('toggle-light-theme');

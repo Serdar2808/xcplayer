@@ -34,9 +34,12 @@ function openSettings(){
 }
 function closeSettings(){
   if (S.settingsCatOpen) {
+      // Fokus beim Zurückspringen auf die Hauptzeile setzen, aus der dieses
+      // Untermenü geöffnet wurde — nicht immer auf die erste Zeile der Liste.
+      var openedFrom = S.settingsCatOpen;
       S.settingsCatOpen = null;
       S.focusArea = 'settings';
-      setTimeout(function(){ SpatialNav.focusBySelector('.ios-row') || SpatialNav.focusFirst(); }, 50);
+      setTimeout(function(){ SpatialNav.focusBySelector('#set-main-'+openedFrom) || SpatialNav.focusBySelector('.ios-row') || SpatialNav.focusFirst(); }, 50);
   } else {
       if (S.playerVisible && S.playerType === 'live') {
           _teardownSettings();

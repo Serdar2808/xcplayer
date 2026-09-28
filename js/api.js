@@ -100,7 +100,8 @@ var API = {
   liveUrl:function(s){
     if(S.isM3U&&s.url) return s.url;
     var p=this._p;
-    return clean(p.host)+'/live/'+p.user+'/'+p.pass+'/'+s.stream_id+(Settings.nativePlayer ? '.ts' : '.m3u8');
+    var ext = Settings.liveHls ? '.m3u8' : (Settings.nativePlayer ? '.ts' : '.m3u8');
+    return clean(p.host)+'/live/'+p.user+'/'+p.pass+'/'+s.stream_id+ext;
   },
   vodUrl:function(s){
     var p=this._p;

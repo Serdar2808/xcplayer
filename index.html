@@ -88,12 +88,17 @@ applyUniversalScale();
       <button class="wiz-btn" id="wiz-btn-step3-next" style="margin-top:auto" data-focusable onclick="WizFlow.nextToCats()">Weiter zu den Kategorien</button>
     </div>
 
-    <!-- Schritt 4: Kategorien -->
+    <!-- Schritt 4: Kategorien — einspaltige Liste im Look der großen Wizard-Buttons.
+         Bewusst KEIN Raster/Rolle: bei potenziell 50-200 Kategorien muss man
+         schnell scannen und mehrere abwählen können — dafür ist "so viel wie
+         möglich gleichzeitig sichtbar" wichtiger als ein Slot-Rollen-Effekt,
+         und eine einzige Spalte braucht keine Spezial-Navigation mehr (Quelle
+         der früheren "springt in falsche Spalte"-Bugs war das 2-Spalten-Raster). -->
     <div id="wiz-step-cats" class="wiz-step" style="width:100%;flex:1;overflow:hidden;">
       <div class="wiz-title" style="flex-shrink:0;">Schritt 2: Live TV Kategorien</div>
       <div class="wiz-sub" style="flex-shrink:0;">Abgewählte Kategorien werden komplett ausgeblendet und beim Scan übersprungen.</div>
-      <div id="wiz-cat-grid" style="display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; width:100%; flex:1; overflow-y:auto; margin-bottom:20px; text-align:left; padding:4px;"></div>
-      <div style="display:flex;gap:12px;margin-bottom:30px;width:100%;">
+      <div id="wiz-cat-grid" class="wiz-cat-col"></div>
+      <div style="display:flex;gap:12px;margin:16px 0 20px;width:100%;flex-shrink:0;">
         <button class="wiz-btn-mini" data-focusable onclick="WizFlow.selectAllCats(true)">Alle auswählen</button>
         <button class="wiz-btn-mini" data-focusable onclick="WizFlow.selectAllCats(false)">Keine auswählen</button>
       </div>
@@ -104,7 +109,8 @@ applyUniversalScale();
     <div id="wiz-step-rules" class="wiz-step" style="width:100%;">
       <div class="wiz-title">Schritt 3: Optimierungen</div>
       <div class="wiz-sub">Wir haben deine Sender analysiert. Wähle aus, was bereinigt werden soll.</div>
-	  <div id="wiz-detect-results" style="width:100%;max-height:400px;overflow-x:hidden;overflow-y:auto;display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:12px;text-align:left;margin-bottom:24px;padding:4px;"></div>      <button class="wiz-btn" id="btn-wiz-finish" data-focusable onclick="Wizard.finishDetect()">Setup abschließen</button>
+	  <div id="wiz-detect-results" class="wiz-cat-col" style="max-height:420px;"></div>
+      <button class="wiz-btn" id="btn-wiz-finish" style="flex-shrink:0; margin-top:20px;" data-focusable onclick="Wizard.finishDetect()">Setup abschließen</button>
     </div>
   </div>
 </div>
@@ -161,7 +167,7 @@ applyUniversalScale();
     <div class="ios-settings-wrap">
       <!-- Block 1: Account & System -->
       <div class="ios-group">
-        <div class="ios-row" data-focusable onclick="openSettingsCategory('system')">
+        <div class="ios-row" id="set-main-system" data-focusable onclick="openSettingsCategory('system')">
           <div class="ios-icon">👤</div>
           <div class="ios-label">Profile, Konto & System</div>
           <div class="ios-arrow">›</div>
@@ -170,12 +176,12 @@ applyUniversalScale();
       
       <!-- Block 2: Optik & Bedienung -->
       <div class="ios-group">
-        <div class="ios-row" data-focusable onclick="openSettingsCategory('ansicht')">
+        <div class="ios-row" id="set-main-ansicht" data-focusable onclick="openSettingsCategory('ansicht')">
           <div class="ios-icon">🎨</div>
           <div class="ios-label">Design & Navigation</div>
           <div class="ios-arrow">›</div>
         </div>
-        <div class="ios-row" data-focusable onclick="openSettingsCategory('osd')">
+        <div class="ios-row" id="set-main-osd" data-focusable onclick="openSettingsCategory('osd')">
           <div class="ios-icon">📺</div>
           <div class="ios-label">Senderlisten & OSD</div>
           <div class="ios-arrow">›</div>
@@ -184,12 +190,12 @@ applyUniversalScale();
       
       <!-- Block 3: Technik & Inhalte -->
       <div class="ios-group">
-        <div class="ios-row" data-focusable onclick="openSettingsCategory('player')">
+        <div class="ios-row" id="set-main-player" data-focusable onclick="openSettingsCategory('player')">
           <div class="ios-icon">▶️</div>
           <div class="ios-label">Wiedergabe & Player</div>
           <div class="ios-arrow">›</div>
         </div>
-        <div class="ios-row" data-focusable onclick="openSettingsCategory('playlist')">
+        <div class="ios-row" id="set-main-playlist" data-focusable onclick="openSettingsCategory('playlist')">
           <div class="ios-icon">📋</div>
           <div class="ios-label">Playlist & Filter</div>
           <div class="ios-arrow">›</div>
@@ -509,23 +515,33 @@ applyUniversalScale();
       <div class="ptab" id="man-tab-vod" data-focusable onclick="manSetTab('vod')">Filme</div>
       <div class="ptab" id="man-tab-series" data-focusable onclick="manSetTab('series')">Serien</div>
     </div>
-    <div style="display:flex; flex:1; gap:20px; overflow:hidden;">
-      <div style="flex:1; display:flex; flex-direction:column; border:1px solid var(--border); border-radius:16px; background:rgba(255,255,255,.02);">
-         <div style="padding:16px; border-bottom:1px solid var(--border); font-weight:600; color:var(--mid);">Kategorien (Sortieren)</div>
-         <div id="man-cat-list" style="flex:1; overflow-y:auto; padding:12px;"></div>
+    <div class="man-columns">
+      <div class="man-col">
+         <div class="man-col-head">Kategorien</div>
+         <div id="man-cat-list" class="man-list"></div>
+         <div class="man-hints">
+           <span class="kh"><span class="kbp">OK</span> Verschieben</span>
+           <span class="kh"><span class="kbp">GELB</span> Aus-/Einblenden</span>
+           <span class="kh"><span class="kbp">GRÜN</span> Umbenennen</span>
+         </div>
       </div>
-      <div style="flex:1; display:flex; flex-direction:column; border:1px solid var(--border); border-radius:16px; background:rgba(255,255,255,.02);">
-         <div style="padding:16px; border-bottom:1px solid var(--border); font-weight:600; color:var(--mid);" id="man-stream-title">Sender / Streams</div>
-         <div id="man-stream-list" style="flex:1; overflow-y:auto; padding:12px;"></div>
+      <div class="man-col">
+         <div class="man-col-head" id="man-stream-title">Sender / Streams</div>
+         <div id="man-stream-list" class="man-list"></div>
+         <div class="man-hints">
+           <span class="kh"><span class="kbp">OK</span> Verschieben</span>
+           <span class="kh"><span class="kbp">GELB</span> Aus-/Einblenden</span>
+           <span class="kh"><span class="kbp">GRÜN</span> Umbenennen</span>
+         </div>
       </div>
-      <div style="width:360px; display:flex; flex-direction:column; border:1px solid var(--border); border-radius:16px; background:rgba(255,255,255,.02); padding:24px; overflow-y:auto;">
-         <div style="font-weight:600; margin-bottom:20px; font-size:var(--fs-md); color:var(--hi);">Umbenennen</div>
+      <div class="man-edit-col">
+         <div id="man-edit-title" class="man-col-head" style="border:none;">Umbenennen</div>
          <div id="man-edit-wrap" style="opacity:0.3; pointer-events:none;">
            <div class="fg"><label>Name</label>
              <input id="man-inp-name" type="text" data-focusable></div>
            <div class="fg" id="man-epg-wrap"><label>EPG Channel ID</label>
              <input id="man-inp-epg" type="text" data-focusable></div>
-           <button class="btn btn-primary" data-focusable onclick="manSaveEdit()">Speichern</button>
+           <button class="btn btn-primary" id="man-btn-save" data-focusable onclick="manSaveEdit()">Speichern</button>
            <div id="man-edit-msg" style="margin-top:14px;font-size:14px;color:var(--accent);"></div>
          </div>
       </div>
@@ -535,27 +551,31 @@ applyUniversalScale();
 
 <!-- PE MANUELLE REGEL MODAL -->
 <div id="pe-manual-modal" class="hidden" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);backdrop-filter:blur(10px);z-index:2400;display:flex;align-items:center;justify-content:center;">
-  <div style="width:500px; background:var(--bg-card); border:1px solid var(--border); border-radius:20px; padding:30px; box-shadow:0 20px 60px rgba(0,0,0,.8);">
+  <div style="width:560px; background:var(--bg-card); border:1px solid var(--border); border-radius:20px; padding:30px; box-shadow:0 20px 60px rgba(0,0,0,.8);">
      <div style="font-weight:700; margin-bottom:20px; font-size:var(--fs-xl); color:var(--hi); font-family:'Sora',sans-serif;">Neue Regel</div>
-     
+
+     <!-- Statt <select> (auf TV-Fernbedienungen nicht zuverlässig bedienbar,
+          Dropdown lässt sich mit OK/Pfeiltasten oft nicht öffnen/schließen):
+          Pillen-Reihen aus normalen, fokussierbaren Buttons. Der gewählte
+          Wert wird in data-value am Container gehalten. -->
      <div class="fg"><label>Anwenden auf</label>
-        <select id="pe-sel-target" data-focusable style="width:100%; height:50px; background:rgba(255,255,255,.05); color:white; border:1px solid var(--border); border-radius:10px; font-size:var(--fs-sm); padding:0 12px; outline:none;">
-          <option value="both">Beides (Kategorie &amp; Sender)</option>
-          <option value="cat">Kategorien</option>
-          <option value="stream">Sender / Streams</option>
-        </select>
+        <div class="pe-pill-row" id="pe-pill-target" data-value="both">
+          <button class="pe-pill" data-focusable data-val="both" onclick="peSetTarget('both')">Beides</button>
+          <button class="pe-pill" data-focusable data-val="cat" onclick="peSetTarget('cat')">Kategorien</button>
+          <button class="pe-pill" data-focusable data-val="stream" onclick="peSetTarget('stream')">Sender</button>
+        </div>
      </div>
-     
+
      <div class="fg"><label>Aktion / Typ</label>
-        <select id="pe-sel-type" data-focusable onchange="peUpdateFormFields()" style="width:100%; height:50px; background:rgba(255,255,255,.05); color:white; border:1px solid var(--border); border-radius:10px; font-size:var(--fs-sm); padding:0 12px; outline:none;">
-          <option value="prefix">Prefix entfernen</option>
-          <option value="suffix">Suffix entfernen</option>
-          <option value="replace">Text ersetzen</option>
-          <option value="regex">RegEx ersetzen</option>
-          <option value="hide">Verstecken</option>
-        </select>
+        <div class="pe-pill-row" id="pe-pill-type" data-value="prefix">
+          <button class="pe-pill" data-focusable data-val="prefix" onclick="peSetType('prefix')">Prefix entfernen</button>
+          <button class="pe-pill" data-focusable data-val="suffix" onclick="peSetType('suffix')">Suffix entfernen</button>
+          <button class="pe-pill" data-focusable data-val="replace" onclick="peSetType('replace')">Text ersetzen</button>
+          <button class="pe-pill" data-focusable data-val="regex" onclick="peSetType('regex')">RegEx ersetzen</button>
+          <button class="pe-pill" data-focusable data-val="hide" onclick="peSetType('hide')">Verstecken</button>
+        </div>
      </div>
-     
+
      <div class="fg"><label id="pe-lbl-pattern">Muster (Text)</label>
         <input id="pe-pattern" type="text" data-focusable placeholder="z.B. DE: " oninput="peUpdatePreview()">
      </div>

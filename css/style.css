@@ -1800,3 +1800,80 @@ body.focus-in-topbar .continue-tile.htile-focused::after {
   display: none !important;
 }
 }
+
+/* ── RUNDE 3: Wizard einspaltige Listen (Schritt 2 Kategorien, Schritt 3
+   Optimierungen) — bewusst eine Spalte statt Raster, siehe Kommentar in
+   index.html. Macht die frühere 2-Spalten-Navigationsfalle unnötig. ── */
+.wiz-cat-col{ display:flex; flex-direction:column; gap:10px; width:100%; flex:1; overflow-y:auto; padding:4px 4px 4px 2px; margin-bottom:6px; }
+.wiz-cat-item{ border-radius:26px; padding:16px 26px; }
+.wiz-cat-item.selected{ background:var(--accent); border-color:var(--accent); box-shadow:0 4px 20px rgba(59,130,246,.35); }
+.wiz-cat-item.selected .wiz-cat-cb{ background:rgba(255,255,255,.25); border-color:transparent; }
+.wiz-detect-card{ border-radius:18px; padding:16px 22px; }
+
+/* ── RUNDE 3: Playlist Editor "Verwalten" — Spaltenlayout ──────────────
+   .man-col/.man-edit-col statt Inline-Flex ohne min-width:0: ein sehr
+   langer PPV-Sendername in einer flex:1-Spalte ohne min-width:0 sprengt
+   sonst die Zeile in ihrer natürlichen Breite und schiebt die feste
+   360px-Umbenennen-Spalte aus dem sichtbaren Bereich. */
+.man-columns{ display:flex; flex:1; gap:20px; overflow:hidden; }
+.man-col{ flex:1; min-width:0; display:flex; flex-direction:column; border:1px solid var(--border); border-radius:16px; background:rgba(255,255,255,.02); }
+.man-edit-col{ width:340px; flex-shrink:0; display:flex; flex-direction:column; border:1px solid var(--border); border-radius:16px; background:rgba(255,255,255,.02); padding:24px; overflow-y:auto; }
+.man-col-head{ padding:16px; border-bottom:1px solid var(--border); font-weight:600; color:var(--mid); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.man-list{ flex:1; overflow-y:auto; padding:12px; min-height:0; }
+.man-hints{ display:flex; flex-wrap:wrap; gap:10px; padding:12px 16px; border-top:1px solid var(--border); flex-shrink:0; }
+
+.man-row{
+  display:flex; align-items:center; gap:12px; padding:12px 14px; margin-bottom:4px;
+  border-radius:10px; border:1px solid transparent; background:rgba(255,255,255,.03);
+  cursor:pointer; min-width:0;
+}
+.man-row:hover{ background:rgba(255,255,255,.07); }
+.man-row.strike .man-row-name{ text-decoration:line-through; color:var(--lo); }
+.man-row.man-open{ border-color:rgba(59,130,246,.35); background:rgba(59,130,246,.08); }
+/* Fokus im selben visuellen Stil wie der Rest des Menüs (vgl. .ios-row.focused):
+   Farbunterlegung + Leucht-Rahmen + Akzentlinien oben/unten. Kein transform:scale
+   hier (anders als .ios-row), damit die Zeile nicht über die schmale Spalte
+   hinausragt und dadurch horizontales Scrollen/Clipping auslöst. */
+.man-row.focused{
+  background:rgba(59,130,246,.18) !important; border-color:var(--accent) !important;
+  outline:none; box-shadow:0 0 20px var(--glow); position:relative;
+}
+.man-row.focused::before, .man-row.focused::after{ content:''; position:absolute; left:8px; right:8px; height:2px; background:linear-gradient(90deg,transparent,var(--accent),var(--accent2),transparent); pointer-events:none; }
+.man-row.focused::before{ top:0; }
+.man-row.focused::after{ bottom:0; }
+.man-row.man-grabbed{
+  border-color:var(--accent2) !important; background:rgba(6,182,212,.16) !important;
+  box-shadow:0 0 0 2px rgba(6,182,212,.4);
+  animation:man-grab-pulse 1s ease-in-out infinite alternate;
+}
+@keyframes man-grab-pulse{ from{ opacity:1; } to{ opacity:.62; } }
+.man-handle{ color:var(--lo); font-size:18px; flex-shrink:0; }
+.man-row.man-grabbed .man-handle{ color:var(--accent2); }
+.man-row-name{ flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:var(--fs-sm); color:var(--hi); }
+
+/* ── RUNDE 3: "Neue Regel"-Dialog — Pillen statt <select> ─────────────
+   Native Dropdowns lassen sich auf TV-Fernbedienungen oft nicht zuverlässig
+   öffnen/schließen (OK/Pfeiltasten-Verhalten uneinheitlich). */
+.pe-pill-row{ display:flex; flex-wrap:wrap; gap:8px; }
+.pe-pill{
+  padding:10px 16px; border-radius:20px; border:1px solid var(--border);
+  background:rgba(255,255,255,.05); color:var(--mid); font-size:var(--fs-xs);
+  font-family:'DM Sans',sans-serif; cursor:pointer;
+}
+.pe-pill:hover, .pe-pill.focused{ background:rgba(255,255,255,.12); color:var(--hi); outline:none; }
+.pe-pill.active{ background:var(--accent); border-color:var(--accent); color:white; font-weight:600; }
+.pe-pill.active.focused{ box-shadow:0 0 0 2px white; }
+
+/* Wizard Schritt 1: Auswahl-Marker bleibt auch bei Fokus sichtbar */
+.wiz-mod-btn{ position:relative; }
+.wiz-mod-btn::after{
+  content:''; position:absolute; top:14px; right:16px;
+  width:34px; height:34px; border-radius:50%;
+  border:3px solid rgba(255,255,255,.45); background:transparent;
+  display:flex; align-items:center; justify-content:center;
+  font-size:22px; font-weight:900; line-height:1; color:#fff;
+  box-sizing:border-box;
+}
+.wiz-mod-btn.selected::after{
+  content:'\2713'; background:var(--accent2); border-color:var(--accent2); color:#04202a;
+}

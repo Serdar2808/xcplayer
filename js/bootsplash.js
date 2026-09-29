@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════════
-//  BOOTSPLASH — XC Player Pro
+//  BOOTSPLASH — XC Player Beta
 //  Cyan-Laser-Animation beim App-Start (4 Sekunden, dann Fade-Out)
 //  Muss VOR allen anderen Scripts geladen werden, damit der Splash
 //  sichtbar ist bevor die App initialisiert.
@@ -42,9 +42,9 @@
         '<path id="bs-c-c"  d="M 1217 370 A 140 140 0 1 0 1217 550" stroke="url(#bs-cool)" stroke-width="50" fill="none" stroke-linecap="round"/>' +
       '</g>' +
 
-      // Akzent-Linien über und unter "PLAYER PRO" (sofort sichtbar)
+      // Akzent-Linien über und unter "PLAYER BETA" (sofort sichtbar)
       '<line id="bs-ln-top" x1="640" y1="735" x2="1280" y2="735" stroke="url(#bs-accent)" stroke-width="3" stroke-linecap="round"/>' +
-      '<text id="bs-tx" x="960" y="820" text-anchor="middle" fill="url(#bs-cool)" font-family="Sora, system-ui, sans-serif" font-size="56" font-weight="600" letter-spacing="14" opacity="1">PLAYER PRO</text>' +
+      '<text id="bs-tx" x="960" y="820" text-anchor="middle" fill="url(#bs-cool)" font-family="Sora, system-ui, sans-serif" font-size="56" font-weight="600" letter-spacing="14" opacity="1">PLAYER BETA</text>' +
       '<line id="bs-ln-bot" x1="640" y1="865" x2="1280" y2="865" stroke="url(#bs-accent)" stroke-width="3" stroke-linecap="round"/>' +
     '</svg>';
 

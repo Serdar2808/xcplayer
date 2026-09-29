@@ -1,10 +1,10 @@
 {
   "id": "com.xcplayer.app",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "vendor": "XC Player",
   "type": "web",
   "main": "index.html",
-  "title": "XC Player",
+  "title": "XC Player Beta",
   "icon": "icon.png",
   "largeIcon": "largeIcon.png",
   "iconColor": "#07090f",

@@ -1,5 +1,5 @@
 // ================================================================
-//  XC PLAYER PRO  —  Kompletter Build
+//  XC PLAYER BETA  —  Kompletter Build
 // ================================================================
 
 // ── ZENTRALE UI-REAKTIONEN AUF STATE-ÄNDERUNGEN ─────────────────

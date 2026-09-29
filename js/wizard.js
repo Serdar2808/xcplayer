@@ -78,16 +78,20 @@ var Wizard = {
     // Speichere die gewählten Regeln ab, entferne aktiv abgewählte
     _wizDetectItems.forEach(function(item){
       if(item.type === 'rule'){
+        // Gleiche Regel = gleiches Muster ODER frühere Fassung derselben
+        // automatischen Regel (legacyPattern) - die wird ersetzt statt verdoppelt
+        var sameRule = function(r) {
+          return r.type === item.rule.type && (r.pattern === item.rule.pattern || (item.legacyPattern && r.pattern === item.legacyPattern));
+        };
         if(item.selected) {
           var exists = peDraftRules.some(function(r) { return r.type === item.rule.type && r.pattern === item.rule.pattern; });
           if(!exists) {
+             peDraftRules = peDraftRules.filter(function(r) { return !sameRule(r); });
              peDraftRules.push(Object.assign({id: Date.now()+Math.random()}, item.rule));
           }
         } else {
           // Wenn aktiv abgewählt, aus der Regelliste löschen falls schon vorhanden
-          peDraftRules = peDraftRules.filter(function(r) {
-             return !(r.type === item.rule.type && r.pattern === item.rule.pattern);
-          });
+          peDraftRules = peDraftRules.filter(function(r) { return !sameRule(r); });
         }
       } else if(item.type === 'setting' && item.setting === 'groupVariants'){
         Settings.groupVariants = item.selected;
@@ -143,6 +147,7 @@ var AutoDetect = {
     // ── 1. Präfix-Erkennung (DE: , TR| , IT - , [DE], 001. etc.) ──────
     var prefixCounts = {};
     var prefixPatterns = [
+      /^(?:4[Kk]-BLURAY|4[Kk]|BLURAY)-([A-Z]{2,3})\s*[-–]\s*/, // BLURAY-DE - , 4K-DE - , 4K-BLURAY-DV -
       /^\|\s*([A-Z]{2,5})\s*\|\s*/,          // |DE| , | DE |
       /^([A-Z]{2,5})\s*[:\|]\s*/,            // DE: , DE : , DE| , DE |
       /^\[\s*([A-Z]{2,5})\s*\]\s*/,          // [DE] , [ DE ]
@@ -166,13 +171,18 @@ var AutoDetect = {
       if (PREFIX_BLACKLIST[countryCode.toUpperCase()]) return;
       var cnt = prefixCounts[countryCode];
       if(cnt > 0){
-        var regexPattern = "^(?:\\|\\s*" + countryCode + "\\s*\\||" + countryCode + "\\s*[:\\|]|\\[\\s*" + countryCode + "\\s*\\]|" + countryCode + "\\s*[-–])\\s*";
+        // Letzte Variante mit optionalem Release-Vorsatz: "DE - ", "BLURAY-DE - ",
+        // "4K-DE - ", "4K-BLURAY-DE - " (Groß-/Kleinschreibung egal, Regel läuft mit /gi)
+        var regexPattern = "^(?:\\|\\s*" + countryCode + "\\s*\\||" + countryCode + "\\s*[:\\|]|\\[\\s*" + countryCode + "\\s*\\]|(?:(?:4K-BLURAY|4K|BLURAY)-)?" + countryCode + "\\s*[-–])\\s*";
+        // Frühere Fassung der Regel (vor 0.1.1) - wird beim erneuten Optimieren ersetzt
+        var legacyPattern = "^(?:\\|\\s*" + countryCode + "\\s*\\||" + countryCode + "\\s*[:\\|]|\\[\\s*" + countryCode + "\\s*\\]|" + countryCode + "\\s*[-–])\\s*";
         var examples = names.filter(function(n){ return new RegExp(regexPattern, "i").test(n); }).slice(0,2);
         if(examples.length > 0){
           results.push({
             id: 'prefix_'+countryCode,
             type: 'rule',
             rule: {target:'both', type:'regex', pattern: regexPattern, replacement:''},
+            legacyPattern: legacyPattern,
             title: 'Länder-Prefix entfernen: "'+countryCode+'"',
             desc: cnt+' Einträge betroffen',
             preview: 'z.B. '+examples.slice(0,1).map(function(e){ return '"'+e+'" → "'+e.replace(new RegExp(regexPattern, "i"), '')+'"'; }).join(''),
@@ -200,13 +210,15 @@ var AutoDetect = {
 
     // ── 1.2 Qualitäts-Suffix-Erkennung ─────────────────────────────
     var qCount = 0;
-    var qRe = /\s+(fhd|uhd|4k|2k|hd|sd|1080p?|720p?|480p?|hevc)[*+]?\s*\d*\s*$/i;
+    // Zusätzlich "(4K)" am Ende, egal ob groß/klein ("Avatar (4k)")
+    var qRe = /\s*\(4k\)\s*$|\s+(fhd|uhd|4k|2k|hd|sd|1080p?|720p?|480p?|hevc)[*+]?\s*\d*\s*$/i;
     names.forEach(function(n){ if(qRe.test(n)) qCount++; });
     if(qCount > 0){
         results.push({
           id: 'suffix_quality',
           type: 'rule',
-          rule: {target:'stream', type:'regex', pattern: '\\s+(FHD|UHD|4K|2K|HD|SD|1080p?|720p?|480p?|HEVC)[*+]?\\s*\\d*\\s*$', replacement:''},
+          rule: {target:'stream', type:'regex', pattern: '\\s*\\(4K\\)\\s*$|\\s+(FHD|UHD|4K|2K|HD|SD|1080p?|720p?|480p?|HEVC)[*+]?\\s*\\d*\\s*$', replacement:''},
+          legacyPattern: '\\s+(FHD|UHD|4K|2K|HD|SD|1080p?|720p?|480p?|HEVC)[*+]?\\s*\\d*\\s*$',
           title: 'Qualitäts-Suffix entfernen',
           desc: qCount+' Sender betroffen',
           preview: 'z.B. "RTL HD" → "RTL"',

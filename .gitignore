@@ -1,8 +1,9 @@
 # macOS
 .DS_Store
 
-# Build-Artefakte (webOS-Paket)
+# Build-Artefakte (webOS-Paket, siehe build.ps1)
 *.ipk
+build/
 
 # Editor / IDE
 .vscode/

@@ -151,12 +151,16 @@ html.theme-light .badge-audio { background: rgba(245,158,11,.15); color: #d97706
 html.theme-light .badge-ar { background: rgba(139,92,246,.15); color: #7c3aed; border-color: rgba(139,92,246,.2); }
 html.theme-light .badge-buf { background: rgba(239,68,68,.15); color: #dc2626; border-color: rgba(239,68,68,.2); }
 html.theme-light .badge-br { background: rgba(6,182,212,.15); color: #0891b2; border-color: rgba(6,182,212,.2); }
-html,body{width:1920px;height:1080px;overflow:hidden;background:var(--bg);
+html{width:1920px}
+html,body{height:1080px;overflow:hidden;background:var(--bg);
   color:var(--hi);font-family:'DM Sans',sans-serif;font-size:var(--fs-md);
   -webkit-font-smoothing:antialiased}
+/* body ist die (skalierte) App-Fläche und darf auf breiten Displays breiter als 1920 sein; html bleibt
+   bewusst bei 1920 (= Viewport-Breite), sonst zoomt der Android-WebView die ganze Seite heraus. */
+body{width:var(--app-w,1920px)}
 ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:3px}
 .hidden{display:none!important}
-.screen{position:fixed;top:0;left:0;width:1920px;height:1080px}
+.screen{position:fixed;top:0;left:0;width:var(--app-w,1920px);height:1080px}
 
 /* ── WIZARD ERKENNUNGS-KARTE ────────────────────────────── */
 .wiz-detect-card{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:14px;transition:border-color .15s;cursor:pointer}
@@ -185,7 +189,7 @@ html,body{width:1920px;height:1080px;overflow:hidden;background:var(--bg);
 
 /* ── WIZARD BILDSCHIRM ──────────────────────────────────── */
 #wizard-screen { background: radial-gradient(ellipse 80% 60% at 50% 50%, rgba(59,130,246,0.15), transparent 70%), var(--bg); display: flex; align-items: center; justify-content: center; z-index: 2200; }
-.wiz-box { width: 1200px; background: rgba(15,21,35,0.85); backdrop-filter: blur(16px); border: 1px solid var(--border); border-radius: 26px; padding: 50px 60px; box-shadow: 0 40px 100px rgba(0,0,0,.8); text-align: center; max-height: 90vh; overflow: hidden; display: flex; flex-direction: column; }
+.wiz-box { width: 1200px; background: rgba(15,21,35,0.85); backdrop-filter: blur(16px); border: 1px solid var(--border); border-radius: 26px; padding: 50px 60px; box-shadow: 0 40px 100px rgba(0,0,0,.8); text-align: center; max-height: 972px; overflow: hidden; display: flex; flex-direction: column; }
 .wiz-step { display: none; flex-direction: column; align-items: center; }
 .wiz-step.active { display: flex; }
 .wiz-title { font-family: 'Sora', sans-serif; font-size: var(--fs-2xl); font-weight: 700; color: var(--hi); margin-bottom: 16px; }
@@ -422,7 +426,7 @@ html.theme-light .ios-row:hover { background: rgba(0,0,0,0.05); }
 /* Split-Pane Detail-Ansicht */
 .set-detail-header { display: flex; align-items: center; gap: 24px; padding: 10px 60px 30px; }
 #set-title { font-family: 'Sora', sans-serif; font-size: var(--fs-xl); font-weight: 700; color: var(--hi); margin: 0; }
-.set-detail-split { display: flex; gap: 50px; padding: 0 60px 60px; height: calc(100vh - 180px); }
+.set-detail-split { display: flex; gap: 50px; padding: 0 60px 60px; height: calc(1080px - 180px); }
 .set-detail-left { flex: 0 0 55%; overflow-y: auto; padding-right: 10px; }
 .set-detail-left::-webkit-scrollbar { width: 0; }
 .set-detail-right { flex: 1; display: flex; align-items: flex-start; justify-content: center; position: sticky; top: 0; }
@@ -661,8 +665,8 @@ body.nf-active #navbar .nav-spacer-r { flex:1; }
 
 /* ── PLAYER ─────────────────────────────────────────────── */
 #player-screen{position:fixed;top:0;left:0;background:#000;z-index:1000;
-  width:1920px;height:1080px;overflow:hidden}
-#video-el{position:absolute;top:0;left:0;width:1920px;height:1080px;
+  width:var(--app-w,1920px);height:1080px;overflow:hidden}
+#video-el{position:absolute;top:0;left:0;width:var(--app-w,1920px);height:1080px;
   display:block;background:#000;object-fit:fill;z-index:1;
   transform:translateZ(0);-webkit-transform:translateZ(0);will-change:transform}
 #buf-overlay{display:none!important}
@@ -1485,11 +1489,11 @@ body.nf-active #nf-search-bar { display:none !important; }
 #netflix-grid::-webkit-scrollbar { width:0; }
 
 .nf-row {
-  min-height:78vh;
+  min-height:842px;
   position:relative;
   contain:strict;
   content-visibility:auto;
-  contain-intrinsic-size:100% 78vh;
+  contain-intrinsic-size:100% 842px;
 }
 .nf-row.nf-skeleton { background:transparent; }
 .nf-row-header {
@@ -1608,10 +1612,10 @@ html.theme-light .nf-row-track::before {
 .nf-row-info {
   padding:18px 50px 0 115px;
   /* Höhe füllt den Raum zwischen Postern und nächster Reihe.
-     78vh row - 440px track - ~60px header = bleibt für Info-Bereich */
+     842px-Reihe (78% von 1080) - 440px track - ~60px header = bleibt für Info-Bereich */
   min-height:120px;
-  height:calc(78vh - 500px);
-  max-height:calc(78vh - 500px);
+  height:calc(842px - 500px);
+  max-height:calc(842px - 500px);
   overflow:hidden;
   display:flex;
   flex-direction:column;
@@ -1697,7 +1701,7 @@ html.theme-light .nf-row-track::before {
   display:grid;
   grid-template-columns:repeat(auto-fill, minmax(180px, 1fr));
   gap:14px;
-  max-height:60vh;
+  max-height:648px;
   overflow-y:auto;
   padding:8px;
 }
@@ -1763,8 +1767,8 @@ html.theme-light .htile-focused.vod, html.theme-light .htile-focused.series {
 #boot-splash {
   position: fixed;
   inset: 0;
-  width: 100vw;
-  height: 100vh;
+  width: var(--app-w,1920px);
+  height: 1080px;
   background: #07090f;
   z-index: 99999;
   opacity: 1;
@@ -1810,7 +1814,7 @@ body.focus-in-topbar .continue-tile.htile-focused::after {
    Titel/Untertitel stehen bleiben. */
 .wiz-step-list{ width:100%; }
 .wiz-step-list .wiz-sub{ margin-bottom:24px; }
-.wiz-split{ display:flex; width:100%; height:calc(90vh - 250px); min-height:0; text-align:left; }
+.wiz-split{ display:flex; width:100%; height:calc(972px - 250px); min-height:0; text-align:left; }
 .wiz-cat-col{ display:flex; flex-direction:column; flex:1; min-width:0; min-height:0; overflow-y:auto; padding:6px 10px 6px 4px; }
 .wiz-cat-col > *{ flex-shrink:0; margin-bottom:14px; }
 .wiz-side{ width:300px; flex-shrink:0; margin-left:30px; display:flex; flex-direction:column; padding-top:6px; }

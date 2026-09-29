@@ -88,7 +88,7 @@ var EpgGrid = {
 
     // Zeitachse auf Jetzt zentrieren
     var nowMin = Math.floor(now.getTime() / 60000);
-    var gridW = 1920 - CONFIG.EPG_GRID_CH_W;
+    var gridW = (window.APP_W||1920) - CONFIG.EPG_GRID_CH_W;
     this.timeOffset = Math.max(0, (nowMin - this.originMin) * CONFIG.EPG_GRID_PX_PER_MIN - gridW / 3);
 
     // Scrollen auf Cursor-Sender zentrieren
@@ -276,7 +276,7 @@ var EpgGrid = {
     var p = ch.progs[this.cursor.prog];
     if(!p) return;
     var ppm = CONFIG.EPG_GRID_PX_PER_MIN;
-    var gridW = 1920 - CONFIG.EPG_GRID_CH_W;
+    var gridW = (window.APP_W||1920) - CONFIG.EPG_GRID_CH_W;
     var px = (p.startMin - this.originMin) * ppm;
     var pw = (p.stopMin - p.startMin) * ppm;
     // Scrollen, damit das fokussierte Programm sichtbar ist
@@ -341,7 +341,7 @@ var EpgGrid = {
         this._updateFocus();
     } else {
       // Zeitachse nach rechts scrollen
-      var maxScroll = Math.max(0, this.totalWidth - (1920 - CONFIG.EPG_GRID_CH_W));
+      var maxScroll = Math.max(0, this.totalWidth - ((window.APP_W||1920) - CONFIG.EPG_GRID_CH_W));
       this.timeOffset = Math.min(maxScroll, this.timeOffset + 300);
       this._applyTimeScroll();
     }

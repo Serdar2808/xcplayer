@@ -55,7 +55,7 @@
     div.id = 'boot-splash';
     // Inline-Style als Fallback, falls CSS noch nicht geladen ist —
     // verhindert dass User-Inhalte (Profil-Screen, full-loader Spinner) durchblitzen
-    div.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh;background:#07090f;z-index:99999;display:flex;align-items:center;justify-content:center;overflow:hidden;pointer-events:none;';
+    div.style.cssText = 'position:fixed;inset:0;width:'+(window.APP_W||1920)+'px;height:1080px;background:#07090f;z-index:99999;display:flex;align-items:center;justify-content:center;overflow:hidden;pointer-events:none;';
     div.innerHTML = HTML;
     // Vor allem anderen einfügen (erstes Kind von <body>)
     if(document.body.firstChild){

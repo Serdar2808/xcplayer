@@ -21,7 +21,7 @@ var TrailerPreview = {
     var ov = $('trailer-overlay');
     var rect = anchorEl ? anchorEl.getBoundingClientRect() : {left:300,top:200,width:184,height:285};
     var w=280, h=170;
-    var left = Math.min(rect.left + rect.width + 12, 1920-w-20);
+    var left = Math.min(rect.left + rect.width + 12, (window.APP_W||1920)-w-20);
     var top  = Math.max(20, Math.min(rect.top + (rect.height-h)/2, 1080-h-20));
     ov.style.left   = left + 'px';
     ov.style.top    = top  + 'px';

@@ -10,16 +10,23 @@
 </head>
 <body>
 <script>
-// Universal Scaling: Stellt sicher, dass das 1920x1080 Layout auf jedem TV 
+// Universal Scaling: Stellt sicher, dass das 1920x1080 Layout auf jedem TV
 // (z.B. ältere TVs mit 1280x720 Browser-Viewport) korrekt skaliert wird.
+// Breitere Displays als 16:9 (Smartphones, ~20:9) bekommen statt eines
+// schwarzen Balkens eine breitere Layout-Fläche: Höhe bleibt 1080, die Breite
+// (APP_W, CSS-Variable --app-w) wächst mit. Auf 16:9-TVs bleibt APP_W = 1920.
+var APP_W = 1920;
 function applyUniversalScale() {
   var w = window.innerWidth;
   var h = window.innerHeight;
   if (w > 0 && (w !== 1920 || h !== 1080)) {
     var scale = Math.min(w / 1920, h / 1080);
+    var appW = Math.round(w / scale);
+    APP_W = appW - 1920 > 2 ? appW : 1920;
+    document.documentElement.style.setProperty('--app-w', APP_W + 'px');
     document.body.style.transform = 'scale(' + scale + ')';
     document.body.style.transformOrigin = 'top left';
-    document.body.style.width = '1920px';
+    document.body.style.width = APP_W + 'px';
     document.body.style.height = '1080px';
   }
 }

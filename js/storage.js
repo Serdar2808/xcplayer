@@ -293,63 +293,78 @@ var EPGStore = {
       req.onerror   = function()  { resolve(); };
     });
   },
+  // Speichert die EPG in Bl\u00f6cken - "erst schreiben, dann umschalten":
+  // Die neuen Bl\u00f6cke bekommen eine eigene Generations-Kennung. Erst wenn alle
+  // geschrieben sind, zeigt der Meta-Eintrag darauf; danach werden die alten
+  // gel\u00f6scht. Bricht das Speichern ab (App geschlossen, Speicher voll ...),
+  // bleibt die bisherige, vollst\u00e4ndige EPG g\u00fcltig. Fr\u00fcher wurden die alten
+  // Bl\u00f6cke zuerst gel\u00f6scht - ein Abbruch hinterlie\u00df dann eine halbe EPG, die
+  // beim n\u00e4chsten Start als g\u00fcltig galt.
   saveXmltvData: function(data) {
     if (!this.db) return;
     var db = this.db;
     var p = Profiles.getActive();
     var pId = p ? p.id : 'default';
-    var prefix = 'p_' + pId + '_';
-    
-    try {
-      var delTx = db.transaction(['xmltv'], 'readwrite');
-      var delStore = delTx.objectStore('xmltv');
-      var curReq = delStore.openCursor(IDBKeyRange.bound(prefix, prefix + '\uffff'));
-      curReq.onsuccess = function(e) {
-        var cursor = e.target.result;
-        if (cursor) { cursor.delete(); cursor.continue(); }
-      };
-      
-      delTx.oncomplete = function() {
-        var progKeys = Object.keys(data.programmes);
-        var chunkSize = 50;
-        var chunkIndex = 0;
-        var i = 0;
-        var totalChunks = Math.ceil(progKeys.length / chunkSize);
-        
-        function writeNextBatch() {
-          if (i >= progKeys.length) {
-            try {
-              var metaTx = db.transaction(['xmltv'], 'readwrite');
-              metaTx.objectStore('xmltv').put({
-                key: 'meta_' + pId,
-                channels: JSON.stringify(data.channels),
-                ts: Date.now(),
-                chunkCount: totalChunks
-              });
-              metaTx.oncomplete = function() { Logger.info('[EPGStore] Saved ' + totalChunks + ' chunks + meta for ' + pId); };
-            } catch(e) { Logger.warn('[EPGStore] meta write error:', e); }
-            return;
-          }
-          try {
-            var tx = db.transaction(['xmltv'], 'readwrite');
-            var store = tx.objectStore('xmltv');
-            var end = Math.min(i + chunkSize, progKeys.length);
-            var chunk = {};
-            for (; i < end; i++) {
-              chunk[progKeys[i]] = data.programmes[progKeys[i]];
-            }
-            store.put({key: prefix + chunkIndex, progs: JSON.stringify(chunk)});
-            chunkIndex++;
-            tx.oncomplete = function() { setTimeout(writeNextBatch, 10); };
-            tx.onerror = function() { Logger.warn('[EPGStore] chunk write error'); setTimeout(writeNextBatch, 10); };
-          } catch(e) { Logger.warn('[EPGStore] batch error:', e); }
-        }
-        writeNextBatch();
-      };
-      delTx.onerror = function() { Logger.warn('[EPGStore] delete failed, writing anyway'); };
-    } catch(e) { Logger.warn('[EPGStore] save error', e); }
+    var base = 'p_' + pId + '_';
+    var gen = Date.now().toString(36);
+    var prefix = base + gen + '_';
+    var progKeys = Object.keys(data.programmes);
+    var chunkSize = 50, chunkIndex = 0, i = 0, failed = false;
+
+    // Bl\u00f6cke dieses Profils l\u00f6schen, deren Schl\u00fcssel match() erf\u00fcllt
+    function deleteBlocks(match) {
+      try {
+        var tx = db.transaction(['xmltv'], 'readwrite');
+        var req = tx.objectStore('xmltv').openCursor(IDBKeyRange.bound(base, base + '\uffff'));
+        req.onsuccess = function(e) {
+          var cursor = e.target.result;
+          if (!cursor) return;
+          if (match(String(cursor.key))) cursor.delete();
+          cursor.continue();
+        };
+      } catch(e) { Logger.warn('[EPGStore] Aufr\u00e4umen fehlgeschlagen:', e.message); }
+    }
+    function fail(msg) {
+      if (failed) return;
+      failed = true;
+      Logger.warn('[EPGStore] Speichern abgebrochen, bisherige EPG bleibt g\u00fcltig:', msg);
+      deleteBlocks(function(k) { return k.indexOf(prefix) === 0; });   // halbe neue Generation entfernen
+    }
+    function writeMeta() {
+      try {
+        var tx = db.transaction(['xmltv'], 'readwrite');
+        tx.objectStore('xmltv').put({
+          key: 'meta_' + pId, channels: JSON.stringify(data.channels),
+          ts: Date.now(), chunkCount: chunkIndex, gen: gen
+        });
+        tx.oncomplete = function() {
+          Logger.info('[EPGStore] ' + chunkIndex + ' Bl\u00f6cke + Meta gespeichert f\u00fcr ' + pId);
+          deleteBlocks(function(k) { return k.indexOf(prefix) !== 0; });  // alte Generationen weg
+        };
+        tx.onerror = tx.onabort = function() { fail('Meta: ' + (tx.error && tx.error.name)); };
+      } catch(e) { fail('Meta: ' + e.message); }
+    }
+    function writeNextBatch() {
+      if (failed) return;
+      if (i >= progKeys.length) return writeMeta();
+      try {
+        var tx = db.transaction(['xmltv'], 'readwrite');
+        var end = Math.min(i + chunkSize, progKeys.length);
+        var chunk = {};
+        for (; i < end; i++) chunk[progKeys[i]] = data.programmes[progKeys[i]];
+        tx.objectStore('xmltv').put({key: prefix + chunkIndex, progs: JSON.stringify(chunk)});
+        chunkIndex++;
+        tx.oncomplete = function() { setTimeout(writeNextBatch, 10); };
+        tx.onerror = tx.onabort = function() { fail('Block ' + chunkIndex + ': ' + (tx.error && tx.error.name)); };
+      } catch(e) { fail('Block ' + chunkIndex + ': ' + e.message); }
+    }
+    writeNextBatch();
   },
-  getXmltvData: function() {
+  // maxAgeMs: Standard = normale Gültigkeit (EPG_CACHE_TTL). Mit größerem Wert
+  // (EPG_STALE_MAX_MS) liefert er ältere Daten als Notlösung, wenn der Server
+  // nicht erreichbar ist.
+  getXmltvData: function(maxAgeMs) {
+    var maxAge = maxAgeMs || CONFIG.EPG_CACHE_TTL;
     return new Promise(function(resolve) {
       if (!EPGStore.db) return resolve(null);
       var p = Profiles.getActive();
@@ -360,13 +375,15 @@ var EPGStore = {
         var metaReq = store.get('meta_'+pId);
         metaReq.onsuccess = function() {
           var m = metaReq.result;
-          if (m && Date.now() - m.ts < CONFIG.EPG_CACHE_TTL) {
+          if (m && Date.now() - m.ts < maxAge) {
             var out = { channels: {}, programmes: {} };
             if (typeof m.channels === 'string') {
                try { out.channels = JSON.parse(m.channels); } catch(e) { Logger.warn('[EPGStore] channels-Meta beschädigt:', e.message); }
             } else { out.channels = m.channels || {}; }
 
-            var prefix = 'p_'+pId+'_';
+            // Nur die Bl\u00f6cke der Generation, auf die der Meta-Eintrag zeigt
+            // (Altbestand ohne Generation: alle Bl\u00f6cke des Profils)
+            var prefix = 'p_'+pId+'_' + (m.gen ? m.gen + '_' : '');
             var curReq = store.openCursor(IDBKeyRange.bound(prefix, prefix + '\uffff'));
             var chunksFound = 0;            
             curReq.onsuccess = function(e) {
@@ -382,10 +399,12 @@ var EPGStore = {
                 } catch(ex) { Logger.warn('[EPGStore] EPG-Chunk beschädigt, übersprungen:', ex.message); }
                 cursor.continue();
               } else {
-                if (chunksFound > 0 || m.chunkCount === 0) {
+                // Nur vollständige Daten verwenden - eine halbe EPG würde sonst
+                // bis zu 24 h als gültig gelten und kein Neuladen auslösen.
+                if (chunksFound === m.chunkCount) {
                    resolve(out);
                 } else {
-                   Logger.warn('[EPGStore] Cache invalid (no chunks)');
+                   Logger.warn('[EPGStore] Cache unvollständig (' + chunksFound + ' von ' + m.chunkCount + ' Blöcken) - wird neu geladen');
                    resolve(null);
                 }
               }

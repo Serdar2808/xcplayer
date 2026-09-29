@@ -115,11 +115,12 @@ var EpgData = {
     var url = CONFIG.API.EPG_XML_URL || "https://leppe-lager.duckdns.org/gewicht/epg-filtered.xml";
     showToast('Lade EPG vom Server…', 60000);
     try {
-      var r = await fetchWithRetry(url, CONFIG.EPG_FETCH_TIMEOUT, 1);
+      var r = await fetchWithRetry(url, CONFIG.EPG_FETCH_TIMEOUT, 0);
       var text = await r.text();
       var result = await parseXMLTV(text);
       this.channels = result.channels; this.programmes = result.programmes; this.loaded = true;
       this._loading = false;
+      clearTimeout(this._retryTimer);
       this._nameMap = null;
       EPGStore.saveXmltvData(this._serializeForDb());
       var toastEl = document.getElementById('toast'); if(toastEl) toastEl.classList.remove('show');
@@ -127,9 +128,24 @@ var EpgData = {
       if(typeof this._updatePlayerAfterLoad === 'function') this._updatePlayerAfterLoad();
     } catch(e) {
       Logger.warn('[EPG] Primäre Quelle fehlgeschlagen:', e.message);
-      this._loading = false;
       var toastEl = document.getElementById('toast'); if(toastEl) toastEl.classList.remove('show');
-      showToast('EPG Fehler — primäre Quelle nicht erreichbar', 3000);
+      // Notlösung: zuletzt gespeicherte EPG weiter nutzen (bis EPG_STALE_MAX_MS alt),
+      // statt ganz ohne Programmdaten dazustehen.
+      var stale = this.loaded ? null : await EPGStore.getXmltvData(CONFIG.EPG_STALE_MAX_MS);
+      if (stale) {
+        this._deserializeFromDb(stale);
+        this.loaded = true;
+        this._nameMap = null;
+        showToast('EPG-Server nicht erreichbar — zeige gespeicherte EPG', 3000);
+        if(typeof this._updatePlayerAfterLoad === 'function') this._updatePlayerAfterLoad();
+      } else if (!this.loaded) {
+        showToast('EPG Fehler — primäre Quelle nicht erreichbar', 3000);
+      }
+      this._loading = false;
+      // Später erneut versuchen (nur eigener Server, nicht der IPTV-Anbieter)
+      var self = this;
+      clearTimeout(this._retryTimer);
+      this._retryTimer = setTimeout(function(){ if(!self._loading) self.refresh(); }, CONFIG.EPG_RETRY_MS);
     }
   },
   _serializeForDb: function() {

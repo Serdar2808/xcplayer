@@ -20,8 +20,10 @@ var currentEnv = ENV_CONFIG[APP_ENV];
 var CONFIG = {
   FETCH_TIMEOUT:        currentEnv.FETCH_TIMEOUT,
   FETCH_RETRIES:        0,          // Keine aggressiven Retries, die DDoS-Schutz auslösen
-  EPG_FETCH_TIMEOUT:    120000,
+  EPG_FETCH_TIMEOUT:    30000,      // bis der EPG-Server antwortet (der Download selbst ist nicht begrenzt)
   EPG_CACHE_TTL:        86400000,   // 24h in ms (Millisekunden)
+  EPG_STALE_MAX_MS:     172800000,  // 48h: gespeicherte EPG als Notlösung, wenn der Server nicht erreichbar ist
+  EPG_RETRY_MS:         1800000,    // 30 min: neuer Versuch nach fehlgeschlagenem EPG-Download
   EPG_CACHE_MAX:        200,        // Maximale Einträge im S.epgCache
   EPG_PARSE_CHUNK:      500,        // Programme pro Chunk
   EPG_RANGE_DAYS:       1.5,        // Auf ±1.5 Tage reduziert (Massive RAM-Einsparung)

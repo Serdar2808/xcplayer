@@ -66,13 +66,32 @@ var LiveUi = (function () {
         'box-shadow:0 30px 80px rgba(0,0,0,.8);overflow:hidden}' +
       '.xc-variants::before{content:"";position:absolute;top:0;bottom:0;left:0;width:2px;pointer-events:none;' +
         'background:linear-gradient(180deg,transparent,var(--accent),var(--accent2),transparent)}' +
-      '.xc-var-title{font-size:36px;font-weight:700;color:#fff;padding:0 30px 12px;flex-shrink:0}' +
+      '.xc-var-title{font-size:36px;font-weight:700;color:#fff;padding:0 30px 12px;flex-shrink:0;border:none;background:none;' +
+        'text-align:left;font-family:inherit;white-space:nowrap}' +
       '.xc-var-list{overflow-y:auto;display:flex;flex-direction:column;flex:1;min-height:0;scrollbar-width:none}' +
       '.xc-var-list::-webkit-scrollbar{display:none}' +
       '.xc-var{border:none;border-radius:0;background:transparent;color:rgba(255,255,255,.75);text-align:left;font-family:inherit;' +
         'font-size:36px;padding:0 30px;min-height:92px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;flex-shrink:0}' +
       '.xc-var.cur{color:#fff;font-weight:600}' +
       '#xc-live-ui:not(.tv) .xc-var.cur,.xc-var.foc{background:rgba(59,130,246,.14);color:#fff}' +
+      // Smartphone mit Kacheln: Duplikate zugeklappt als Griff am rechten Rand, Antippen klappt auf
+      '.xc-var-handle{display:none;position:absolute;right:0;top:50%;transform:translateY(-50%);width:64px;height:340px;border:none;' +
+        'border-radius:26px 0 0 26px;background:var(--accent);color:#fff;padding:0;cursor:pointer;flex-direction:column;' +
+        'align-items:center;justify-content:center;gap:14px;box-shadow:0 0 30px var(--glow);font-family:inherit}' +
+      '.xc-var-handle b{font-size:48px;line-height:1}' +
+      '.xc-var-handle span{writing-mode:vertical-rl;transform:rotate(180deg);font-size:30px;font-weight:600;letter-spacing:2px}' +
+      '#xc-live-ui.mode-tiles.has-vars:not(.vars-open) .xc-var-handle{display:flex}' +
+      '#xc-live-ui.mode-tiles:not(.vars-open) .xc-variants{display:none !important}' +
+      '#xc-live-ui.mode-tiles .xc-var-title{cursor:pointer}' +
+      '#xc-live-ui.mode-tiles .xc-var-title::after{content:" \\203A";color:var(--accent2)}' +
+      // Normale Senderliste: Duplikate waagerecht oben, rechts neben Zurück
+      '#xc-live-ui.mode-button .xc-variants{top:40px !important;bottom:auto !important;left:200px;right:40px;width:auto;' +
+        'flex-direction:row;align-items:center;padding:0 10px 0 0}' +
+      '#xc-live-ui.mode-button .xc-variants::before{top:auto;bottom:0;left:0;right:0;width:auto;height:2px;' +
+        'background:linear-gradient(90deg,transparent,var(--accent),var(--accent2),transparent)}' +
+      '#xc-live-ui.mode-button .xc-var-title{padding:0 26px 0 30px}' +
+      '#xc-live-ui.mode-button .xc-var-list{flex-direction:row;overflow-x:auto;overflow-y:hidden;flex:1;min-width:0}' +
+      '#xc-live-ui.mode-button .xc-var{min-height:110px;max-width:520px}' +
       // Kachel-Senderliste unten
       '.xc-strip{position:absolute;left:0;right:0;bottom:0;padding:24px 0 30px;' +
         'background:linear-gradient(transparent,rgba(4,6,14,.85) 22%,rgba(4,6,14,.97))}' +
@@ -112,7 +131,8 @@ var LiveUi = (function () {
         '<button class="xc-lb xc-pp xc-hit" data-act="pp" aria-label="Play/Pause">' + ICON_PAUSE + '</button>' +
         '<button class="xc-lb xc-hit" data-act="next" aria-label="Nächster Sender">' + ICON_NEXT + '</button>' +
       '</div>' +
-      '<div class="xc-variants xc-hit xc-panel" style="display:none"><div class="xc-var-title">Duplikate</div><div class="xc-var-list"></div></div>' +
+      '<div class="xc-variants xc-hit xc-panel" style="display:none"><button class="xc-var-title" data-act="vars-close">Duplikate</button><div class="xc-var-list"></div></div>' +
+      '<button class="xc-var-handle xc-hit" data-act="vars" aria-label="Duplikate"><b>&#x2039;</b><span>Duplikate</span></button>' +
       '<div class="xc-strip xc-hit xc-panel" style="display:none"><div class="xc-cats"></div><div class="xc-tiles"></div></div>' +
       '<button class="xc-listbtn xc-hit" data-act="list" style="display:none">' + ICON_LIST + ' Senderliste</button>';
 
@@ -128,6 +148,12 @@ var LiveUi = (function () {
       if (el.hasAttribute('data-var')) { playVariant(parseInt(el.getAttribute('data-var'), 10)); return; }
       var act = el.getAttribute('data-act');
       if (act === 'pp') { Player.togglePP(); setTimeout(updatePlayPause, 250); restartTimer(); return; }
+      // Duplikate bei Kacheln: Griff klappt auf, Überschrift klappt wieder zu
+      if (act === 'vars' || act === 'vars-close') {
+        if (ui.classList.contains('mode-tiles')) { ui.classList.toggle('vars-open', act === 'vars'); layout(); }
+        restartTimer();
+        return;
+      }
       hide();
       if (act === 'back') { handleBack(); return; }            // Live: öffnet das Menü
       if (act === 'list') { Player.toggleChList(); return; }
@@ -153,6 +179,7 @@ var LiveUi = (function () {
   }
   function renderVariants(show) {
     var box = ui.querySelector('.xc-variants'), vars = S.variants || [];
+    ui.classList.toggle('has-vars', !!show && vars.length >= 2);
     if (!show || vars.length < 2) { box.style.display = 'none'; return; }
     var cur = curVariantIdx(), tv = st.kind === 'dups', html = '';
     for (var i = 0; i < vars.length; i++) {
@@ -250,26 +277,43 @@ var LiveUi = (function () {
     timer = setTimeout(function () { hide(); }, UI_MS);
   }
 
-  // Senkrecht verteilen: OSD oben, Kachelleiste unten; die Duplikate füllen
-  // genau den Raum dazwischen, die Mitte-Buttons stehen mittig darin.
+  // Freien Raum zwischen den Leisten berechnen. Das Live-OSD steht bei Kacheln
+  // oben (unten liegt die Kachelleiste), sonst wie gewohnt unten.
+  //   Kacheln   OSD oben · Kacheln unten · Duplikate zugeklappt rechts (Griff)
+  //   kompakt   Liste links · OSD unten · Duplikate rechts senkrecht
+  //   normal    Zurück + Duplikate waagerecht oben · Button "Senderliste" über dem OSD
   function layout() {
-    var uiH = ui.offsetHeight, uiW = ui.offsetWidth;
+    var uiH = ui.offsetHeight, gap = 24;
     var r = ui.getBoundingClientRect(), scale = (uiH && r.height) ? r.height / uiH : 1;
-    var top = st.kind === 'phone' ? 40 + 130 : 40, osd = $('live-osd');
-    if (osd && osd.offsetHeight) top = Math.max(top, (osd.getBoundingClientRect().bottom - r.top) / scale);
-    var bottom = uiH - 40;
+    var top = 40, bottom = uiH - 40, osd = $('live-osd');
+    if (osd && osd.offsetHeight) {
+      var o = osd.getBoundingClientRect(), oTop = (o.top - r.top) / scale, oBottom = (o.bottom - r.top) / scale;
+      if (oTop < uiH / 2) top = Math.max(top, oBottom); else bottom = Math.min(bottom, oTop);
+    }
     var strip = ui.querySelector('.xc-strip'), lb = ui.querySelector('.xc-listbtn');
-    if (strip.style.display !== 'none') bottom = strip.offsetTop + 20;       // oberer Verlauf der Leiste darf überlappen
-    else if (lb.style.display !== 'none') bottom = lb.offsetTop;
-    var gap = 24, box = ui.querySelector('.xc-variants');
-    box.style.top = (top + gap) + 'px';
-    box.style.bottom = (uiH - bottom + gap) + 'px';
+    if (strip.style.display !== 'none') bottom = Math.min(bottom, strip.offsetTop + 20);   // oberer Verlauf darf überlappen
+    if (lb.style.display !== 'none') {                                                    // Button direkt über dem OSD
+      lb.style.bottom = (uiH - bottom + gap) + 'px';
+      bottom = bottom - gap - lb.offsetHeight;
+    }
+    var box = ui.querySelector('.xc-variants'), boxShown = box.style.display !== 'none';
+    var cTop = top;
+    if (st.list === 'button') {
+      // Duplikate waagerecht oben (Position aus der CSS) - Mitte darunter
+      box.style.top = ''; box.style.bottom = '';
+      cTop = Math.max(cTop, boxShown ? 40 + box.offsetHeight : 40 + 130);
+    } else {
+      box.style.top = (top + gap) + 'px';
+      box.style.bottom = (uiH - bottom + gap) + 'px';
+      if (st.kind === 'phone' && st.list !== 'compact') cTop = Math.max(cTop, 40 + 130);   // unter dem Zurück-Button
+    }
+    var h = ui.querySelector('.xc-var-handle');
+    h.style.top = ((top + bottom) / 2) + 'px';
     var c = ui.querySelector('.xc-center');
-    c.style.top = ((top + bottom) / 2) + 'px';
+    c.style.top = ((cTop + bottom) / 2) + 'px';
     // Waagerecht: neben der kompakten Liste und links von den Duplikaten
     c.style.left = (st.list === 'compact' ? 550 : 0) + 'px';
-    c.style.right = (st.list === 'compact' && box.style.display !== 'none' ? 40 + box.offsetWidth + gap : 0) + 'px';
-    if (!uiW) c.style.right = '0px';
+    c.style.right = (st.list === 'compact' && boxShown ? 40 + box.offsetWidth + gap : 0) + 'px';
   }
 
   function showOsd() {
@@ -285,6 +329,10 @@ var LiveUi = (function () {
     st.open = true; st.kind = kind;
     ui.classList.toggle('tv', kind !== 'phone');
     ui.classList.toggle('compact', st.list === 'compact');
+    ['tiles', 'compact', 'button'].forEach(function (m) {
+      ui.classList.toggle('mode-' + m, kind === 'phone' && st.list === m);
+    });
+    ui.classList.remove('vars-open');           // Duplikate bei Kacheln jedes Mal zugeklappt
     document.documentElement.classList.toggle('xc-liveui-compact', st.list === 'compact');
     var strip = kind === 'tiles' || (kind === 'phone' && st.list === 'tiles');
     ui.querySelector('.xc-strip').style.display = strip ? '' : 'none';
@@ -415,7 +463,13 @@ var LiveUi = (function () {
     if (typeof handleBack !== 'function' || handleBack._liveUi) return;
     var origBack = handleBack;
     window.handleBack = function () {
-      if (st.open) { hide(); return; }
+      if (st.open) {
+        // Kompakte Liste mit Buttons (Handy): schließen und wie Zurück im Live-Bild
+        // gleich das Top-Menü öffnen; sonst nur die Bedienung ausblenden
+        var compact = st.list === 'compact';
+        hide();
+        if (!compact) return;
+      }
       return origBack.apply(this, arguments);
     };
     window.handleBack._liveUi = true;
@@ -434,6 +488,13 @@ var LiveUi = (function () {
     if (!phone && !tilesOn()) return;
     var target = e.target;
     if (!target.closest || !target.closest('#player-screen')) return;
+    // Top-Menü offen: Tippen ins Bild schließt nur das Menü
+    if (S.focusArea === 'nav-tabs' || S.sysMenuOpen) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      handleBack();
+      return;
+    }
     if (target.closest('button,.vchip')) return;               // echte Buttons/Kacheln/Chips selbst
     if (compactOpen() && target.closest('#ch-list-overlay')) return;
     if (blocked()) return;

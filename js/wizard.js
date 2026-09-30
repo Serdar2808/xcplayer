@@ -336,6 +336,16 @@ var WizFlow = {
     var absoluteRawVod = this._mods.vod ? (S.rawStreams.vod || []) : [];
     // Vor dem Scan mit AutoDetect keine Regeln anwenden, das wollen wir ja analysieren!
     _wizDetectItems = AutoDetect.run(absoluteRawLive.concat(absoluteRawVod));
+    // Serien: nur Präfix-/Suffix-Regeln übernehmen (z.B. "BLURAY-DV - " steht oft
+    // nur bei Serien). Die übrigen Erkennungen (Duplikate, Platzhalter ...) sind
+    // für Live-Sender gedacht und würden durch Seriennamen verfälscht.
+    if (this._mods.series && (S.rawStreams.series || []).length) {
+      AutoDetect.run(S.rawStreams.series).forEach(function(it){
+        if (it.type !== 'rule' || !/^(prefix_|suffix_)/.test(it.id)) return;
+        if (_wizDetectItems.some(function(x){ return x.id === it.id; })) return;
+        _wizDetectItems.push(it);
+      });
+    }
   },
 
   renderRules: function() {
@@ -447,6 +457,13 @@ var WizFlow = {
           rawVod = Array.isArray(vodStreams) ? vodStreams : [];
           S.rawStreams.vod = rawVod;
        } catch(e) { Logger.warn('[Wizard] VOD-Streams konnten nicht geladen werden:', e.message); }
+    }
+
+    if (this._mods.series) {
+       try {
+          var serStreams = await getOrFetchData('streams', 'series');
+          S.rawStreams.series = Array.isArray(serStreams) ? serStreams : [];
+       } catch(e) { Logger.warn('[Wizard] Serien konnten nicht geladen werden:', e.message); }
     }
 
     this.detectRules();

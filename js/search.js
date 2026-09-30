@@ -58,6 +58,21 @@ var NFSearch = {
     S.prevFocusForSearch = null;
   },
 
+  // Alle Filme bzw. Serien des aktuellen Bereichs - unabhängig davon, ob die
+  // Netflix-Ansicht an ist (vorher kamen die Daten nur aus ihr: bei klassischer
+  // Ansicht fand die Suche nichts)
+  _getAll: async function(){
+    if((S.tab === 'vod' || S.tab === 'series') && typeof getAllStreamsForTab === 'function'){
+      try { var all = await getAllStreamsForTab(); if(all && all.length) return all; } catch(e){}
+    }
+    var out=[];
+    for(var i=0;i<NF.fullData.length;i++){
+      if(NF.fullData[i].cat && NF.fullData[i].cat.category_id === 'fav') continue;   // Favoriten stehen auch in ihrer Kategorie
+      out = out.concat(NF.fullData[i].streams);
+    }
+    return out;
+  },
+
   _renderResults: async function(q){
     var box=$('nf-search-results'); if(!box) return;
     NFSearch._searchId++;
@@ -68,17 +83,14 @@ var NFSearch = {
       return;
     }
     var hits=[];
-    var streamsProcessed = 0;
-    for(var i=0;i<NF.fullData.length && hits.length<60;i++){
-      var row=NF.fullData[i];
-      for(var k=0;k<row.streams.length && hits.length<60;k++){
-        var s=row.streams[k];
-        if(((s.name||s.title||'')+'').toLowerCase().indexOf(q)!==-1) hits.push(s);
-        
-        if (++streamsProcessed % 1000 === 0) {
-          await new Promise(function(resolve) { setTimeout(resolve, 0); });
-          if (NFSearch._searchId !== currentSearchId) return; // Neue Suche gestartet, diese abbrechen
-        }
+    var all = await NFSearch._getAll();
+    if (NFSearch._searchId !== currentSearchId) return;
+    for(var i=0;i<all.length && hits.length<60;i++){
+      var s=all[i];
+      if(((s.name||s.title||'')+'').toLowerCase().indexOf(q)!==-1) hits.push(s);
+      if (i > 0 && i % 1000 === 0) {
+        await new Promise(function(resolve) { setTimeout(resolve, 0); });
+        if (NFSearch._searchId !== currentSearchId) return; // Neue Suche gestartet, diese abbrechen
       }
     }
     

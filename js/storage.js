@@ -3,6 +3,7 @@ var Settings = {
   splitList: false,
   compactList: false,
   compactListEpg: false,
+  tileList: null,          // null = noch nie gewählt -> Standard in load()
   compactOsd: false,
   useNetflixStyle: true,
   compactOsdHints: true,
@@ -48,8 +49,17 @@ var Settings = {
         this.showVod        = d.showVod !== false;
         this.showSeries     = d.showSeries !== false;
         this.epgShift       = d.epgShift !== undefined ? parseInt(d.epgShift) : 0;
+        if (d.tileList !== undefined && d.tileList !== null) this.tileList = !!d.tileList;
       }
     }catch(e){ Logger.warn('[Settings] load error:', e); }
+    // Kachel-Senderliste: Standard auf Smartphones an (außer die kompakte Liste
+    // ist gewählt), sonst aus. Früherer Handy-Schalter (xcp_phone_tiles) zählt mit.
+    if (this.tileList === null) {
+      var oldPhone = null;
+      try { oldPhone = localStorage.getItem('xcp_phone_tiles'); } catch(e){}
+      this.tileList = document.documentElement.classList.contains('xc-phone') && !this.compactList && oldPhone !== '0';
+    }
+    if (this.tileList && this.compactList) this.compactList = false;
     this._apply();
   },
   loadProfile: function(pid){
@@ -88,6 +98,7 @@ var Settings = {
     try{ localStorage.setItem('xcp_settings',JSON.stringify({
       splitList:this.splitList,
       compactList:this.compactList, compactListEpg:this.compactListEpg,
+      tileList:this.tileList,
       compactOsd:this.compactOsd, compactOsdHints:this.compactOsdHints,
       useNetflixStyle:this.useNetflixStyle,
       groupVariants:this.groupVariants,
@@ -121,6 +132,9 @@ var Settings = {
     if(t) t.classList.toggle('on',this.compactList);
     var tcle=$('toggle-compact-list-epg');
     if(tcle) tcle.classList.toggle('on',this.compactListEpg);
+    var ttl=$('toggle-tile-list');
+    if(ttl) ttl.classList.toggle('on',!!this.tileList);
+    document.documentElement.classList.toggle('xc-tiles-on', !!this.tileList);
     var tco=$('toggle-compact-osd');
     if(tco) tco.classList.toggle('on',this.compactOsd);
     var tcoh=$('toggle-compact-osd-hints');
@@ -183,6 +197,9 @@ var Settings = {
 
 function toggleSetting(key){
   Settings[key]=!Settings[key];
+  // Kachel-Senderliste und kompakte Liste schließen sich gegenseitig aus
+  if(key === 'tileList' && Settings.tileList) Settings.compactList = false;
+  if(key === 'compactList' && Settings.compactList) Settings.tileList = false;
   Settings.save(); Settings._apply();
   
   if (S.streams && S.streams.length > 0) {

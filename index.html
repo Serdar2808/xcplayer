@@ -259,6 +259,13 @@ applyUniversalScale();
                 <div class="ios-toggle sp-toggle" id="toggle-compact-list-epg"><div class="sp-toggle-knob"></div></div>
               </div>
             </div>
+            <div class="ios-row" data-focusable onmouseover="setFocus(this)" onclick="toggleSetting('tileList')">
+              <div style="flex:1">
+                <div class="ios-label">Kachel-Senderliste</div>
+                <div style="font-size:var(--fs-xs);color:var(--lo);margin-top:4px">Live TV: Sender als Kacheln unten im Bild (OK bzw. Antippen) · ersetzt die kompakte Liste</div>
+              </div>
+              <div class="ios-toggle sp-toggle" id="toggle-tile-list"><div class="sp-toggle-knob"></div></div>
+            </div>
           </div>
           <div class="ios-group">
             <div class="ios-row" data-focusable onmouseover="setFocus(this)" data-preview="split" onclick="toggleSetting('splitList')">
@@ -691,6 +698,7 @@ applyUniversalScale();
 <script src="js/grid.js"></script>
 <script src="js/player.js"></script>
 <script src="js/spatialnav.js"></script>
+<script src="js/tilelist.js"></script>
 <script src="js/keyhandler.js"></script>
 <script src="js/main.js"></script>
 

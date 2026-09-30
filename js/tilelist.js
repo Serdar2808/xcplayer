@@ -39,7 +39,7 @@ var LiveUi = (function () {
     var css = document.createElement('style');
     css.textContent =
       // Ebene über dem Bild: selbst durchlässig, nur die Bedienelemente fangen Berührungen
-      '#xc-live-ui{position:absolute;inset:0;z-index:1019;opacity:0;pointer-events:none;transition:opacity .2s}' +
+      '#xc-live-ui{position:absolute;top:0;left:0;right:0;bottom:0;z-index:1019;opacity:0;pointer-events:none;transition:opacity .2s}' +
       '#xc-live-ui.show{opacity:1}' +
       '#xc-live-ui.show .xc-hit{pointer-events:auto}' +
       '#xc-live-ui.compact{z-index:1031}' +                       // über der kompakten Liste (Zurück-Button)
@@ -49,8 +49,9 @@ var LiveUi = (function () {
       '.xc-lb:active{transform:scale(.93)}' +
       '.xc-back{position:absolute;top:40px;left:40px;width:130px;height:130px}.xc-back svg{width:70px;height:70px}' +
       '#xc-live-ui.compact .xc-back{top:62px;left:62px;width:96px;height:96px}#xc-live-ui.compact .xc-back svg{width:54px;height:54px}' +
-      '.xc-center{position:absolute;left:0;right:0;top:50%;display:flex;justify-content:center;align-items:center;gap:150px;transform:translateY(-50%)}' +
-      '#xc-live-ui.compact .xc-center{gap:80px}' +
+      '.xc-center{position:absolute;left:0;right:0;top:50%;display:flex;justify-content:center;align-items:center;transform:translateY(-50%)}' +
+      '.xc-center .xc-lb{margin:0 75px}' +
+      '#xc-live-ui.compact .xc-center .xc-lb{margin:0 40px}' +
       '.xc-center .xc-lb{width:180px;height:180px}.xc-center svg{width:92px;height:92px}' +
       '.xc-center .xc-pp{width:220px;height:220px;background:rgba(59,130,246,.8)}.xc-center .xc-pp svg{width:110px;height:110px}' +
       // Cyan Fokus-Linien oben/unten wie in Senderliste und Filme/Serien.
@@ -77,8 +78,8 @@ var LiveUi = (function () {
       // Smartphone mit Kacheln: Duplikate zugeklappt als Griff am rechten Rand, Antippen klappt auf
       '.xc-var-handle{display:none;position:absolute;right:0;top:50%;transform:translateY(-50%);width:64px;height:340px;border:none;' +
         'border-radius:26px 0 0 26px;background:var(--accent);color:#fff;padding:0;cursor:pointer;flex-direction:column;' +
-        'align-items:center;justify-content:center;gap:14px;box-shadow:0 0 30px var(--glow);font-family:inherit}' +
-      '.xc-var-handle b{font-size:48px;line-height:1}' +
+        'align-items:center;justify-content:center;box-shadow:0 0 30px var(--glow);font-family:inherit}' +
+      '.xc-var-handle b{font-size:48px;line-height:1;margin-bottom:14px}' +
       '.xc-var-handle span{writing-mode:vertical-rl;transform:rotate(180deg);font-size:30px;font-weight:600;letter-spacing:2px}' +
       '#xc-live-ui.mode-tiles.has-vars:not(.vars-open) .xc-var-handle{display:flex}' +
       '#xc-live-ui.mode-tiles:not(.vars-open) .xc-variants{display:none !important}' +
@@ -97,13 +98,13 @@ var LiveUi = (function () {
         'background:linear-gradient(transparent,rgba(4,6,14,.85) 22%,rgba(4,6,14,.97))}' +
       '.xc-cats,.xc-tiles{display:flex;overflow-x:auto;overflow-y:hidden;padding:0 40px;scrollbar-width:none}' +
       '.xc-cats::-webkit-scrollbar,.xc-tiles::-webkit-scrollbar{display:none}' +
-      '.xc-cats{gap:6px;margin-bottom:10px}' +
+      '.xc-cats{margin-bottom:10px}.xc-cat{margin-right:6px}' +
       '.xc-cat{flex-shrink:0;border:none;background:transparent;color:rgba(255,255,255,.6);font-family:inherit;' +
         'font-size:34px;padding:14px 26px;white-space:nowrap;cursor:pointer}' +
       '.xc-cat.cur{color:#fff;font-weight:700}' +
       '.xc-cat::before{display:none}' +
       '.xc-cat.foc{background:rgba(59,130,246,.14);border-radius:10px}' +
-      '.xc-tiles{gap:20px;padding-top:12px;padding-bottom:12px}' +
+      '.xc-tiles{padding-top:12px;padding-bottom:12px}.xc-tile{margin-right:20px}' +
       '.xc-tile{flex-shrink:0;width:300px;height:170px;border-radius:16px;border:none;transition:transform .12s;' +
         'background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;padding:14px;cursor:pointer;overflow:hidden}' +
       '.xc-tile img{max-width:100%;max-height:100%;object-fit:contain;pointer-events:none}' +
@@ -113,8 +114,8 @@ var LiveUi = (function () {
       '#xc-live-ui.tv .xc-tile.cur{background:rgba(255,255,255,.18)}' +
       '.xc-tile.foc{background:rgba(59,130,246,.22);box-shadow:0 0 30px var(--glow);transform:scale(1.06)}' +
       '.xc-listbtn{position:absolute;left:50%;bottom:60px;transform:translateX(-50%);border:none;border-radius:60px;' +
-        'background:rgba(0,0,0,.55);color:#fff;font-size:40px;padding:26px 50px;display:flex;align-items:center;gap:20px}' +
-      '.xc-listbtn svg{width:52px;height:52px}' +
+        'background:rgba(0,0,0,.55);color:#fff;font-size:40px;padding:26px 50px;display:flex;align-items:center}' +
+      '.xc-listbtn svg{width:52px;height:52px;margin-right:20px}' +
       // Live-OSD oben, solange Kacheln aktiv sind (unten liegt die Kachelleiste)
       'html.xc-tiles-on #live-osd{top:40px;bottom:auto}' +
       // Kompakte Liste mit Buttons (Smartphone): Zurück sitzt oben in der Liste, OSD rechts daneben

@@ -39,17 +39,43 @@ applyUniversalScale();
 <!-- WIZARD BILDSCHIRM -->
 <div id="wizard-screen" class="screen hidden">
   <div class="wiz-box">
-    <!-- Schritt 1: Cloud Sync -->
+    <!-- Schritt 1: Playlist verbinden (die App fragt selbst nach, ob sie auf der Webseite eingegeben wurde) -->
     <div id="wiz-step-1" class="wiz-step active">
       <div class="wiz-title">Willkommen bei XC Player Beta</div>
-      <div class="wiz-sub">Scanne den QR-Code mit deinem Smartphone, um<br>deine Playlist bequem hinzuzufügen.</div>
+      <div class="wiz-sub" id="wiz-sub-1">Scanne den QR-Code mit deinem Smartphone und gib dort deine Playlist ein.<br>Die App erkennt sie danach automatisch.</div>
       <div class="wiz-qr-wrap"><img id="wiz-qr" src="" alt="QR" width="220" height="220"></div>
       <div class="wiz-mac" id="wiz-mac">MAC LÄDT...</div>
-      <button class="wiz-btn" id="wiz-btn-sync" data-focusable onclick="Wizard.sync()">Playlist geladen -> Weiter</button>
+      <div class="wiz-status wait" id="wiz-status"><span class="wiz-spin"></span><span id="wiz-status-txt">Warte auf deine Playlist …</span></div>
+      <button class="wiz-btn wiz-phone-only" id="wiz-btn-direct" data-focusable onclick="Wizard.openDirect()">Playlist direkt eingeben</button>
     </div>
-    
-    <!-- Schritt 2: Steuerkreuz Tutorial -->
+
+    <!-- Smartphones: Playlist direkt eingeben (Alternative zum QR-Code) -->
+    <div id="wiz-step-direct" class="wiz-step">
+      <div class="wiz-title">Playlist eingeben</div>
+      <div class="wiz-direct-tabs">
+        <button class="ptab active" id="wd-tab-xc" data-focusable onclick="Wizard.directTab('xc')">Xtream Codes</button>
+        <button class="ptab" id="wd-tab-m3u" data-focusable onclick="Wizard.directTab('m3u')">M3U-Link</button>
+      </div>
+      <div id="wd-xc" class="wiz-direct-fields">
+        <input id="wd-host" class="wiz-input" type="url" data-focusable placeholder="Server-Adresse, z. B. http://server.de:8080" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+        <div class="wiz-input-row">
+          <input id="wd-user" class="wiz-input" type="text" data-focusable placeholder="Benutzername" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+          <input id="wd-pass" class="wiz-input" type="password" data-focusable placeholder="Passwort" autocomplete="off">
+        </div>
+      </div>
+      <div id="wd-m3u" class="wiz-direct-fields hidden">
+        <input id="wd-m3u-url" class="wiz-input" type="url" data-focusable placeholder="M3U-Link, z. B. http://server.de/get.php?username=…" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+      </div>
+      <div class="wiz-err hidden" id="wd-err"></div>
+      <div class="wiz-btn-row">
+        <button class="wiz-btn wiz-btn-ghost" data-focusable onclick="Wizard.closeDirect()">Zurück</button>
+        <button class="wiz-btn" id="wd-connect" data-focusable onclick="Wizard.connectDirect()">Verbinden</button>
+      </div>
+    </div>
+
+    <!-- Schritt 2: Bedienung -->
     <div id="wiz-step-2" class="wiz-step">
+      <div class="wiz-conn-ok hidden" id="wiz-conn-info"></div>
       <div class="wiz-title">Steuerung</div>
       <div class="wiz-dpad-ill">
         <div class="wiz-dpad-btn wiz-dpad-up">&#x25B2;</div>
@@ -74,57 +100,11 @@ applyUniversalScale();
           <p><b>Gelbe Taste:</b> Untertitel</p>
           <p><b>Blaue Taste:</b> Audiospur</p></div>
       </div>
-      <button class="wiz-btn" id="wiz-btn-next" data-focusable onclick="Wizard.next()">Weiter zum Playlist-Editor</button>
+      <button class="wiz-btn" id="wiz-btn-next" data-focusable onclick="Wizard.next()">Weiter zur Einrichtung</button>
     </div>
 
-    <!-- Schritt 3: Module (Inhalte) -->
-    <div id="wiz-step-modules" class="wiz-step" style="width:100%;">
-      <div class="wiz-title">Schritt 1: Inhalte auswählen</div>
-      <div class="wiz-sub">Was möchtest du in der App anzeigen? (VOD und Serien laden etwas länger)</div>
-      <div style="display:flex;gap:30px;margin-bottom:40px;width:100%;justify-content:center;">
-        <button class="wiz-mod-btn selected" id="wiz-mod-live" data-focusable onclick="WizFlow.toggleMod('live')">
-          <span style="font-size:48px;">📺</span><span>Live TV</span>
-        </button>
-        <button class="wiz-mod-btn selected" id="wiz-mod-vod" data-focusable onclick="WizFlow.toggleMod('vod')">
-          <span style="font-size:48px;">🎬</span><span>Filme (VOD)</span>
-        </button>
-        <button class="wiz-mod-btn selected" id="wiz-mod-series" data-focusable onclick="WizFlow.toggleMod('series')">
-          <span style="font-size:48px;">🍿</span><span>Serien</span>
-        </button>
-      </div>
-      <button class="wiz-btn" id="wiz-btn-step3-next" style="margin-top:auto" data-focusable onclick="WizFlow.nextToCats()">Weiter zu den Kategorien</button>
-    </div>
-
-    <!-- Schritt 4: Kategorien — einspaltige Liste im Look der großen Wizard-Buttons.
-         Bewusst KEIN Raster/Rolle: bei potenziell 50-200 Kategorien muss man
-         schnell scannen und mehrere abwählen können — dafür ist "so viel wie
-         möglich gleichzeitig sichtbar" wichtiger als ein Slot-Rollen-Effekt,
-         und eine einzige Spalte braucht keine Spezial-Navigation mehr (Quelle
-         der früheren "springt in falsche Spalte"-Bugs war das 2-Spalten-Raster). -->
-    <div id="wiz-step-cats" class="wiz-step wiz-step-list">
-      <div class="wiz-title">Schritt 2: Live TV Kategorien</div>
-      <div class="wiz-sub">Abgewählte Kategorien werden komplett ausgeblendet und beim Scan übersprungen.</div>
-      <div class="wiz-split">
-        <div id="wiz-cat-grid" class="wiz-cat-col"></div>
-        <div class="wiz-side">
-          <button class="wiz-btn-mini" data-focusable onclick="WizFlow.selectAllCats(true)">Alle auswählen</button>
-          <button class="wiz-btn-mini" data-focusable onclick="WizFlow.selectAllCats(false)">Keine auswählen</button>
-          <button class="wiz-btn" id="wiz-btn-step4-next" data-focusable onclick="WizFlow.doScan()">Weiter zur Analyse</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Schritt 5: Regeln / Analyse — gleiches Listen-Layout wie Schritt 4 -->
-    <div id="wiz-step-rules" class="wiz-step wiz-step-list">
-      <div class="wiz-title">Schritt 3: Optimierungen</div>
-      <div class="wiz-sub">Wir haben deine Sender analysiert. Wähle aus, was bereinigt werden soll.</div>
-      <div class="wiz-split">
-        <div id="wiz-detect-results" class="wiz-cat-col"></div>
-        <div class="wiz-side">
-          <button class="wiz-btn" id="btn-wiz-finish" data-focusable onclick="Wizard.finishDetect()">Setup abschließen</button>
-        </div>
-      </div>
-    </div>
+    <!-- Schritt 3: Einrichtung als Fragen (js/wizard.js, WizQ) -->
+    <div id="wiz-step-q" class="wiz-step"><div id="wiz-q"></div></div>
   </div>
 </div>
 
@@ -515,7 +495,7 @@ applyUniversalScale();
   <div id="pe-view-rules" style="flex:1; display:flex; flex-direction:column; padding:30px 40px; gap:20px; overflow:hidden;">
     <div style="display:flex; gap:20px; flex-shrink:0;">
       <button id="pe-btn-wizard" class="btn btn-secondary" data-focusable onclick="Wizard.startOptimization()" style="flex:1; font-size:var(--fs-lg); height:70px; display:flex; align-items:center; justify-content:center; gap:12px; background:rgba(255,255,255,.05); border:1px solid var(--border);">
-        <span style="font-size:32px;">⚡</span> Schnell-Optimierung starten
+        <span style="font-size:32px;">&#x21BB;</span> Einrichtung wiederholen
       </button>
       <button id="pe-btn-manual" class="btn btn-secondary" data-focusable onclick="openPEManualModal()" style="flex:1; font-size:var(--fs-lg); height:70px; display:flex; align-items:center; justify-content:center; gap:12px; background:rgba(255,255,255,.05); border:1px solid var(--border);">
         <span style="font-size:32px;">➕</span> Manuelle Regel

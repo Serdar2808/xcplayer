@@ -1900,3 +1900,111 @@ body.focus-in-topbar .continue-tile.htile-focused::after {
 .wiz-mod-btn.selected::after{
   content:'\2713'; background:var(--accent2); border-color:var(--accent2); color:#04202a;
 }
+
+/* ── ERSTEINRICHTUNG: Status, Direkteingabe, Fragen ─────────────────────
+   Bewusst ohne flex-gap/inset: ältere TV-Browser (webOS 5 = Chrome 68)
+   kennen beides nicht - Abstände über margin, Raster über grid-gap. */
+.wiz-status{display:flex;align-items:center;justify-content:center;max-width:1050px;min-height:52px;margin:0 auto 26px;
+  font-size:var(--fs-md);color:var(--mid);line-height:1.4}
+.wiz-status.err{color:#fca5a5}
+.wiz-status.warn{color:var(--yellow)}
+.wiz-spin{width:28px;height:28px;flex-shrink:0;margin-right:16px;border-radius:50%;border:3px solid rgba(255,255,255,.18);
+  border-top-color:var(--accent2);animation:spin 1s linear infinite}
+.wiz-status.err .wiz-spin{display:none}
+.wiz-phone-only{display:none}
+html.xc-phone .wiz-phone-only{display:inline-block}
+.wiz-btn-ghost{background:rgba(255,255,255,.08);border:2px solid var(--border);color:var(--hi)}
+.wiz-btn-ghost:hover{border-color:var(--accent);background:rgba(59,130,246,.2)}
+.wiz-btn-row{display:flex;justify-content:center;width:100%;margin-top:30px;flex-shrink:0}
+.wiz-btn-row > *{margin:0 12px}
+.wiz-btn-row .wiz-btn{min-width:220px}
+
+.wiz-input{width:100%;height:76px;padding:0 26px;margin-bottom:18px;border-radius:16px;border:2px solid var(--border);
+  background:rgba(0,0,0,.25);color:var(--hi);font-size:var(--fs-lg);font-family:inherit;outline:none}
+.wiz-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--glow)}
+.wiz-input::placeholder{color:var(--lo)}
+.wiz-input-row{display:flex;width:100%}
+.wiz-input-row .wiz-input + .wiz-input{margin-left:18px}
+#wiz-step-direct{width:100%;max-width:1100px;margin:0 auto}
+.wiz-direct-tabs{display:flex;justify-content:center;margin-bottom:28px}
+.wiz-direct-tabs .ptab{margin:0 8px;border:2px solid var(--border);background:rgba(255,255,255,.05);color:var(--mid);font-family:inherit}
+.wiz-direct-tabs .ptab.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.wiz-direct-fields{width:100%}
+.wiz-err{width:100%;margin-top:4px;color:#fca5a5;font-size:var(--fs-md);line-height:1.4}
+.wiz-conn-ok{margin-bottom:18px;color:var(--green);font-size:var(--fs-md);font-weight:600}
+.wiz-conn-warn{margin-top:6px;color:var(--yellow);font-weight:400}
+
+/* Fragen */
+#wiz-step-q{width:100%}
+#wiz-q{width:100%;display:flex;flex-direction:column;align-items:center}
+.wq-head{display:flex;align-items:center;width:100%;margin-bottom:28px}
+.wq-prog{margin-right:22px;white-space:nowrap;font-size:var(--fs-sm);color:var(--mid)}
+.wq-bar{flex:1;height:6px;border-radius:3px;background:rgba(255,255,255,.1);overflow:hidden}
+.wq-bar i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+.wq-sub{max-width:1000px}
+.wq-body{width:100%}
+.wq-ex{padding:22px 30px;border-radius:18px;border:1px solid var(--border);background:rgba(0,0,0,.25);text-align:left}
+.wq-ex-row{display:flex;align-items:center;padding:10px 0;font-size:var(--fs-lg)}
+.wq-before{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--mid)}
+.wq-arrow{flex-shrink:0;margin:0 24px;color:var(--accent2);font-weight:700}
+.wq-after{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--hi);font-weight:600}
+.wq-count{margin-top:14px;font-size:var(--fs-sm);color:var(--mid)}
+.wq-note{margin-top:14px;font-size:var(--fs-sm);color:var(--yellow);line-height:1.4}
+
+.wq-tiles{display:grid;grid-template-columns:repeat(4,1fr);grid-gap:18px;max-height:500px;overflow-y:auto;padding:8px;text-align:left}
+.wq-tiles.wq-mods{grid-template-columns:repeat(3,1fr)}
+.wq-tile{position:relative;display:block;width:100%;padding:22px 24px 20px;border-radius:18px;border:2px solid var(--border);
+  background:rgba(0,0,0,.2);color:var(--mid);font-family:inherit;text-align:left;cursor:pointer}
+.wq-tile.selected{background:rgba(59,130,246,.15);border-color:var(--accent);color:var(--hi)}
+.wq-tile::after{content:'';position:absolute;top:16px;right:16px;width:34px;height:34px;box-sizing:border-box;border-radius:50%;
+  border:3px solid rgba(255,255,255,.45);font-size:22px;font-weight:900;line-height:28px;text-align:center;color:#04202a}
+.wq-tile.selected::after{content:'\2713';background:var(--accent2);border-color:var(--accent2)}
+.wq-mod{text-align:center;padding:30px 20px}
+.wq-mod-ico{display:block;margin-bottom:12px;font-size:56px}
+.wq-badge{display:inline-block;min-width:64px;height:48px;padding:0 12px;margin-bottom:14px;border-radius:12px;
+  background:rgba(255,255,255,.1);color:var(--hi);font-family:'Sora',sans-serif;font-size:var(--fs-md);font-weight:700;line-height:48px;text-align:center}
+.wq-tile-name{display:block;padding-right:34px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:var(--fs-md);font-weight:600;color:inherit}
+.wq-mod .wq-tile-name{padding-right:0}
+.wq-tile-sub{display:block;margin-top:6px;font-size:var(--fs-xs);color:var(--lo)}
+.wq-tile.focused .wq-tile-sub{color:rgba(255,255,255,.85)}
+
+#wq-search{margin-bottom:14px}
+.wq-list{max-height:460px;overflow-y:auto;padding:4px 10px 4px 4px;text-align:left}
+.wq-group{display:flex;align-items:center;margin:20px 0 12px}
+.wq-group:first-child{margin-top:0}
+.wq-group-title{flex:1;min-width:0;font-size:var(--fs-md);font-weight:700;color:var(--hi)}
+.wq-group .wiz-btn-mini{flex:0 0 auto;margin-left:12px;padding:8px 20px}
+.wq-list .wiz-cat-item{margin-bottom:10px}
+.wq-cat-name{flex:1;min-width:0;margin-left:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wq-cat-count{flex-shrink:0;margin-left:14px;font-size:var(--fs-xs);opacity:.75}
+
+.wq-sum{max-height:540px;overflow-y:auto;padding:4px;text-align:left}
+.wq-sum-row{display:flex;align-items:center;margin-bottom:12px;padding:18px 26px;border-radius:16px;border:1px solid var(--border);
+  background:rgba(0,0,0,.2);cursor:pointer}
+.wq-sum-row:hover{border-color:var(--accent)}
+.wq-sum-row.focused{border-color:var(--accent);background:rgba(59,130,246,.18)}
+.wq-sum-label{flex:1;min-width:0;font-size:var(--fs-md);color:var(--mid)}
+.wq-sum-val{max-width:60%;margin-left:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:var(--fs-md);font-weight:600;color:var(--hi)}
+.wq-sum-edit{flex-shrink:0;margin-left:20px;font-size:var(--fs-sm);color:var(--accent2)}
+
+/* Smartphones: größer zum Antippen (Layout wird dort stark verkleinert) */
+html.xc-phone .wiz-status{font-size:40px}
+html.xc-phone .wiz-input{height:110px;font-size:44px;border-radius:22px}
+html.xc-phone .wiz-direct-tabs .ptab{font-size:40px;padding:20px 40px}
+html.xc-phone .wiz-err,html.xc-phone .wiz-conn-ok{font-size:40px}
+html.xc-phone #wiz-step-direct{max-width:1700px}
+html.xc-phone .wq-prog{font-size:36px}
+html.xc-phone .wq-sub{max-width:1600px}
+html.xc-phone .wq-ex-row{font-size:46px}
+html.xc-phone .wq-count,html.xc-phone .wq-note{font-size:36px}
+html.xc-phone .wq-tiles{max-height:430px}
+html.xc-phone .wq-tile-name{font-size:42px}
+html.xc-phone .wq-tile-sub{font-size:30px}
+html.xc-phone .wq-badge{font-size:38px;height:64px;line-height:64px}
+html.xc-phone .wq-group-title{font-size:42px}
+html.xc-phone .wq-cat-count{font-size:32px}
+html.xc-phone .wq-list{max-height:380px}
+html.xc-phone .wq-sum-label,html.xc-phone .wq-sum-val{font-size:42px}
+html.xc-phone .wq-sum-edit{font-size:34px}
+html.xc-phone .wq-sum{max-height:470px}
+html.xc-phone .wq-list .wiz-cat-cb{width:44px;height:44px;font-size:30px;border-radius:10px}

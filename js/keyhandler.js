@@ -83,9 +83,7 @@ function handleBack(){
   if($('confirm-modal')&&!$('confirm-modal').classList.contains('hidden')){ closeConfirm(false); return; }
   if($('pe-manual-modal')&&!$('pe-manual-modal').classList.contains('hidden')){ closePEManualModal(); return; }
   if(!$('wizard-screen').classList.contains('hidden')) {
-    // Zurück-Verhalten hängt vom AKTUELL SICHTBAREN Schritt ab, nicht pauschal
-    // von S.wizardMode — sonst löst BACK auf jedem Schritt "Setup abschließen"
-    // aus (Wizard.finishDetect), sobald man nicht mehr im Cloud-Sync-Zwischenstand ist.
+    // Zurück-Verhalten hängt vom AKTUELL SICHTBAREN Schritt ab
     if($('wiz-step-1').classList.contains('active')){
       if(Profiles.list.length > 0){
         S.screen = 'profile';
@@ -93,27 +91,12 @@ function handleBack(){
         updateFocus();
       }
       // Kein Profil vorhanden: Schritt 1 ist der Ausgangspunkt, nichts zu tun.
-    } else if($('wiz-step-2').classList.contains('active')){
-      $('wiz-step-2').classList.remove('active');
-      $('wiz-step-1').classList.add('active');
-      setTimeout(function(){ SpatialNav.focusBySelector('#wiz-btn-sync'); }, 50);
-    } else if($('wiz-step-modules').classList.contains('active')){
-      if(S.wizardMode){
-        $('wiz-step-modules').classList.remove('active');
-        $('wiz-step-2').classList.add('active');
-        setTimeout(function(){ SpatialNav.focusBySelector('#wiz-btn-next'); }, 50);
-      } else {
-        // Über die Einstellungen gestartet (Schnell-Optimierung) — dorthin zurück.
-        S.screen = 'settings';
-        setTimeout(function(){ SpatialNav.focusBySelector('#pe-btn-wizard'); }, 50);
-      }
-    } else if($('wiz-step-cats').classList.contains('active')){
-      $('wiz-step-cats').classList.remove('active');
-      $('wiz-step-modules').classList.add('active');
-      setTimeout(function(){ SpatialNav.focusBySelector('#wiz-mod-live'); }, 50);
-    } else if($('wiz-step-rules').classList.contains('active')){
-      Wizard.finishDetect();
+    } else if($('wiz-step-direct').classList.contains('active')){
+      Wizard.closeDirect();
+    } else if($('wiz-step-q').classList.contains('active')){
+      WizQ.back();                 // vorige Frage (vor der ersten: Bedienung bzw. Playlist-Editor)
     }
+    // Schritt 2 (Bedienung): Playlist ist schon verbunden - nichts zu tun
     return;
   }
   if($('pe-modal')&&!$('pe-modal').classList.contains('hidden')){
@@ -213,6 +196,10 @@ window.addEventListener('keydown', function(e) {
       }
     }
     if(k === 37 || k === 39 || k === 13) return;
+    // Schreib-Tasten gehören dem Eingabefeld - sonst verschluckt die
+    // Navigation weiter unten (Einrichtung, Profil-Dialog) jeden Buchstaben
+    if(k === 229 || k === 32 || k === 46 || k === 35 || k === 36 || (k >= 48 && k <= 90) ||
+       (k >= 96 && k <= 111) || (k >= 186 && k <= 222)) return;
   }
 
   if(k === KEYS.ESC || k === KEYS.BKSP){

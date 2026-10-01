@@ -122,6 +122,7 @@ async function activateProfile(id){
       S.m3uCategories=cached.categories;
       S.rawCategories = { live: S.m3uCategories, vod: [], series: [] };
       S.rawStreams = { live: S.m3uStreams, vod: [], series: [] };
+      if (S.wizardMode) return;     // Einrichtung läuft weiter (wie beim Laden unten)
       launchLiveTv();
       return;
     }

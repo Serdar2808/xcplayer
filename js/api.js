@@ -74,9 +74,23 @@ var API = {
     var p=this._p;
     return clean(p.host)+'/player_api.php?username='+encodeURIComponent(p.user)+'&password='+encodeURIComponent(p.pass);
   },
+  // Optional (Einrichtung): onProgress(bytes) während großer Downloads
+  onProgress: null,
   call: async function(params){
     var url=this.base()+(params?'&'+params:'');
     var r = await fetchWithRetry(url);
+    var cb = this.onProgress;
+    if(cb && r.body && r.body.getReader && window.TextDecoder){
+      var reader = r.body.getReader(), dec = new TextDecoder('utf-8'), text = '', bytes = 0;
+      for(;;){
+        var part = await reader.read();
+        if(part.done) break;
+        bytes += part.value.length;
+        text += dec.decode(part.value, { stream: true });
+        cb(bytes);
+      }
+      return JSON.parse(text + dec.decode());
+    }
     return r.json();
   },
   auth:function(){ return this.call(''); },

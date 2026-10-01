@@ -100,7 +100,10 @@ applyUniversalScale();
           <p><b>Gelbe Taste:</b> Untertitel</p>
           <p><b>Blaue Taste:</b> Audiospur</p></div>
       </div>
-      <button class="wiz-btn" id="wiz-btn-next" data-focusable onclick="Wizard.next()">Weiter zur Einrichtung</button>
+      <div class="wiz-btn-row">
+        <button class="wiz-btn wiz-btn-ghost" id="wiz-btn-back2" data-focusable onclick="Wizard.backToStart()">Zurück</button>
+        <button class="wiz-btn" id="wiz-btn-next" data-focusable onclick="Wizard.next()">Weiter zur Einrichtung</button>
+      </div>
     </div>
 
     <!-- Schritt 3: Einrichtung als Fragen (js/wizard.js, WizQ) -->

@@ -2008,3 +2008,15 @@ html.xc-phone .wq-sum-label,html.xc-phone .wq-sum-val{font-size:42px}
 html.xc-phone .wq-sum-edit{font-size:34px}
 html.xc-phone .wq-sum{max-height:470px}
 html.xc-phone .wq-list .wiz-cat-cb{width:44px;height:44px;font-size:30px;border-radius:10px}
+/* Einrichtung: Auswahl mit Vorschaubild (Senderliste, Netflix-Ansicht ...) */
+.wq-tiles.wq-choice{grid-template-columns:repeat(3,1fr);max-height:none}
+.wq-tiles.wq-choice2{grid-template-columns:repeat(2,1fr);max-width:900px;margin:0 auto}
+.wq-pick{padding:14px 14px 18px}
+.wq-pick::after{top:24px;right:24px;background:rgba(0,0,0,.45)}
+.wq-pick.selected::after{background:var(--accent2)}
+.wq-pick-img{display:block;width:100%;padding-top:56%;margin-bottom:14px;border-radius:12px;border:1px solid var(--border);
+  background-color:#000;background-position:center;background-size:cover;background-repeat:no-repeat}
+.wq-pick .wq-tile-name{padding:0 8px}
+.wq-pick .wq-tile-sub{padding:0 8px}
+html.xc-phone .wq-tiles.wq-choice{max-height:none}
+html.xc-phone .wq-tiles.wq-choice2{max-width:1000px}

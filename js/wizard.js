@@ -105,7 +105,8 @@ var Wizard = {
       return res;
     }
     this._stopPolling();
-    var firstId = null;
+    var firstId = null, self = this;
+    this._lastSource = source; this._lastSig = sig; this._addedIds = [];
     profs.forEach(function(prof){
       var ex = Profiles.list.find(function(p){
         return (p.type === 'xc' && prof.type === 'xc' && p.host === prof.host && p.user === prof.user) ||
@@ -113,7 +114,7 @@ var Wizard = {
       });
       var id;
       if(ex) { prof.id = ex.id; Profiles.update(ex.id, prof); id = ex.id; }
-      else id = Profiles.add(prof).id;
+      else { id = Profiles.add(prof).id; self._addedIds.push(id); }
       if(!firstId) firstId = id;
     });
     // Zugang ist gerade geprüft (kein zweiter Login), M3U schon geladen (kein zweiter Download)
@@ -204,8 +205,23 @@ var Wizard = {
     return m ? m[1] : 'Meine Playlist';
   },
 
-  // ── Schritt 2 -> Fragen ──────────────────────────────────────────
+  // ── Schritt 2 ────────────────────────────────────────────────────
   next: function() { WizQ.start(true); },
+  // Zurück zur Playlist-Eingabe: die gerade verbundene Playlist wird verworfen
+  backToStart: function() {
+    var src = this._lastSource, sig = this._lastSig;
+    (this._addedIds || []).forEach(function(id){ Profiles.remove(id); });
+    this._addedIds = [];
+    this.start();
+    if(src === 'cloud') {
+      // Dieselben Daten nicht sofort wieder übernehmen - erst eine geänderte Playlist
+      this._failedSig = sig;
+      this._retryAt = Infinity;
+      this._setStatus('wait', 'Ändere die Playlist auf der Webseite – die App erkennt die neue automatisch.');
+    } else if(src === 'direct') {
+      this.openDirect();                          // Eingaben stehen noch in den Feldern
+    }
+  },
   // Einstellungen > Playlist-Editor > "Einrichtung wiederholen"
   startOptimization: function() {
     if(S.settingsOpen) closeSettings();
@@ -542,7 +558,7 @@ var WIZ_ADULT_RE = /(^|[^a-z0-9])(xxx|adults?|18\s?\+|\+\s?18|porn\w*|erotik\w*|
 function _wizNum(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
 
 var WizQ = {
-  STEPS: ['mods', 'countries', 'adult', 'custom', 'catlist', 'prefix', 'quality', 'dups', 'premium', 'placeholders', 'empty', 'summary'],
+  STEPS: ['mods', 'countries', 'adult', 'custom', 'catlist', 'prefix', 'quality', 'dups', 'premium', 'placeholders', 'empty', 'list', 'split', 'netflix', 'summary'],
   TYPE_LABEL: { live: 'Live TV', vod: 'Filme', series: 'Serien' },
 
   start: function(firstRun) {
@@ -576,10 +592,20 @@ var WizQ = {
     var types = ['live', 'vod', 'series'].filter(function(t){ return WizQ.mods[t] && !WizQ.data[t]; });
     for(var i = 0; i < types.length; i++) {
       var t = types[i];
-      showFullLoader(this.TYPE_LABEL[t] + ' wird geladen …', 'Bei großen Playlists kann das etwas dauern');
+      var label = { live: 'Sender werden', vod: 'Filme werden', series: 'Serien werden' }[t];
+      showFullLoader(label + ' geladen …', 'Bei großen Playlists kann das etwas dauern');
       var cats = [], streams = [];
       try { cats = await getOrFetchData('cats', t) || []; } catch(e) {}
+      // Laufende Menge anzeigen - die Gesamtgröße schicken die meisten Anbieter nicht mit
+      var shown = 0;
+      API.onProgress = function(bytes){
+        if(bytes - shown < 262144) return;        // alle 0,25 MB aktualisieren
+        shown = bytes;
+        var sub = $('fl-sub');
+        if(sub) { sub.style.display = 'block'; sub.textContent = (bytes / 1048576).toFixed(1).replace('.', ',') + ' MB geladen'; }
+      };
       try { streams = await getOrFetchData('streams', t) || []; } catch(e) {}
+      API.onProgress = null;
       S.rawStreams[t] = streams;
       this.data[t] = { cats: cats, streams: streams };
       this._index(t);
@@ -742,6 +768,8 @@ var WizQ = {
       case 'premium': return this._det().premiumMatches.length > 0;
       case 'placeholders': return this._det().placeholderMatches.length > 0;
       case 'empty': return this._det().empty.length > 0;
+      case 'split': return this.answers.list !== 'tiles';                 // gibt es nur bei normaler/kompakter Liste
+      case 'netflix': return !!(this.mods.vod || this.mods.series);
       default: return true;
     }
   },
@@ -794,6 +822,10 @@ var WizQ = {
   _defaultAnswer: function(step) {
     if(step in this.answers || ['mods', 'countries', 'catlist', 'summary'].indexOf(step) !== -1) return;
     if(step === 'custom') { this.answers.custom = false; return; }
+    // Aussehen: immer der aktuelle Stand (auf Handys sind die Kacheln schon voreingestellt)
+    if(step === 'list') { this.answers.list = Settings.tileList ? 'tiles' : Settings.compactList ? 'compact' : 'normal'; return; }
+    if(step === 'split') { this.answers.split = !!Settings.splitList; return; }
+    if(step === 'netflix') { this.answers.netflix = Settings.useNetflixStyle !== false; return; }
     if(this.firstRun) { this.answers[step] = true; return; }
     // Erneuter Durchlauf: aktueller Zustand
     var d = this._det();
@@ -1055,6 +1087,47 @@ var WizQ = {
              sub: _wizNum(n) + (n === 1 ? ' Kategorie enthält' : ' Kategorien enthalten') + ' keine Sender oder Titel.' };
   },
 
+  // Auswahl mit Vorschaubildern: Antippen bzw. OK wählt und geht weiter
+  _choice: function(opts, cols) {
+    var cur = this.answers[this._step], html = '<div class="wq-tiles wq-choice' + (cols === 2 ? ' wq-choice2' : '') + '">';
+    this._opts = opts;
+    opts.forEach(function(o, i){
+      html += '<button class="wq-tile wq-pick' + (o.val === cur ? ' selected' : '') + '" id="wq-o-' + i + '" data-focusable onclick="WizQ.choose(' + i + ')">' +
+              '<span class="wq-pick-img" style="background-image:url(' + o.img + ')"></span>' +
+              '<span class="wq-tile-name">' + o.label + '</span><span class="wq-tile-sub">' + o.sub + '</span></button>';
+    });
+    var idx = 0; opts.forEach(function(o, i){ if(o.val === cur) idx = i; });
+    return { html: html + '</div>', focus: '#wq-o-' + idx };
+  },
+  choose: function(i) {
+    var o = this._opts && this._opts[i]; if(!o) return;
+    this.answers[this._step] = o.val;
+    this._advance();
+  },
+  _r_list: function() {
+    var c = this._choice([
+      { val: 'tiles', label: 'Kacheln', sub: 'Sender als Kacheln unten im Bild', img: 'images/preview_kacheln.jpg' },
+      { val: 'compact', label: 'Kompakt', sub: 'Schmale Liste am linken Rand', img: 'images/preview_kompakt_liste_on.jpg' },
+      { val: 'normal', label: 'Normal', sub: 'Große Liste mit Programminfos', img: 'images/preview_kompakt_liste_off.jpg' }
+    ], 3);
+    return { title: 'Wie soll die Senderliste aussehen?', sub: 'Sie erscheint im Live TV mit OK bzw. durch Tippen ins Bild.',
+             body: c.html, buttons: '', focus: c.focus };
+  },
+  _r_split: function() {
+    var c = this._choice([
+      { val: true, label: 'Zweispaltig', sub: 'Kategorien links neben den Sendern', img: 'images/preview_split_on.jpg' },
+      { val: false, label: 'Einspaltig', sub: 'Kategorie oben wechseln', img: 'images/preview_split_off.jpg' }
+    ], 2);
+    return { title: 'Kategorien neben den Sendern anzeigen?', sub: 'Praktisch bei vielen Kategorien.', body: c.html, buttons: '', focus: c.focus };
+  },
+  _r_netflix: function() {
+    var c = this._choice([
+      { val: true, label: 'Netflix-Ansicht', sub: 'Große Bilder in Reihen', img: 'images/preview_netflix_on.jpg' },
+      { val: false, label: 'Klassisch', sub: 'Raster mit Kategorien links', img: 'images/preview_netflix_off.jpg' }
+    ], 2);
+    return { title: 'Wie sollen Filme und Serien aussehen?', sub: '', body: c.html, buttons: '', focus: c.focus };
+  },
+
   _r_summary: function() {
     var self = this, rows = [], yn = function(v, yes, no){ return v === false ? no : yes; };
     var add = function(step, label, val){ if(self._applies(step)) rows.push([step, label, val]); };
@@ -1069,6 +1142,9 @@ var WizQ = {
     add('premium', 'Zusätze entfernen', yn(this.answers.premium, 'Ja', 'Nein'));
     add('placeholders', 'Platzhalter ausblenden', yn(this.answers.placeholders, 'Ja', 'Nein'));
     add('empty', 'Leere Kategorien ausblenden', yn(this.answers.empty, 'Ja', 'Nein'));
+    add('list', 'Senderliste', { tiles: 'Kacheln', compact: 'Kompakt', normal: 'Normal' }[this.answers.list] || '');
+    add('split', 'Kategorien neben den Sendern', yn(this.answers.split, 'Ja', 'Nein'));
+    add('netflix', 'Filme & Serien', yn(this.answers.netflix, 'Netflix-Ansicht', 'Klassisch'));
     var html = '<div class="wq-sum">';
     rows.forEach(function(r){
       html += '<div class="wq-sum-row" data-focusable onclick="WizQ.edit(\'' + r[0] + '\')"><span class="wq-sum-label">' + esc(r[1]) + '</span>' +
@@ -1106,7 +1182,15 @@ var WizQ = {
     Settings.showSeries = this.mods.series;
     Settings.playlistRules = peDraftRules;
     Settings.hiddenCats = peDraftVisCats;
+    // Aussehen
+    if(this.answers.list) {
+      Settings.tileList = this.answers.list === 'tiles';
+      Settings.compactList = this.answers.list === 'compact';
+    }
+    if(this._applies('split') && 'split' in this.answers) Settings.splitList = !!this.answers.split;
+    if(this._applies('netflix') && 'netflix' in this.answers) Settings.useNetflixStyle = !!this.answers.netflix;
     Settings.save();
+    Settings._apply();
 
     if(this.firstRun) {
       S.wizardMode = false;

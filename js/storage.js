@@ -263,7 +263,12 @@ var Profiles = {
       localStorage.setItem('xcp_profiles',JSON.stringify(this.list));
     }catch(e){ Logger.warn('[Profiles] save error:', e); }
   },
-  add:function(p){ p.id='p'+Date.now(); this.list.push(p); this.save(); return p; },
+  add:function(p){
+    // Eindeutig, auch wenn mehrere Profile in derselben Millisekunde angelegt werden (Cloud-Sync)
+    var id='p'+Date.now(), n=0;
+    while(this.get(id)) id='p'+Date.now()+'_'+(++n);
+    p.id=id; this.list.push(p); this.save(); return p;
+  },
   update:function(id,data){
     for(var i=0;i<this.list.length;i++) if(this.list[i].id===id){ this.list[i]=data; break; }
     this.save();

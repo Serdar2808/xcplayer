@@ -323,7 +323,9 @@ function _updateVlistFocus(){
     var s = S.filteredStreams[idx];
     var isFocused = (idx === S.chListCursor) && (!Settings.splitList || S.chListFocusArea === 'streams');
     var isActive  = S.currentStream && s && s.stream_id === S.currentStream.stream_id;
-    row.className = 'clo-row' + (isActive?' clo-active':'') + (isFocused?' clo-focused':'');
+    // classList statt className: die Klasse no-epg (aus _updateVlistRows) bleibt erhalten
+    row.classList.toggle('clo-active', !!isActive);
+    row.classList.toggle('clo-focused', !!isFocused);
   }
 }
 
@@ -390,6 +392,8 @@ function _updateVlistRows(){
       }
     }
     row._ui.epg.textContent = epgTxt;
+    // Ohne EPG (z.B. PPV-Events) bekommt der Name den ganzen Platz
+    row.classList.toggle('no-epg', !epgTxt);
     row._ui.time.textContent = timeStr;
     row._ui.bar.style.width = barPct.toFixed(1)+'%';
   }

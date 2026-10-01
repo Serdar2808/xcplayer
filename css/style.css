@@ -2020,3 +2020,14 @@ html.xc-phone .wq-list .wiz-cat-cb{width:44px;height:44px;font-size:30px;border-
 .wq-pick .wq-tile-sub{padding:0 8px}
 html.xc-phone .wq-tiles.wq-choice{max-height:none}
 html.xc-phone .wq-tiles.wq-choice2{max-width:1000px}
+/* Senderliste: Sender ohne EPG (z.B. DAZN-PPV mit Eventnamen) - Name nutzt die
+   ganze Zeile statt neben dem leeren EPG-Platz abgeschnitten zu werden */
+.clo-row.no-epg .clo-name{max-width:none;flex:1 1 auto;margin-right:0}
+.clo-row.no-epg .clo-right{display:none}
+.clo-row.clo-focused .clo-name{max-width:65%}
+.clo-row.clo-focused.no-epg .clo-name{max-width:none}
+/* Kompakte Liste: lange Namen zweizeilig, wenn kein EPG darunter steht */
+#ch-list-overlay.compact .clo-row.no-epg .clo-name.is-long,
+#ch-list-overlay.compact:not(.show-epg) .clo-row .clo-name.is-long{
+  white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+  line-height:1.1;text-overflow:clip;animation:none !important;transform:none !important}

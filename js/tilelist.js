@@ -108,6 +108,12 @@ var LiveUi = (function () {
       '.xc-tile{flex-shrink:0;width:300px;height:170px;border-radius:16px;border:none;transition:transform .12s;' +
         'background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;padding:14px;cursor:pointer;overflow:hidden}' +
       '.xc-tile img{max-width:100%;max-height:100%;object-fit:contain;pointer-events:none}' +
+      // Name klein unter dem Logo (Einstellung "Sendername unter dem Logo")
+      '.xc-tile.has-cap{flex-direction:column;padding:12px 14px 10px}' +
+      '.xc-tile.has-cap img{max-height:104px;min-height:0}' +
+      '.xc-tile.has-cap .xc-tile-cap{display:block;flex-shrink:0;max-width:100%;margin-top:8px;font-size:24px;font-weight:500;' +
+        'line-height:1.2;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
+      'html.xc-phone .xc-tile.has-cap .xc-tile-cap{font-size:28px}' +
       '.xc-tile span{color:#fff;font-size:34px;font-weight:600;line-height:1.2;text-align:center;overflow:hidden;' +
         'display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;pointer-events:none}' +
       '#xc-live-ui:not(.tv) .xc-tile.cur{background:rgba(59,130,246,.2);box-shadow:0 0 30px var(--glow)}' +
@@ -239,10 +245,16 @@ var LiveUi = (function () {
     for (var i = 0; i < st.streams.length; i++) {
       var s = st.streams[i];
       if (s.stream_id === curId) curPos = i;
+      // Mit Logo optional der Name klein darunter (Einstellung). Lädt das Logo
+      // nicht, bleibt nur der Name - dann groß wie bei Sendern ohne Logo.
+      var cap = !!(s.stream_icon && Settings.tileNames);
+      var onerr = cap ? 'this.parentNode.classList.remove(\'has-cap\');this.parentNode.removeChild(this)'
+                      : 'this.outerHTML=\'<span>' + esc(s.name).replace(/'/g, '&#39;') + '</span>\'';
       var inner = s.stream_icon
-        ? '<img src="' + esc(s.stream_icon) + '" loading="lazy" alt="" onerror="this.outerHTML=\'<span>' + esc(s.name).replace(/'/g, '&#39;') + '</span>\'">'
+        ? '<img src="' + esc(s.stream_icon) + '" loading="lazy" alt="" onerror="' + onerr + '">' +
+          (cap ? '<span class="xc-tile-cap">' + esc(s.name) + '</span>' : '')
         : '<span>' + esc(s.name) + '</span>';
-      html += '<button class="xc-tile xc-line' + (s.stream_id === curId ? ' cur' : '') + '" data-tile="' + i + '" aria-label="' + esc(s.name) + '">' + inner + '</button>';
+      html += '<button class="xc-tile xc-line' + (cap ? ' has-cap' : '') + (s.stream_id === curId ? ' cur' : '') + '" data-tile="' + i + '" aria-label="' + esc(s.name) + '">' + inner + '</button>';
     }
     var tiles = ui.querySelector('.xc-tiles');
     tiles.innerHTML = html;
@@ -312,9 +324,17 @@ var LiveUi = (function () {
     h.style.top = ((top + bottom) / 2) + 'px';
     var c = ui.querySelector('.xc-center');
     c.style.top = ((cTop + bottom) / 2) + 'px';
-    // Waagerecht: neben der kompakten Liste und links von den Duplikaten
-    c.style.left = (st.list === 'compact' ? 550 : 0) + 'px';
-    c.style.right = (st.list === 'compact' && boxShown ? 40 + box.offsetWidth + gap : 0) + 'px';
+    // Waagerecht: möglichst mittig auf dem Bildschirm - nur wenn die Buttons dort
+    // die kompakte Liste bzw. die Duplikate berühren würden, in den freien Raum dazwischen
+    c.style.left = '0px'; c.style.right = '0px';
+    var uiW = ui.offsetWidth, kids = c.children, first = kids[0], last = kids[kids.length - 1];
+    var w = first && last ? (last.offsetLeft + last.offsetWidth) - first.offsetLeft : 0;
+    var minX = st.list === 'compact' ? 550 : 0;
+    var maxX = uiW - (st.list === 'compact' && boxShown ? 40 + box.offsetWidth + gap : 0);
+    if(uiW && ((uiW - w) / 2 < minX || (uiW + w) / 2 > maxX)) {
+      c.style.left = minX + 'px';
+      c.style.right = (uiW - maxX) + 'px';
+    }
   }
 
   function showOsd() {
@@ -483,30 +503,27 @@ var LiveUi = (function () {
   // Magic Remote, Tablet) mit Kachel-Einstellung: Kacheln ein/aus.
   // Läuft vor dem Standard-Handler und stoppt ihn für jede freie Fläche - der
   // würde sonst die Senderliste öffnen bzw. den Sender neu starten.
-  document.addEventListener('click', function (e) {
-    if (typeof S === 'undefined' || !isLive()) return;
+  // Gibt true zurück, wenn der Tipp hier verarbeitet wurde (dann nicht weiterreichen)
+  function handleTap(target) {
+    if (typeof S === 'undefined' || !isLive()) return false;
     var phone = isPhone();
-    if (!phone && !tilesOn()) return;
-    var target = e.target;
-    if (!target.closest || !target.closest('#player-screen')) return;
+    if (!phone && !tilesOn()) return false;
+    if (!target || !target.closest || !target.closest('#player-screen')) return false;
     // Top-Menü offen: Tippen ins Bild schließt nur das Menü
-    if (S.focusArea === 'nav-tabs' || S.sysMenuOpen) {
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      handleBack();
-      return;
-    }
-    if (target.closest('button,.vchip')) return;               // echte Buttons/Kacheln/Chips selbst
-    if (compactOpen() && target.closest('#ch-list-overlay')) return;
-    if (blocked()) return;
-    e.preventDefault();
-    e.stopImmediatePropagation();
-    if (target.closest('.xc-panel')) return;                    // Hintergrund der Leisten: nichts tun
+    if (S.focusArea === 'nav-tabs' || S.sysMenuOpen) { handleBack(); return true; }
+    if (target.closest('button,.vchip')) return false;          // echte Buttons/Kacheln/Chips selbst
+    if (compactOpen() && target.closest('#ch-list-overlay')) return false;
+    if (blocked()) return false;
+    if (target.closest('.xc-panel')) return true;                // Hintergrund der Leisten: nichts tun
     if (st.open) hide();
     else if (phone) showPhone();
     else showTiles();
+    return true;
+  }
+  document.addEventListener('click', function (e) {
+    if (handleTap(e.target)) { e.preventDefault(); e.stopImmediatePropagation(); }
   }, true);
   document.addEventListener('touchstart', function () { if (st.open) restartTimer(); }, { capture: true, passive: true });
 
-  return { isOpen: function () { return st.open; }, hide: hide, showPhone: showPhone, showTiles: showTiles, showDups: showDups };
+  return { tap: handleTap, isOpen: function () { return st.open; }, hide: hide, showPhone: showPhone, showTiles: showTiles, showDups: showDups };
 })();

@@ -4,6 +4,7 @@ var Settings = {
   compactList: false,
   compactListEpg: false,
   tileList: null,          // null = noch nie gewählt -> Standard in load()
+  tileNames: false,        // Kacheln: Sendername klein unter dem Logo
   compactOsd: false,
   useNetflixStyle: true,
   compactOsdHints: true,
@@ -50,6 +51,7 @@ var Settings = {
         this.showSeries     = d.showSeries !== false;
         this.epgShift       = d.epgShift !== undefined ? parseInt(d.epgShift) : 0;
         if (d.tileList !== undefined && d.tileList !== null) this.tileList = !!d.tileList;
+        this.tileNames      = !!d.tileNames;
       }
     }catch(e){ Logger.warn('[Settings] load error:', e); }
     // Kachel-Senderliste: Standard auf Smartphones an (außer die kompakte Liste
@@ -98,7 +100,7 @@ var Settings = {
     try{ localStorage.setItem('xcp_settings',JSON.stringify({
       splitList:this.splitList,
       compactList:this.compactList, compactListEpg:this.compactListEpg,
-      tileList:this.tileList,
+      tileList:this.tileList, tileNames:this.tileNames,
       compactOsd:this.compactOsd, compactOsdHints:this.compactOsdHints,
       useNetflixStyle:this.useNetflixStyle,
       groupVariants:this.groupVariants,
@@ -135,6 +137,10 @@ var Settings = {
     var ttl=$('toggle-tile-list');
     if(ttl) ttl.classList.toggle('on',!!this.tileList);
     document.documentElement.classList.toggle('xc-tiles-on', !!this.tileList);
+    var ttn=$('toggle-tile-names');
+    if(ttn) ttn.classList.toggle('on',!!this.tileNames);
+    var subTl=$('sub-tileList');
+    if(subTl) subTl.classList.toggle('expanded', !!this.tileList);
     var tco=$('toggle-compact-osd');
     if(tco) tco.classList.toggle('on',this.compactOsd);
     var tcoh=$('toggle-compact-osd-hints');

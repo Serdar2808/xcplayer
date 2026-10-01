@@ -9,15 +9,12 @@ function _baseName(name){
   var QUALITY  = /\s+(fhd|uhd|4k|2k|hd|sd|1080p?|720p?|480p?|1080|720|576)[*+]?$/i;
   var CODEC    = /\s+(hevc|h\.?265|h\.?264|avc|av1|mpeg2)[*+]?$/i;
   var EXTRAS   = /\s+(ultra|feed|backup|bk|alt|multi|ppv|plus|premium|platinum|gold)[*+]?$/i;
-  var prev;
-  var stripped = false;
+  // Eine Zahl am Ende bleibt stehen: sie unterscheidet meist echte Sender
+  // ("Sky Sport 1 HEVC" / "Sky Sport 2 HEVC" sind keine Duplikate)
   for(var pass=0; pass<6; pass++){
-    prev = s;
     s = s.replace(QUALITY,'').trim();
     s = s.replace(CODEC,'').trim();
     s = s.replace(EXTRAS,'').trim();
-    // Trailing-Nummer nur entfernen, wenn in diesem Durchlauf etwas entfernt wurde
-    if(s !== prev){ stripped = true; s = s.replace(/\s+\d+$/, '').trim(); }
   }
   return s.trim();
 }

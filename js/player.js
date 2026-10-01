@@ -164,7 +164,7 @@ var Player = {
         } else {
             var nextIdx = S.currentEpIdx + 1;
             if(nextIdx < S.currentEpsArray.length) Player.nextEp();
-            else showToast('Letzte Episode', 1500);
+            else { showToast('Letzte Folge der Staffel', 2500); Player.close(); }   // zurück zur Episodenübersicht statt schwarzem Bild
         }
       } else if(S.playerType==='vod'){
         Player.close(); // Film fertig → zurück

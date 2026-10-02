@@ -86,12 +86,12 @@ async function renderContinueScreen() {
            ? '<img class="nf-card-img" src="'+esc(it.thumb)+'" decoding="async" alt="" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">'
              + '<div class="nf-card-img-ph" style="display:none">&#x1F3AC;</div>'
            : '<div class="nf-card-img-ph">&#x1F3AC;</div>';
-         html += '<div class="nf-card cs-card" data-focusable data-focus-class="nf-focused" data-onfocus data-k="'+k+'" data-row="'+r+'">'
+         // Karte + Fortschrittsbalken (cyan) darunter
+         html += '<div class="cs-item"><div class="nf-card cs-card" data-focusable data-focus-class="nf-focused" data-onfocus data-k="'+k+'" data-row="'+r+'">'
            + img
            + '<div class="nf-card-title" aria-hidden="true">'+esc(it.title)+'</div>'
            + (it.badge ? '<div class="cs-badge">'+esc(it.badge)+'</div>' : '')
-           + '<div class="cs-prog"><i style="width:'+it.pct+'%"></i></div>'
-           + '</div>';
+           + '</div><div class="cs-prog"><i style="width:'+it.pct+'%"></i></div></div>';
        });
        html += '</div></div><div class="cs-info" id="cs-info-'+r+'"></div></div>';
      });
@@ -152,14 +152,39 @@ function _csDecorate(items){
 function _csFocused(card){
   var items = $('cs-grid')._items || [], it = items[parseInt(card.getAttribute('data-k'), 10)];
   var track = card.closest('.cs-track');
-  if(track) track.scrollLeft = Math.max(0, card.offsetLeft - 50);
+  if(track) track.scrollLeft = Math.max(0, track.scrollLeft + card.getBoundingClientRect().left - track.getBoundingClientRect().left - 50);
   document.querySelectorAll('#cs-grid .cs-info').forEach(function(el){ el.innerHTML = ''; });
   var box = $('cs-info-' + card.getAttribute('data-row'));
   if(box && it){
+    var phone = document.documentElement.classList.contains('xc-phone'), k = card.getAttribute('data-k');
     box.innerHTML = '<div class="nf-info-meta">' + it.meta + '</div>' +
       (it.plot ? '<div class="cs-plot">' + esc(it.plot) + '</div>' : '') +
-      '<div class="cs-hint">' + (document.documentElement.classList.contains('xc-phone') ? 'Nochmal antippen' : 'OK') + ': fortsetzen</div>';
+      (phone
+        ? '<div class="cs-hint">Nochmal antippen: fortsetzen <button class="cs-remove" onclick="continueRemove(' + k + ')">&#x2715; Entfernen</button></div>'
+        : '<div class="cs-hint">OK: fortsetzen &nbsp;·&nbsp; <span class="cs-key-red"></span> ROT: aus Weiterschauen entfernen</div>');
   }
+}
+
+// Eintrag aus Weiterschauen entfernen (Fortschritt wird gelöscht)
+function continueRemove(k){
+  var items = $('cs-grid')._items || [], it = items[k];
+  if(!it) return;
+  var name = it.title + (it.badge ? ' (' + it.badge + ')' : '');
+  showConfirm('Aus Weiterschauen entfernen?', name, 'Entfernen', function(yes){
+    if(!yes) { setTimeout(function(){ SpatialNav.focusBySelector('.cs-card[data-k="' + k + '"]'); }, 50); return; }
+    if(it.kind === 'vod'){
+      delete S.resume[String(it.stream.stream_id)];
+      saveResume();
+    } else {
+      var sid = String(it.rec.series_id);
+      if(S.resumeSeries) delete S.resumeSeries[sid];
+      if(it.rec.episode_id) delete S.resume[String(it.rec.episode_id)];
+      saveResume();
+      if(typeof saveResumeSeries === 'function') saveResumeSeries();
+    }
+    showToast('Entfernt', 1500);
+    renderContinueScreen();
+  });
 }
 
 async function _playSeriesFromContinue(s, targetEpId) {

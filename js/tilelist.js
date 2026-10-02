@@ -116,14 +116,15 @@ var LiveUi = (function () {
       '.xc-tile img{max-width:100%;max-height:100%;object-fit:contain;pointer-events:none}' +
       // Name klein unter dem Logo (Einstellung "Sendername unter dem Logo")
       '.xc-tile.has-cap{flex-direction:column;padding:12px 14px 10px}' +
-      '.xc-tile.has-cap img{flex:1 1 0;min-height:0;width:100%;max-height:none}' +   // Logo füllt den Platz, Name steht immer unten
-      '.xc-tile.has-cap .xc-tile-cap{display:block;flex-shrink:0;max-width:100%;margin-top:8px;font-size:24px;font-weight:500;' +
-        'line-height:1.2;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
+      // Feste Breiten (Kachel 300 - 2x14 Rand): ältere TV-Browser (webOS 5, Chrome 68)
+      // rechnen "100%" in einem <button> mit Flex-Layout falsch - Logo und Name wurden
+      // so breit wie der längste Name, das Logo saß schief und der Lauftext lief nie
+      '.xc-tile.has-cap img{flex:1 1 0;min-height:0;width:272px;max-width:272px;max-height:none}' +   // Name steht immer unten
+      '.xc-tile.has-cap .xc-tile-cap{display:block;flex-shrink:0;width:272px;max-width:272px;margin-top:8px;font-size:24px;font-weight:500;' +
+        'line-height:1.2;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}' +
       'html.xc-phone .xc-tile.has-cap .xc-tile-cap{font-size:28px}' +
       '.xc-tile .xc-cap-in{display:inline-block;font:inherit;color:inherit;line-height:inherit;overflow:visible;-webkit-line-clamp:none}' +
-      '.xc-tile.has-cap .xc-tile-cap.run{text-overflow:clip;text-align:left;width:100%}' +
-      '.xc-tile-cap.run .xc-cap-in{animation:xc-cap-run var(--dur,6s) ease-in-out infinite alternate}' +
-      '@keyframes xc-cap-run{0%,15%{transform:translateX(0)}85%,100%{transform:translateX(var(--shift,0))}}' +
+      '.xc-tile.has-cap .xc-tile-cap.run{text-overflow:clip;text-align:left}' +
       '.xc-tile span{color:#fff;font-size:34px;font-weight:600;line-height:1.2;text-align:center;overflow:hidden;' +
         'display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;pointer-events:none}' +
       '#xc-live-ui:not(.tv) .xc-tile.cur{background:rgba(59,130,246,.2);box-shadow:0 0 30px var(--glow)}' +
@@ -278,15 +279,21 @@ var LiveUi = (function () {
     if (jumpToCurrent && curPos >= 0) scrollIntoList(tiles, tiles.children[curPos], true);
     markTiles();
     markCats();
-    // Lange Namen unter den Logos als Lauftext (Weite erst nach dem Layout messbar)
+    // Lange Namen unter den Logos als Lauftext (Weite erst nach dem Layout messbar).
+    // Web Animations statt CSS-Variablen in @keyframes - die kennen ältere TV-Browser nicht.
     requestAnimationFrame(function(){
-      tiles.querySelectorAll('.has-cap .xc-tile-cap').forEach(function(capEl){
-        var inEl = capEl.firstChild, over = inEl ? inEl.scrollWidth - capEl.clientWidth : 0;
-        if(over <= 2) return;
+      var caps = tiles.querySelectorAll('.has-cap .xc-tile-cap');
+      for(var ci = 0; ci < caps.length; ci++){
+        var capEl = caps[ci], inEl = capEl.firstChild;
+        var over = inEl ? inEl.offsetWidth - capEl.clientWidth : 0;
+        if(over <= 2 || !inEl.animate) continue;
         capEl.classList.add('run');
-        capEl.style.setProperty('--shift', -(over + 6) + 'px');
-        capEl.style.setProperty('--dur', Math.max(4, Math.round(over / 25)) + 's');
-      });
+        var to = 'translateX(' + -(over + 6) + 'px)';
+        inEl.animate([
+          { transform: 'translateX(0)', offset: 0 }, { transform: 'translateX(0)', offset: 0.15 },
+          { transform: to, offset: 0.85 }, { transform: to, offset: 1 }
+        ], { duration: Math.max(4000, over * 18), iterations: Infinity, direction: 'alternate', easing: 'ease-in-out' });
+      }
     });
   }
   function markTiles() {

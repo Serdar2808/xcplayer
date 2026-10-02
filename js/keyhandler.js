@@ -214,6 +214,14 @@ window.addEventListener('keydown', function(e) {
     e.preventDefault(); handleBack(); return;
   }
 
+  // Weiterschauen: ROT entfernt den ausgewählten Eintrag (mit Rückfrage)
+  if((k===KEYS.RED||k===82) && S.screen==='continue' && !S.playerVisible && !S.sysMenuOpen &&
+     $('confirm-modal').classList.contains('hidden') && SpatialNav.focused && SpatialNav.focused.classList.contains('cs-card')){
+    e.preventDefault();
+    continueRemove(parseInt(SpatialNav.focused.getAttribute('data-k'), 10));
+    return;
+  }
+
   var isPE = !$('pe-modal').classList.contains('hidden');
   if(S.sysMenuOpen || isPE || !$('pe-manual-modal').classList.contains('hidden') || !$('profile-modal').classList.contains('hidden') || !$('confirm-modal').classList.contains('hidden') || !$('wizard-screen').classList.contains('hidden')) {
     var hasOverlay = !$('confirm-modal').classList.contains('hidden') || !$('profile-modal').classList.contains('hidden');

@@ -34,8 +34,13 @@ var LiveUi = (function () {
            (typeof EpgGrid !== 'undefined' && EpgGrid.open);
   }
 
-  function ensure() {
-    if (ui) return ui;
+  // Stile gleich beim Start einfügen, nicht erst beim ersten Öffnen der Bedienung:
+  // sonst stand das Live-OSD mit eingeschalteten Kacheln unten, bis man einmal die
+  // Senderliste/Kacheln geöffnet hatte (auch nach Senderwechseln)
+  var cssDone = false;
+  function injectCss() {
+    if (cssDone) return;
+    cssDone = true;
     var css = document.createElement('style');
     css.textContent =
       // Ebene über dem Bild: selbst durchlässig, nur die Bedienelemente fangen Berührungen
@@ -95,7 +100,8 @@ var LiveUi = (function () {
       '#xc-live-ui.mode-button .xc-var{min-height:110px;max-width:520px}' +
       // Kachel-Senderliste unten
       '.xc-strip{position:absolute;left:0;right:0;bottom:0;padding:24px 0 30px;' +
-        'background:linear-gradient(rgba(4,6,14,.65),rgba(4,6,14,.99))}' +            // wie das Live-OSD
+        // Unten so deckend wie das Live-OSD, nach oben transparenter, oben weicher Schatten
+        'background:linear-gradient(rgba(4,6,14,0),rgba(4,6,14,.8) 16%,rgba(4,6,14,.93) 45%,rgba(4,6,14,.99))}' +
       '.xc-cats,.xc-tiles{display:flex;overflow-x:auto;overflow-y:hidden;padding:0 40px;scrollbar-width:none}' +
       '.xc-cats::-webkit-scrollbar,.xc-tiles::-webkit-scrollbar{display:none}' +
       '.xc-cats{margin-bottom:10px}.xc-cat{margin-right:6px}' +
@@ -114,6 +120,10 @@ var LiveUi = (function () {
       '.xc-tile.has-cap .xc-tile-cap{display:block;flex-shrink:0;max-width:100%;margin-top:8px;font-size:24px;font-weight:500;' +
         'line-height:1.2;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
       'html.xc-phone .xc-tile.has-cap .xc-tile-cap{font-size:28px}' +
+      '.xc-tile .xc-cap-in{display:inline-block;font:inherit;color:inherit;line-height:inherit;overflow:visible;-webkit-line-clamp:none}' +
+      '.xc-tile.has-cap .xc-tile-cap.run{text-overflow:clip;text-align:left;width:100%}' +
+      '.xc-tile-cap.run .xc-cap-in{animation:xc-cap-run var(--dur,6s) ease-in-out infinite alternate}' +
+      '@keyframes xc-cap-run{0%,15%{transform:translateX(0)}85%,100%{transform:translateX(var(--shift,0))}}' +
       '.xc-tile span{color:#fff;font-size:34px;font-weight:600;line-height:1.2;text-align:center;overflow:hidden;' +
         'display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;pointer-events:none}' +
       '#xc-live-ui:not(.tv) .xc-tile.cur{background:rgba(59,130,246,.2);box-shadow:0 0 30px var(--glow)}' +
@@ -128,7 +138,12 @@ var LiveUi = (function () {
       'html.xc-liveui-compact #ch-list-overlay.compact #clo-topbar{padding-left:140px;min-height:128px;align-items:center}' +
       'html.xc-liveui-compact #live-osd:not(.compact-osd),html.xc-phone.xc-liveui-compact #live-osd:not(.compact-osd){left:550px}';
     document.head.appendChild(css);
+  }
+  injectCss();
 
+  function ensure() {
+    if (ui) return ui;
+    injectCss();
     ui = document.createElement('div');
     ui.id = 'xc-live-ui';
     ui.innerHTML =
@@ -252,7 +267,7 @@ var LiveUi = (function () {
                       : 'this.outerHTML=\'<span>' + esc(s.name).replace(/'/g, '&#39;') + '</span>\'';
       var inner = s.stream_icon
         ? '<img src="' + esc(s.stream_icon) + '" loading="lazy" alt="" onerror="' + onerr + '">' +
-          (cap ? '<span class="xc-tile-cap">' + esc(s.name) + '</span>' : '')
+          (cap ? '<span class="xc-tile-cap"><span class="xc-cap-in">' + esc(s.name) + '</span></span>' : '')
         : '<span>' + esc(s.name) + '</span>';
       html += '<button class="xc-tile xc-line' + (cap ? ' has-cap' : '') + (s.stream_id === curId ? ' cur' : '') + '" data-tile="' + i + '" aria-label="' + esc(s.name) + '">' + inner + '</button>';
     }
@@ -263,6 +278,16 @@ var LiveUi = (function () {
     if (jumpToCurrent && curPos >= 0) scrollIntoList(tiles, tiles.children[curPos], true);
     markTiles();
     markCats();
+    // Lange Namen unter den Logos als Lauftext (Weite erst nach dem Layout messbar)
+    requestAnimationFrame(function(){
+      tiles.querySelectorAll('.has-cap .xc-tile-cap').forEach(function(capEl){
+        var inEl = capEl.firstChild, over = inEl ? inEl.scrollWidth - capEl.clientWidth : 0;
+        if(over <= 2) return;
+        capEl.classList.add('run');
+        capEl.style.setProperty('--shift', -(over + 6) + 'px');
+        capEl.style.setProperty('--dur', Math.max(4, Math.round(over / 25)) + 's');
+      });
+    });
   }
   function markTiles() {
     if (st.kind !== 'tiles') return;

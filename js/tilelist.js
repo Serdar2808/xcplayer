@@ -95,7 +95,7 @@ var LiveUi = (function () {
       '#xc-live-ui.mode-button .xc-var{min-height:110px;max-width:520px}' +
       // Kachel-Senderliste unten
       '.xc-strip{position:absolute;left:0;right:0;bottom:0;padding:24px 0 30px;' +
-        'background:linear-gradient(transparent,rgba(4,6,14,.85) 22%,rgba(4,6,14,.97))}' +
+        'background:linear-gradient(rgba(4,6,14,.65),rgba(4,6,14,.99))}' +            // wie das Live-OSD
       '.xc-cats,.xc-tiles{display:flex;overflow-x:auto;overflow-y:hidden;padding:0 40px;scrollbar-width:none}' +
       '.xc-cats::-webkit-scrollbar,.xc-tiles::-webkit-scrollbar{display:none}' +
       '.xc-cats{margin-bottom:10px}.xc-cat{margin-right:6px}' +
@@ -110,7 +110,7 @@ var LiveUi = (function () {
       '.xc-tile img{max-width:100%;max-height:100%;object-fit:contain;pointer-events:none}' +
       // Name klein unter dem Logo (Einstellung "Sendername unter dem Logo")
       '.xc-tile.has-cap{flex-direction:column;padding:12px 14px 10px}' +
-      '.xc-tile.has-cap img{max-height:104px;min-height:0}' +
+      '.xc-tile.has-cap img{flex:1 1 0;min-height:0;width:100%;max-height:none}' +   // Logo füllt den Platz, Name steht immer unten
       '.xc-tile.has-cap .xc-tile-cap{display:block;flex-shrink:0;max-width:100%;margin-top:8px;font-size:24px;font-weight:500;' +
         'line-height:1.2;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
       'html.xc-phone .xc-tile.has-cap .xc-tile-cap{font-size:28px}' +

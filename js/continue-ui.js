@@ -66,50 +66,99 @@ async function renderContinueScreen() {
   // Neueste zuerst (Serien haben ts; VOD hat 0 → landen hinten – das ist okay als Default)
   items.sort(function(a,b){ return (b.ts||0) - (a.ts||0); });
 
-  var html = '';
+  var grid = $('cs-grid');
   if(items.length === 0){
-     html = '<div class="empty-s">Keine Filme oder Serien angefangen.<br><br><button class="btn btn-secondary" id="cs-empty-back" data-focusable onclick="handleBack()">Zurück</button></div>';
+     grid.classList.remove('cs-nf');
+     grid.innerHTML = '<div class="empty-s">Keine Filme oder Serien angefangen.<br><br><button class="btn btn-secondary" id="cs-empty-back" data-focusable onclick="handleBack()">Zurück</button></div>';
   } else {
-     for(var k=0; k<items.length; k++){
-        var it = items[k];
-        var thumb, title, subTxt, pct;
-        if(it.kind === 'vod'){
-          var s = it.stream;
-          thumb = s.stream_icon||s.cover||'';
-          title = esc(s.name||s.title||'Film');
-          var durSecs = s.duration_secs||0;
-          pct = durSecs>0 ? Math.min(100,Math.round(it.pos/durSecs*100)) : 0;
-          subTxt = durSecs>0
-            ? Math.max(0,Math.floor((durSecs-it.pos)/60))+' Min verbleibend'
-            : 'Fortsetzen bei '+fmtDur(it.pos);
-        } else {
-          var r = it.rec;
-          thumb = r.cover || (it.stream && (it.stream.cover||it.stream.stream_icon)) || '';
-          var seName = r.name || (it.stream && it.stream.name) || 'Serie';
-          var seLabel = 'S'+(r.season_num||'?')+'E'+(r.episode_num||'?');
-          title = esc(seName) + ' <span style="opacity:.7">· '+esc(seLabel)+'</span>';
-          subTxt = 'Fortsetzen bei '+fmtDur(it.pos);
-          pct = 0; // Episodenlänge unbekannt → keine Fortschrittsanzeige
-        }
-        var imgEl = thumb
-          ? '<img class="ct-thumb" src="'+esc(thumb)+'" onerror="this.style.display=\'none\'">'
-          : '<div class="ct-thumb-ph">&#x1F3AC;</div>';
-        html += '<div class="continue-tile" style="width:440px; height:100px; padding:0 20px;" data-focusable data-focus-class="htile-focused" onclick="continuePlay('+k+')">'
-          + imgEl
-          + '<div class="ct-info"><div class="ct-title" style="font-size:var(--fs-md);">'+title+'</div><div class="ct-sub" style="font-size:var(--fs-sm);">'+subTxt+'</div></div>'
-          + '<div class="ct-bar"><div class="ct-bar-fill" style="width:'+pct+'%"></div></div>'
-          + '</div>';
-     }
+     _csDecorate(items);
+     // Wie die Netflix-Ansicht: je eine Reihe für Serien und Filme
+     var rows = [
+       { title: 'Serien weiterschauen', items: items.filter(function(x){ return x.kind === 'series'; }) },
+       { title: 'Filme weiterschauen', items: items.filter(function(x){ return x.kind === 'vod'; }) }
+     ].filter(function(r){ return r.items.length; });
+     var html = '';
+     rows.forEach(function(row, r){
+       html += '<div class="cs-row"><div class="nf-row-header">'+row.title+'</div><div class="cs-track"><div class="cs-inner">';
+       row.items.forEach(function(it){
+         var k = items.indexOf(it);
+         var img = it.thumb
+           ? '<img class="nf-card-img" src="'+esc(it.thumb)+'" decoding="async" alt="" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">'
+             + '<div class="nf-card-img-ph" style="display:none">&#x1F3AC;</div>'
+           : '<div class="nf-card-img-ph">&#x1F3AC;</div>';
+         html += '<div class="nf-card cs-card" data-focusable data-focus-class="nf-focused" data-onfocus data-k="'+k+'" data-row="'+r+'">'
+           + img
+           + '<div class="nf-card-title" aria-hidden="true">'+esc(it.title)+'</div>'
+           + (it.badge ? '<div class="cs-badge">'+esc(it.badge)+'</div>' : '')
+           + '<div class="cs-prog"><i style="width:'+it.pct+'%"></i></div>'
+           + '</div>';
+       });
+       html += '</div></div><div class="cs-info" id="cs-info-'+r+'"></div></div>';
+     });
+     grid.classList.add('cs-nf');
+     grid.innerHTML = html;
+     grid.querySelectorAll('.cs-card').forEach(function(card){
+       card.addEventListener('xcfocus', function(){ _csFocused(card); });
+       card.addEventListener('mouseover', function(){ if(SpatialNav.focused !== card) setFocus(card); });
+       card.addEventListener('click', function(){
+         // Touch wie in der Netflix-Ansicht: erstes Antippen wählt aus, zweites setzt fort
+         if(SpatialNav.focused !== card){ setFocus(card); return; }
+         continuePlay(parseInt(card.getAttribute('data-k'), 10));
+       });
+     });
   }
-  $('cs-grid').innerHTML = html;
-  $('cs-grid')._items = items;
+  grid._items = items;
   if(!S._navTabHold){
     S.focusArea = 'continue';
-    setTimeout(function(){ 
+    setTimeout(function(){
        if(typeof SpatialNav !== 'undefined') {
-          SpatialNav.focusBySelector('.continue-tile') || SpatialNav.focusBySelector('#cs-empty-back');
+          SpatialNav.focusBySelector('.cs-card') || SpatialNav.focusBySelector('#cs-empty-back');
        }
     }, 50);
+  }
+}
+
+// Anzeige-Daten je Eintrag: Bild, Titel, Staffel/Folge, Fortschritt, Infozeile
+function _csDecorate(items){
+  items.forEach(function(it){
+    var dur, meta = [];
+    if(it.kind === 'vod'){
+      var s = it.stream;
+      it.thumb = s.stream_icon || s.cover || '';
+      it.title = s.name || s.title || 'Film';
+      it.plot = s.plot || '';
+      dur = s.duration_secs || 0;
+      meta.push('<span class="nf-info-meta-tag">Film</span>');
+    } else {
+      var r = it.rec;
+      it.thumb = r.cover || (it.stream && (it.stream.cover || it.stream.stream_icon)) || '';
+      it.title = r.name || (it.stream && it.stream.name) || 'Serie';
+      it.plot = (it.stream && it.stream.plot) || '';
+      dur = r.dur || 0;
+      it.badge = 'S' + (r.season_num || '?') + ' · E' + (r.episode_num || '?');
+      meta.push('<span class="nf-info-meta-tag">Serie</span>');
+      meta.push('Staffel ' + esc(r.season_num || '?') + ' · Folge ' + esc(r.episode_num || '?'));
+      // Folgentitel ohne den oft vorangestellten "Serie - S01E05 -"-Teil
+      var et = String(r.ep_title || '').replace(/^.*?S\d+\s*E\d+\s*[-–:]?\s*/i, '').trim();
+      if(et) meta.push(esc(et));
+    }
+    it.pct = dur > 0 ? Math.min(100, Math.round(it.pos / dur * 100)) : 0;
+    meta.push('bei ' + fmtDur(it.pos) + (dur > 0 ? ' · noch ' + Math.max(1, Math.round((dur - it.pos) / 60)) + ' Min' : ''));
+    it.meta = meta.join(' &nbsp;·&nbsp; ');
+  });
+}
+
+// Fokussierte Karte: an den Reihenanfang holen (wie Netflix) und Infozeile füllen
+function _csFocused(card){
+  var items = $('cs-grid')._items || [], it = items[parseInt(card.getAttribute('data-k'), 10)];
+  var track = card.closest('.cs-track');
+  if(track) track.scrollLeft = Math.max(0, card.offsetLeft - 50);
+  document.querySelectorAll('#cs-grid .cs-info').forEach(function(el){ el.innerHTML = ''; });
+  var box = $('cs-info-' + card.getAttribute('data-row'));
+  if(box && it){
+    box.innerHTML = '<div class="nf-info-meta">' + it.meta + '</div>' +
+      (it.plot ? '<div class="cs-plot">' + esc(it.plot) + '</div>' : '') +
+      '<div class="cs-hint">' + (document.documentElement.classList.contains('xc-phone') ? 'Nochmal antippen' : 'OK') + ': fortsetzen</div>';
   }
 }
 

@@ -95,6 +95,17 @@ var Settings = {
         }
       }
     }catch(e){ Logger.warn('[Settings] loadProfile error:', e); }
+    // Frühere Fassungen der Qualitäts-Regel auf die aktuelle heben (erkennt jetzt
+    // auch RAW und hochgestellte Angaben wie "RTL ᴴᴰ") - ohne neue Einrichtung
+    if(typeof WIZ_QUALITY_RULE !== 'undefined') {
+      var oldQ = ['\\s*\\(4K\\)\\s*$|\\s+(FHD|UHD|4K|2K|HD|SD|1080p?|720p?|480p?|HEVC)[*+]?\\s*\\d*\\s*$',
+                  '\\s+(FHD|UHD|4K|2K|HD|SD|1080p?|720p?|480p?|HEVC)[*+]?\\s*\\d*\\s*$'];
+      var changed = false;
+      (this.playlistRules || []).forEach(function(r){
+        if(r && r.type === 'regex' && oldQ.indexOf(r.pattern) !== -1) { r.pattern = WIZ_QUALITY_RULE; changed = true; }
+      });
+      if(changed) this.saveProfile(pid);
+    }
   },
   save: function(){
     try{ localStorage.setItem('xcp_settings',JSON.stringify({

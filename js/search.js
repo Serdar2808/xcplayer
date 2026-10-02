@@ -105,7 +105,7 @@ var NFSearch = {
     for(var j=0;j<hits.length;j++){
       var s=hits[j], cover=s.stream_icon||s.cover||'';
       html+='<div class="nfs-card" data-idx="'+j+'">'
-        +(cover?'<img loading="lazy" decoding="async" src="'+esc(cover)+'" onerror="this.style.display=\'none\'">':'<div style="height:270px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:50px">🎬</div>')
+        +(cover?'<img loading="lazy" decoding="async" src="'+esc(cover)+'" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'"><div class="nfs-ph" style="display:none">🎬</div>':'<div class="nfs-ph">🎬</div>')
         +'<div class="nfs-card-name">'+esc(s.name||s.title||'')+'</div></div>';
     }
     box.innerHTML=html;

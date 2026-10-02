@@ -133,6 +133,9 @@ var Player = {
                 season_idx: S.cursors.season,
                 name: cs.name || S.currentStream.name || '',
                 cover: cs.cover || cs.stream_icon || '',
+                // Für Weiterschauen: Folgentitel und Länge (Fortschritt, "noch x Min")
+                ep_title: (S.currentEpsArray && S.currentEpsArray[S.currentEpIdx] && S.currentEpsArray[S.currentEpIdx].title) || '',
+                dur: Math.floor(Player.vid.duration) || 0,
                 pos: ct,
                 ts: Date.now()
               };

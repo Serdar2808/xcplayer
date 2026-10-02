@@ -281,7 +281,7 @@ function closeSysSidebar() {
      }, 50);
   } else if (S.screen === 'continue') {
      S.focusArea = 'continue';
-     setTimeout(function(){ if(typeof SpatialNav !== 'undefined') { SpatialNav.focusBySelector('.continue-tile') || SpatialNav.focusBySelector('#cs-empty-back'); } }, 50);
+     setTimeout(function(){ if(typeof SpatialNav !== 'undefined') { SpatialNav.focusBySelector('.cs-card') || SpatialNav.focusBySelector('#cs-empty-back'); } }, 50);
   } else if (S.seriesDetailOpen) {
      S.focusArea = 'series_ep';
      setTimeout(function(){ if(typeof SpatialNav !== 'undefined') { SpatialNav.focusBySelector('#ep-' + S.cursors.ep) || SpatialNav.focusBySelector('.ep-item') || SpatialNav.focusBySelector('.sbtn.active'); } }, 50);

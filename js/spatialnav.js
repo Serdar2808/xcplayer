@@ -71,6 +71,8 @@ var SpatialNav = {
     }
     var fc = el.getAttribute('data-focus-class')||'focused';
     el.classList.add(fc);
+    // Elemente, die auf ihren Fokus reagieren wollen (z.B. Weiterschauen-Karten)
+    if(el.hasAttribute('data-onfocus')){ try { el.dispatchEvent(new CustomEvent('xcfocus')); } catch(e){} }
     var scrollContainerSel = '#episode-list, #epg-body, #sub-list, #audio-list, #clo-list, #wiz-cat-grid, #wiz-detect-results, .wq-tiles, #wq-list, .wq-sum';
     var container = el.closest(scrollContainerSel);
     if(container){
@@ -92,7 +94,7 @@ var SpatialNav = {
     else if(el.classList.contains('sbtn')){ S.focusArea='series_season'; S.cursors.season=parseInt(el.getAttribute('data-idx')||0); } 
     else if(el.classList.contains('ep-item')){ S.focusArea='series_ep'; S.cursors.ep=parseInt(el.getAttribute('data-idx')||0); } 
     else if(el.closest('#search-bar')){ S.focusArea='topbar'; } 
-    else if(el.classList.contains('continue-tile') || el.id === 'cs-empty-back'){ S.focusArea='continue'; } 
+    else if(el.classList.contains('cs-card') || el.id === 'cs-empty-back'){ S.focusArea='continue'; } 
     else if(el.closest('#settings-screen')){ S.focusArea='settings'; }
   },
   focusFirst: function() { var items = this.getFocusables(); if(items.length) this.focus(items[0]); },
@@ -140,4 +142,4 @@ var SpatialNav = {
 };
 function clearFocus(){ if(SpatialNav.focused){ var pc=SpatialNav.focused.getAttribute('data-focus-class')||'focused'; SpatialNav.focused.classList.remove(pc,'focused','card-focused','htile-focused'); SpatialNav.focused=null; } }
 function setFocus(el, cls){ SpatialNav.focus(el); }
-function updateFocus(){ if(S.focusArea==='profile_grid'){ SpatialNav.focusFirst(); } else if(S.focusArea==='sidebar'){ setTimeout(function(){ SpatialNav.focusBySelector('.cat-item.active') || SpatialNav.focusBySelector('#cat-1') || SpatialNav.focusBySelector('.cat-item'); }, 50); } else if(S.focusArea==='continue'){ setTimeout(function(){ SpatialNav.focusBySelector('.continue-tile') || SpatialNav.focusFirst(); }, 50); } else if(S.focusArea==='grid'){ ensureCursorInView(); renderVirtualGrid(); setTimeout(function(){ SpatialNav.focusBySelector('#gwrap-'+S.cursors.grid) || SpatialNav.focusBySelector('.grid-item-wrap'); }, 50); } else if(S.focusArea==='series_season'){ setTimeout(function(){ SpatialNav.focusBySelector('.sbtn.active') || SpatialNav.focusBySelector('.sbtn'); }, 50); } else if(S.focusArea==='series_ep'){ setTimeout(function(){ SpatialNav.focusBySelector('#ep-'+S.cursors.ep) || SpatialNav.focusBySelector('.ep-item'); }, 50); } }
+function updateFocus(){ if(S.focusArea==='profile_grid'){ SpatialNav.focusFirst(); } else if(S.focusArea==='sidebar'){ setTimeout(function(){ SpatialNav.focusBySelector('.cat-item.active') || SpatialNav.focusBySelector('#cat-1') || SpatialNav.focusBySelector('.cat-item'); }, 50); } else if(S.focusArea==='continue'){ setTimeout(function(){ SpatialNav.focusBySelector('.cs-card') || SpatialNav.focusFirst(); }, 50); } else if(S.focusArea==='grid'){ ensureCursorInView(); renderVirtualGrid(); setTimeout(function(){ SpatialNav.focusBySelector('#gwrap-'+S.cursors.grid) || SpatialNav.focusBySelector('.grid-item-wrap'); }, 50); } else if(S.focusArea==='series_season'){ setTimeout(function(){ SpatialNav.focusBySelector('.sbtn.active') || SpatialNav.focusBySelector('.sbtn'); }, 50); } else if(S.focusArea==='series_ep'){ setTimeout(function(){ SpatialNav.focusBySelector('#ep-'+S.cursors.ep) || SpatialNav.focusBySelector('.ep-item'); }, 50); } }

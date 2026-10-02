@@ -290,6 +290,18 @@ var PlaylistCheck = {
   }
 };
 
+// Qualitätsangabe am Namensende: HD/FHD/4K/RAW ..., "(4K)" und hochgestellte
+// Buchstaben wie "RTL ᴴᴰ" / "Sky ᴿᴬᵂ" (eigene Unicode-Zeichen, keine Formatierung)
+var WIZ_QUALITY_RULE = '\\s*\\(4K\\)\\s*$|\\s+(FHD|UHD|4K|2K|HD|SD|RAW|1080p?|720p?|480p?|HEVC)[*+]?\\s*\\d*\\s*$|' +
+                       '\\s*[\\u02B0-\\u02FF\\u1D2C-\\u1D6A\\u1D9B-\\u1DBF\\u2070-\\u209F]{2,}\\s*$';
+// Gleiche Regel = gleiches Muster oder eine frühere Fassung davon (wird ersetzt statt verdoppelt)
+function _wizSameRule(it, r) {
+  if(r.type !== it.rule.type) return false;
+  if(r.pattern === it.rule.pattern) return true;
+  var L = it.legacyPattern;
+  return !!L && (Array.isArray(L) ? L.indexOf(r.pattern) !== -1 : r.pattern === L);
+}
+
 // ════════════════════════════════════════════════════════════
 // AUTO-DETECT ENGINE
 // ════════════════════════════════════════════════════════════
@@ -368,14 +380,15 @@ var AutoDetect = {
     // ── 1.2 Qualitäts-Suffix-Erkennung ─────────────────────────────
     var qCount = 0;
     // Zusätzlich "(4K)" am Ende, egal ob groß/klein ("Avatar (4k)")
-    var qRe = /\s*\(4k\)\s*$|\s+(fhd|uhd|4k|2k|hd|sd|1080p?|720p?|480p?|hevc)[*+]?\s*\d*\s*$/i;
+    var qRe = new RegExp(WIZ_QUALITY_RULE, 'i');
     names.forEach(function(n){ if(qRe.test(n)) qCount++; });
     if(qCount > 0){
         results.push({
           id: 'suffix_quality',
           type: 'rule',
-          rule: {target:'stream', type:'regex', pattern: '\\s*\\(4K\\)\\s*$|\\s+(FHD|UHD|4K|2K|HD|SD|1080p?|720p?|480p?|HEVC)[*+]?\\s*\\d*\\s*$', replacement:''},
-          legacyPattern: '\\s+(FHD|UHD|4K|2K|HD|SD|1080p?|720p?|480p?|HEVC)[*+]?\\s*\\d*\\s*$',
+          rule: {target:'stream', type:'regex', pattern: WIZ_QUALITY_RULE, replacement:''},
+          legacyPattern: ['\\s*\\(4K\\)\\s*$|\\s+(FHD|UHD|4K|2K|HD|SD|1080p?|720p?|480p?|HEVC)[*+]?\\s*\\d*\\s*$',
+                          '\\s+(FHD|UHD|4K|2K|HD|SD|1080p?|720p?|480p?|HEVC)[*+]?\\s*\\d*\\s*$'],
           title: 'Qualitäts-Suffix entfernen',
           desc: qCount+' Sender betroffen',
           preview: 'z.B. "RTL HD" → "RTL"',
@@ -829,7 +842,7 @@ var WizQ = {
     if(this.firstRun) { this.answers[step] = true; return; }
     // Erneuter Durchlauf: aktueller Zustand
     var d = this._det();
-    var has = function(it){ return !!it && peDraftRules.some(function(r){ return r.type === it.rule.type && (r.pattern === it.rule.pattern || (it.legacyPattern && r.pattern === it.legacyPattern)); }); };
+    var has = function(it){ return !!it && peDraftRules.some(function(r){ return _wizSameRule(it, r); }); };
     if(step === 'prefix') this.answers.prefix = d.prefix.some(has);
     else if(step === 'quality') this.answers.quality = has(d.quality);
     else if(step === 'premium') this.answers.premium = has(d.premium);
@@ -1059,7 +1072,7 @@ var WizQ = {
     // Beispiele mit unterschiedlich geschriebenen Varianten zuerst ("RTL HD · RTL FHD")
     var uniq = function(g){ return g.filter(function(n, i){ return g.indexOf(n) === i; }); };
     var d = this._det(), groups = d.dupGroups.map(uniq).sort(function(a, b){ return b.length - a.length; });
-    var qRe = /\s*\(4k\)\s*$|\s+(fhd|uhd|4k|2k|hd|sd|1080p?|720p?|480p?|hevc)[*+]?\s*\d*\s*$/i;
+    var qRe = new RegExp(WIZ_QUALITY_RULE, 'i');
     var rows = this._pick(groups.slice(0, 30)).map(function(g){
       var v = g.slice(0, 3).join(' · ') + (g.length > 3 ? ' …' : '');
       return [v, g[0].replace(qRe, '').trim()];
@@ -1158,7 +1171,7 @@ var WizQ = {
   // ── Abschluss ────────────────────────────────────────────────
   finish: function() {
     var self = this, d = this._det(), a = this.answers;
-    var sameRule = function(it){ return function(r){ return r.type === it.rule.type && (r.pattern === it.rule.pattern || (it.legacyPattern && r.pattern === it.legacyPattern)); }; };
+    var sameRule = function(it){ return function(r){ return _wizSameRule(it, r); }; };
     var setRule = function(it, on){
       if(!it) return;
       peDraftRules = peDraftRules.filter(function(r){ return !sameRule(it)(r); });

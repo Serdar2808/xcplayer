@@ -6,12 +6,15 @@ function _baseName(name){
   // Schritt 1: Inhalt in Klammern am Ende entfernen: (BK), (backup), (HEVC) etc.
   s = s.replace(/\s*\([^)]*\)\s*$/g, '').trim();
   // Schritt 2: Bekannte Suffix-Wörter iterativ entfernen (wiederholen, bis stabil)
-  var QUALITY  = /\s+(fhd|uhd|4k|2k|hd|sd|1080p?|720p?|480p?|1080|720|576)[*+]?$/i;
+  var QUALITY  = /\s+(fhd|uhd|4k|2k|hd|sd|raw|1080p?|720p?|480p?|1080|720|576)[*+]?$/i;
   var CODEC    = /\s+(hevc|h\.?265|h\.?264|avc|av1|mpeg2)[*+]?$/i;
   var EXTRAS   = /\s+(ultra|feed|backup|bk|alt|multi|ppv|plus|premium|platinum|gold)[*+]?$/i;
   // Eine Zahl am Ende bleibt stehen: sie unterscheidet meist echte Sender
   // ("Sky Sport 1 HEVC" / "Sky Sport 2 HEVC" sind keine Duplikate)
+  // Hochgestellte Qualitätsangabe ("RTL ᴴᴰ", "Sky ᴿᴬᵂ") - eigene Unicode-Zeichen
+  var SUPER    = /\s*[ʰ-˿ᴬ-ᵪᶛ-ᶿ⁰-₟]{2,}$/;
   for(var pass=0; pass<6; pass++){
+    s = s.replace(SUPER,'').trim();
     s = s.replace(QUALITY,'').trim();
     s = s.replace(CODEC,'').trim();
     s = s.replace(EXTRAS,'').trim();

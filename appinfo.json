@@ -1,6 +1,6 @@
 {
   "id": "com.xcplayer.app",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "vendor": "XC Player",
   "type": "web",
   "main": "index.html",

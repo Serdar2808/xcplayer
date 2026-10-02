@@ -45,7 +45,7 @@ function navTabClick(action){
     if(S.screen === 'settings') {
         S.focusArea = 'settings';
         if(S.settingsCatOpen) {
-            setTimeout(function(){ if(typeof SpatialNav !== 'undefined') SpatialNav.focusBySelector('#set-cat-' + S.settingsCatOpen + ' [data-focusable]') || SpatialNav.focusFirst(); }, 50);
+            setTimeout(function(){ if(typeof SpatialNav !== 'undefined') SpatialNav.focusBySelector('#st-nav-' + S.settingsCatOpen) || SpatialNav.focusFirst(); }, 50);
         } else {
             setTimeout(function(){ if(typeof SpatialNav !== 'undefined') SpatialNav.focusBySelector('.ios-row') || SpatialNav.focusFirst(); }, 50);
         }
@@ -275,7 +275,7 @@ function closeSysSidebar() {
      S.focusArea = 'settings';
      setTimeout(function(){ 
        if(typeof SpatialNav !== 'undefined') { 
-         if(S.settingsCatOpen) SpatialNav.focusBySelector('#set-cat-' + S.settingsCatOpen + ' [data-focusable]') || SpatialNav.focusFirst();
+         if(S.settingsCatOpen) SpatialNav.focusBySelector('#st-nav-' + S.settingsCatOpen) || SpatialNav.focusFirst();
          else SpatialNav.focusBySelector('.ios-row') || SpatialNav.focusFirst(); 
        } 
      }, 50);

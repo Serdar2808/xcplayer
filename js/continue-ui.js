@@ -91,7 +91,8 @@ async function renderContinueScreen() {
            + img
            + '<div class="nf-card-title" aria-hidden="true">'+esc(it.title)+'</div>'
            + (it.badge ? '<div class="cs-badge">'+esc(it.badge)+'</div>' : '')
-           + '</div><div class="cs-prog"><i style="width:'+it.pct+'%"></i></div></div>';
+           // Ohne bekannte Länge kein (leerer) Balken - sähe aus wie "nie gestartet"
+           + '</div><div class="cs-prog' + (it.dur > 0 ? '' : ' cs-prog-none') + '"><i style="width:'+it.pct+'%"></i></div></div>';
        });
        html += '</div></div><div class="cs-info" id="cs-info-'+r+'"></div></div>';
      });
@@ -108,6 +109,7 @@ async function renderContinueScreen() {
      });
   }
   grid._items = items;
+  if(items.length) _csFillDurations(items);
   if(!S._navTabHold){
     S.focusArea = 'continue';
     setTimeout(function(){
@@ -115,6 +117,71 @@ async function renderContinueScreen() {
           SpatialNav.focusBySelector('.cs-card') || SpatialNav.focusBySelector('#cs-empty-back');
        }
     }, 50);
+  }
+}
+
+// Gesamtlängen (Sekunden) für den Fortschrittsbalken - beim Schauen gespeichert
+// bzw. einmalig beim Anbieter nachgeschlagen und gemerkt
+var ContinueDur = {
+  _m: null,
+  _load: function(){
+    if(!this._m){ try { this._m = JSON.parse(localStorage.getItem('xcp_cont_dur') || '{}') || {}; } catch(e){ this._m = {}; } }
+    return this._m;
+  },
+  get: function(id){ return id ? (this._load()[String(id)] || 0) : 0; },
+  set: function(id, secs){
+    secs = Math.floor(secs || 0);
+    if(!id || !(secs > 0) || !isFinite(secs)) return;
+    var m = this._load();
+    if(m[String(id)] === secs) return;
+    m[String(id)] = secs;
+    try { localStorage.setItem('xcp_cont_dur', JSON.stringify(m)); } catch(e){}
+  }
+};
+// "duration_secs" oder "duration" ("1:45:10" / "45:10") aus Film-/Folgen-Infos
+function _csParseDur(info){
+  if(!info) return 0;
+  var s = parseInt(info.duration_secs, 10);
+  if(s > 0) return s;
+  var m = String(info.duration || '').match(/^(\d+):(\d+)(?::(\d+))?$/);
+  if(!m) return 0;
+  return m[3] !== undefined ? (+m[1]) * 3600 + (+m[2]) * 60 + (+m[3]) : (+m[1]) * 60 + (+m[2]);
+}
+async function _csSeriesInfo(sid){
+  var info = S.seriesInfoCache[sid];
+  if(info) return info;
+  var p = Profiles.getActive(), dbKey = (p ? p.id : 'unknown') + '_seriesInfo_' + sid;
+  info = await PlaylistDB.get(dbKey);
+  if(!info){ info = await API.getSeriesInfo(sid); if(info) PlaylistDB.set(dbKey, info); }
+  if(info) S.seriesInfoCache[sid] = info;
+  return info;
+}
+// Fehlende Längen nachschlagen und Balken/Infozeile nachträglich füllen
+async function _csFillDurations(items){
+  if(S.isM3U) return;
+  for(var i = 0; i < items.length; i++){
+    var it = items[i];
+    if(it.dur > 0) continue;
+    var secs = 0;
+    try {
+      if(it.kind === 'vod'){
+        var d = await API.getVodInfo(it.stream.stream_id);
+        secs = _csParseDur(d && d.info);
+        if(secs) ContinueDur.set(it.stream.stream_id, secs);
+      } else {
+        var info = await _csSeriesInfo(it.rec.series_id), eps = (info && info.episodes) || {}, ep = null;
+        Object.keys(eps).forEach(function(sn){ (eps[sn] || []).forEach(function(e){ if(String(e.id) === String(it.rec.episode_id)) ep = e; }); });
+        secs = _csParseDur(ep && ep.info);
+        if(secs) ContinueDur.set(it.rec.episode_id, secs);
+      }
+    } catch(e){}
+    if(!(secs > 0) || $('cs-grid')._items !== items) continue;
+    _csDecorate([it]);
+    var card = document.querySelector('#cs-grid .cs-card[data-k="' + items.indexOf(it) + '"]');
+    if(!card) continue;
+    var bar = card.parentNode.querySelector('.cs-prog');
+    if(bar){ bar.classList.remove('cs-prog-none'); bar.firstChild.style.width = it.pct + '%'; }
+    if(SpatialNav.focused === card) _csFocused(card);
   }
 }
 
@@ -127,14 +194,14 @@ function _csDecorate(items){
       it.thumb = s.stream_icon || s.cover || '';
       it.title = s.name || s.title || 'Film';
       it.plot = s.plot || '';
-      dur = s.duration_secs || 0;
+      dur = s.duration_secs || ContinueDur.get(s.stream_id);
       meta.push('<span class="nf-info-meta-tag">Film</span>');
     } else {
       var r = it.rec;
       it.thumb = r.cover || (it.stream && (it.stream.cover || it.stream.stream_icon)) || '';
       it.title = r.name || (it.stream && it.stream.name) || 'Serie';
       it.plot = (it.stream && it.stream.plot) || '';
-      dur = r.dur || 0;
+      dur = r.dur || ContinueDur.get(r.episode_id);
       it.badge = 'S' + (r.season_num || '?') + ' · E' + (r.episode_num || '?');
       meta.push('<span class="nf-info-meta-tag">Serie</span>');
       meta.push('Staffel ' + esc(r.season_num || '?') + ' · Folge ' + esc(r.episode_num || '?'));
@@ -142,7 +209,8 @@ function _csDecorate(items){
       var et = String(r.ep_title || '').replace(/^.*?S\d+\s*E\d+\s*[-–:]?\s*/i, '').trim();
       if(et) meta.push(esc(et));
     }
-    it.pct = dur > 0 ? Math.min(100, Math.round(it.pos / dur * 100)) : 0;
+    it.dur = dur || 0;
+    it.pct = dur > 0 ? Math.max(1, Math.min(100, Math.round(it.pos / dur * 100))) : 0;
     meta.push('bei ' + fmtDur(it.pos) + (dur > 0 ? ' · noch ' + Math.max(1, Math.round((dur - it.pos) / 60)) + ' Min' : ''));
     it.meta = meta.join(' &nbsp;·&nbsp; ');
   });

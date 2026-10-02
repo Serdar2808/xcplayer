@@ -155,157 +155,106 @@ applyUniversalScale();
 
 <!-- EINSTELLUNGEN BILDSCHIRM (Vollbild) -->
 <div id="settings-screen" class="screen hidden">
-  
-  <!-- HAUPTSEITE -->
-  <div id="set-view-main">
-    <h2 class="set-main-title">Einstellungen</h2>
-    
-    <div class="ios-settings-wrap">
-      <!-- Block 1: Account & System -->
-      <div class="ios-group">
-        <div class="ios-row" id="set-main-system" data-focusable onclick="openSettingsCategory('system')">
-          <div class="ios-icon">👤</div>
-          <div class="ios-label">Profile, Konto & System</div>
-          <div class="ios-arrow">›</div>
-        </div>
-      </div>
-      
-      <!-- Block 2: Optik & Bedienung -->
-      <div class="ios-group">
-        <div class="ios-row" id="set-main-ansicht" data-focusable onclick="openSettingsCategory('ansicht')">
-          <div class="ios-icon">🎨</div>
-          <div class="ios-label">Design & Navigation</div>
-          <div class="ios-arrow">›</div>
-        </div>
-        <div class="ios-row" id="set-main-osd" data-focusable onclick="openSettingsCategory('osd')">
-          <div class="ios-icon">📺</div>
-          <div class="ios-label">Senderlisten & OSD</div>
-          <div class="ios-arrow">›</div>
-        </div>
-      </div>
-      
-      <!-- Block 3: Technik & Inhalte -->
-      <div class="ios-group">
-        <div class="ios-row" id="set-main-player" data-focusable onclick="openSettingsCategory('player')">
-          <div class="ios-icon">▶️</div>
-          <div class="ios-label">Wiedergabe & Player</div>
-          <div class="ios-arrow">›</div>
-        </div>
-        <div class="ios-row" id="set-main-playlist" data-focusable onclick="openSettingsCategory('playlist')">
-          <div class="ios-icon">📋</div>
-          <div class="ios-label">Playlist & Filter</div>
-          <div class="ios-arrow">›</div>
-        </div>
-      </div>
-    </div>
-  </div>
+  <!-- Links feste Bereichsleiste, rechts der Inhalt als Karten (settings-ui.js) -->
+  <div class="st-layout">
+    <nav class="st-rail" id="st-rail">
+      <div class="st-rail-title">Einstellungen</div>
+      <div class="st-rail-acct" id="st-rail-acct"></div>
+      <div class="st-nav" id="st-nav-ansicht" data-cat="ansicht" data-focusable data-onfocus onclick="settingsNavClick('ansicht')"><span class="st-ico">&#x1F3A8;</span><span class="st-nav-label">Aussehen</span></div>
+      <div class="st-nav" id="st-nav-live" data-cat="live" data-focusable data-onfocus onclick="settingsNavClick('live')"><span class="st-ico">&#x1F4FA;</span><span class="st-nav-label">Live TV</span></div>
+      <div class="st-nav" id="st-nav-media" data-cat="media" data-focusable data-onfocus onclick="settingsNavClick('media')"><span class="st-ico">&#x1F3AC;</span><span class="st-nav-label">Filme &amp; Serien</span></div>
+      <div class="st-nav" id="st-nav-player" data-cat="player" data-focusable data-onfocus onclick="settingsNavClick('player')"><span class="st-ico">&#x25B6;&#xFE0F;</span><span class="st-nav-label">Wiedergabe</span></div>
+      <div class="st-nav" id="st-nav-playlist" data-cat="playlist" data-focusable data-onfocus onclick="settingsNavClick('playlist')"><span class="st-ico">&#x1F5C2;&#xFE0F;</span><span class="st-nav-label">Playlist</span></div>
+      <div class="st-nav" id="st-nav-system" data-cat="system" data-focusable data-onfocus onclick="settingsNavClick('system')"><span class="st-ico">&#x1F464;</span><span class="st-nav-label">Konto &amp; Geräte</span></div>
+      <div class="st-nav" id="st-nav-about" data-cat="about" data-focusable data-onfocus onclick="settingsNavClick('about')"><span class="st-ico">&#x2139;&#xFE0F;</span><span class="st-nav-label">Über</span></div>
+    </nav>
 
-  <!-- DETAILSEITE (Split Pane) -->
-  <div id="set-view-detail" class="hidden">
-    <div class="set-detail-header">
-      <button class="set-back-btn" data-focusable onclick="closeSettings()">‹</button>
-      <h2 id="set-title">Einstellungen</h2>
-    </div>
-    
-    <div class="set-detail-split">
-      <!-- Linke Spalte: Die Schalter -->
-      <div class="set-detail-left">
-        
-        <!-- Kategorie: Ansicht -->
-        <div id="set-cat-ansicht" class="set-cat-group hidden">
-          <div class="ios-group">
-            <div class="ios-row" data-focusable onmouseover="setFocus(this)" data-preview="hell" onclick="toggleSetting('lightTheme')">
-              <div class="ios-label">Helles Design</div>
-              <div class="ios-toggle sp-toggle" id="toggle-light-theme"><div class="sp-toggle-knob"></div></div>
-            </div>
-            <div class="ios-row" data-focusable onmouseover="setFocus(this)" data-preview="netflix" onclick="toggleSetting('useNetflixStyle')">
-              <div class="ios-label">Netflix-Ansicht (Filme/Serien)</div>
-              <div class="ios-toggle sp-toggle on" id="toggle-netflix-style"><div class="sp-toggle-knob"></div></div>
-            </div>
-            <div class="ios-row" data-focusable onmouseover="setFocus(this)" data-preview="sidebar" onclick="toggleSetting('useSidebar')">
-              <div class="ios-label">Klassische Seitenleiste statt Top-Tabs</div>
-              <div class="ios-toggle sp-toggle" id="toggle-use-sidebar"><div class="sp-toggle-knob"></div></div>
-            </div>
+    <main class="st-content" id="st-content">
+
+      <!-- Aussehen -->
+      <section id="set-cat-ansicht" class="set-cat-group hidden">
+        <h2 class="st-h">Aussehen</h2>
+        <div class="st-card">
+          <div class="st-card-title">Design</div>
+          <div class="st-choices st-choices-2">
+            <button class="st-choice" data-group="theme" data-val="dark" data-focusable onclick="setChoice('theme','dark')"><span class="st-swatch st-swatch-dark"></span><span class="st-choice-name">Dunkel</span></button>
+            <button class="st-choice" data-group="theme" data-val="light" data-focusable onclick="setChoice('theme','light')"><span class="st-swatch st-swatch-light"></span><span class="st-choice-name">Hell</span></button>
           </div>
         </div>
-
-        <!-- Kategorie: OSD -->
-        <div id="set-cat-osd" class="set-cat-group hidden">
-          <div class="ios-group">
-            <div class="ios-row" data-focusable onmouseover="setFocus(this)" data-preview="kompakt_liste" onclick="toggleSetting('compactList')">
-              <div class="ios-label">Kompakte Senderliste</div>
-              <div class="ios-toggle sp-toggle" id="toggle-epg-list"><div class="sp-toggle-knob"></div></div>
-            </div>
-            <div id="sub-compactList" class="ios-sub-group">
-              <div class="ios-row ios-sub-row" data-focusable onmouseover="setFocus(this)" data-preview="kompakt_epg" onclick="toggleSetting('compactListEpg')">
-                <div class="ios-label">EPG in kompakter Liste anzeigen</div>
-                <div class="ios-toggle sp-toggle" id="toggle-compact-list-epg"><div class="sp-toggle-knob"></div></div>
-              </div>
-            </div>
-            <div class="ios-row" data-focusable onmouseover="setFocus(this)" onclick="toggleSetting('tileList')">
-              <div style="flex:1">
-                <div class="ios-label">Kachel-Senderliste</div>
-                <div style="font-size:var(--fs-xs);color:var(--lo);margin-top:4px">Live TV: Sender als Kacheln unten im Bild (OK bzw. Antippen) · ersetzt die kompakte Liste</div>
-              </div>
-              <div class="ios-toggle sp-toggle" id="toggle-tile-list"><div class="sp-toggle-knob"></div></div>
-            </div>
-            <div id="sub-tileList" class="ios-sub-group">
-              <div class="ios-row ios-sub-row" data-focusable onmouseover="setFocus(this)" onclick="toggleSetting('tileNames')">
-                <div class="ios-label">Sendername unter dem Logo</div>
-                <div class="ios-toggle sp-toggle" id="toggle-tile-names"><div class="sp-toggle-knob"></div></div>
-              </div>
-            </div>
+        <div class="st-card">
+          <div class="st-card-title">Navigation</div>
+          <div class="st-choices st-choices-2">
+            <button class="st-choice" data-group="nav" data-val="tabs" data-focusable onclick="setChoice('nav','tabs')"><span class="st-img" style="background-image:url(images/preview_sidebar_off.jpg)"></span><span class="st-choice-name">Menü oben</span></button>
+            <button class="st-choice" data-group="nav" data-val="sidebar" data-focusable onclick="setChoice('nav','sidebar')"><span class="st-img" style="background-image:url(images/preview_sidebar_on.jpg)"></span><span class="st-choice-name">Seitenleiste</span></button>
           </div>
-          <div class="ios-group">
-            <div class="ios-row" data-focusable onmouseover="setFocus(this)" data-preview="split" onclick="toggleSetting('splitList')">
-              <div class="ios-label">Zweispaltige Senderliste</div>
+        </div>
+      </section>
+
+      <!-- Live TV -->
+      <section id="set-cat-live" class="set-cat-group hidden">
+        <h2 class="st-h">Live TV</h2>
+        <div class="st-card">
+          <div class="st-card-title">Senderliste</div>
+          <div class="st-choices st-choices-3">
+            <button class="st-choice" data-group="list" data-val="tiles" data-focusable onclick="setChoice('list','tiles')"><span class="st-img" style="background-image:url(images/preview_kacheln.jpg)"></span><span class="st-choice-name">Kacheln</span></button>
+            <button class="st-choice" data-group="list" data-val="compact" data-focusable onclick="setChoice('list','compact')"><span class="st-img" style="background-image:url(images/preview_kompakt_liste_on.jpg)"></span><span class="st-choice-name">Kompakt</span></button>
+            <button class="st-choice" data-group="list" data-val="normal" data-focusable onclick="setChoice('list','normal')"><span class="st-img" style="background-image:url(images/preview_kompakt_liste_off.jpg)"></span><span class="st-choice-name">Normal</span></button>
+          </div>
+          <div class="ios-group st-rows">
+            <div class="ios-row st-only-tiles" data-focusable onmouseover="setFocus(this)" onclick="toggleSetting('tileNames')">
+              <div class="ios-label">Sendername unter dem Logo</div>
+              <div class="ios-toggle sp-toggle" id="toggle-tile-names"><div class="sp-toggle-knob"></div></div>
+            </div>
+            <div class="ios-row st-only-compact" data-focusable onmouseover="setFocus(this)" onclick="toggleSetting('compactListEpg')">
+              <img class="st-thumb" data-thumb="kompakt_epg" alt="">
+              <div class="ios-label">EPG in der Liste anzeigen</div>
+              <div class="ios-toggle sp-toggle" id="toggle-compact-list-epg"><div class="sp-toggle-knob"></div></div>
+            </div>
+            <div class="ios-row st-only-list" data-focusable onmouseover="setFocus(this)" onclick="toggleSetting('splitList')">
+              <img class="st-thumb" data-thumb="split" alt="">
+              <div class="ios-label">Kategorien neben den Sendern (zweispaltig)</div>
               <div class="ios-toggle sp-toggle" id="toggle-split-list"><div class="sp-toggle-knob"></div></div>
             </div>
-          </div>
-          
-          <div class="ios-group">
-            <div class="ios-row" data-focusable onmouseover="setFocus(this)" data-preview="kompakt_osd" onclick="toggleSetting('compactOsd')">
-              <div class="ios-label">Kompaktes Player-OSD</div>
-              <div class="ios-toggle sp-toggle" id="toggle-compact-osd"><div class="sp-toggle-knob"></div></div>
-            </div>
-          <div class="ios-row" data-focusable onmouseover="setFocus(this)" data-preview="osd_hints" onclick="toggleSetting('compactOsdHints')">
-            <div class="ios-label">Steuerungs-Hinweise anzeigen</div>
-            <div class="ios-toggle sp-toggle" id="toggle-compact-osd-hints"><div class="sp-toggle-knob"></div></div>
-          </div>
-            <div class="ios-row" data-focusable onmouseover="setFocus(this)" data-preview="epg_grid" onclick="toggleSetting('extendedEpg')">
-              <div class="ios-label">Erweitertes EPG-Grid nutzen</div>
-              <div class="ios-toggle sp-toggle" id="toggle-extended-epg"><div class="sp-toggle-knob"></div></div>
-            </div>
-          </div>
-
-          <div class="ios-group">
-            <div class="ios-row" data-focusable onmouseover="setFocus(this)" data-preview="ch_numbers" onclick="toggleSetting('showChNumbers')">
+            <div class="ios-row" data-focusable onmouseover="setFocus(this)" onclick="toggleSetting('showChNumbers')">
+              <img class="st-thumb" data-thumb="ch_numbers" alt="">
               <div class="ios-label">Kanalnummern anzeigen</div>
               <div class="ios-toggle sp-toggle" id="toggle-ch-numbers"><div class="sp-toggle-knob"></div></div>
             </div>
-            <div class="ios-row" data-focusable onmouseover="setFocus(this)" data-preview="ch_logos" onclick="toggleSetting('showChLogos')">
+            <div class="ios-row" data-focusable onmouseover="setFocus(this)" onclick="toggleSetting('showChLogos')">
+              <img class="st-thumb" data-thumb="ch_logos" alt="">
               <div class="ios-label">Senderlogos anzeigen</div>
               <div class="ios-toggle sp-toggle" id="toggle-ch-logos"><div class="sp-toggle-knob"></div></div>
             </div>
           </div>
         </div>
-
-        <!-- Kategorie: Player -->
-        <div id="set-cat-player" class="set-cat-group hidden">
-          <div class="ios-group">
-            <div class="ios-row" data-focusable onmouseover="setFocus(this)" onclick="toggleSetting('nativePlayer')">
-              <div style="flex:1">
-                  <div class="ios-label">Nativer TV-Player (MPEG-TS)</div>
-                  <div style="font-size:var(--fs-xs);color:var(--lo);margin-top:4px" id="native-player-sub">TV-Decoder mit MPEG-TS · geringste CPU, beste Kompatibilität</div>
-              </div>
-              <div class="ios-toggle sp-toggle" id="toggle-native-player"><div class="sp-toggle-knob"></div></div>
+        <div class="st-card">
+          <div class="st-card-title">Senderinfo (OSD)</div>
+          <div class="st-choices st-choices-2">
+            <button class="st-choice" data-group="osd" data-val="normal" data-focusable onclick="setChoice('osd','normal')"><span class="st-img" style="background-image:url(images/preview_kompakt_osd_off.jpg)"></span><span class="st-choice-name">Normal</span></button>
+            <button class="st-choice" data-group="osd" data-val="compact" data-focusable onclick="setChoice('osd','compact')"><span class="st-img" style="background-image:url(images/preview_kompakt_osd_on.jpg)"></span><span class="st-choice-name">Kompakt</span></button>
+          </div>
+          <div class="ios-group st-rows">
+            <div class="ios-row st-only-osdcompact" data-focusable onmouseover="setFocus(this)" onclick="toggleSetting('compactOsdHints')">
+              <img class="st-thumb" data-thumb="osd_hints" alt="">
+              <div class="ios-label">Tasten-Hinweise anzeigen</div>
+              <div class="ios-toggle sp-toggle" id="toggle-compact-osd-hints"><div class="sp-toggle-knob"></div></div>
             </div>
-            <div class="ios-row" data-focusable onmouseover="setFocus(this)" onclick="changeEpgShift()">
+          </div>
+        </div>
+        <div class="st-card">
+          <div class="st-card-title">Weiteres</div>
+          <div class="ios-group st-rows">
+            <div class="ios-row" data-focusable onmouseover="setFocus(this)" onclick="toggleSetting('groupVariants')">
+              <img class="st-thumb" data-thumb="varianten" alt="">
               <div style="flex:1">
-                  <div class="ios-label">EPG Timeshift</div>
-                  <div style="font-size:var(--fs-xs);color:var(--lo);margin-top:4px" id="epg-shift-sub">Zeitversatz: 0 Stunden</div>
+                <div class="ios-label">Duplikate zusammenfassen</div>
+                <div class="st-sub">RTL HD, RTL FHD … erscheinen als ein Sender</div>
               </div>
-              <div class="ios-arrow" style="font-size:24px;padding-right:8px;">↻</div>
+              <div class="ios-toggle sp-toggle" id="toggle-group-variants"><div class="sp-toggle-knob"></div></div>
+            </div>
+            <div class="ios-row" data-focusable onmouseover="setFocus(this)" onclick="toggleSetting('extendedEpg')">
+              <div class="ios-label">Erweitertes EPG-Raster</div>
+              <div class="ios-toggle sp-toggle" id="toggle-extended-epg"><div class="sp-toggle-knob"></div></div>
             </div>
             <div class="ios-row" data-focusable onmouseover="setFocus(this)" onclick="toggleSetting('startFirstChannel')">
               <div class="ios-label">Beim App-Start mit Kanal 1 starten</div>
@@ -313,65 +262,134 @@ applyUniversalScale();
             </div>
           </div>
         </div>
+      </section>
 
-        <!-- Kategorie: Playlist -->
-        <div id="set-cat-playlist" class="set-cat-group hidden">
-          <div class="ios-group">
-            <div class="ios-row" data-focusable onmouseover="setFocus(this)" data-preview="varianten" onclick="toggleSetting('groupVariants')">
-              <div class="ios-label">Duplikate/Qualitäten gruppieren</div>
-              <div class="ios-toggle sp-toggle" id="toggle-group-variants"><div class="sp-toggle-knob"></div></div>
-            </div>
+      <!-- Filme & Serien -->
+      <section id="set-cat-media" class="set-cat-group hidden">
+        <h2 class="st-h">Filme &amp; Serien</h2>
+        <div class="st-card">
+          <div class="st-card-title">Ansicht</div>
+          <div class="st-choices st-choices-2">
+            <button class="st-choice" data-group="media" data-val="netflix" data-focusable onclick="setChoice('media','netflix')"><span class="st-img" style="background-image:url(images/preview_netflix_on.jpg)"></span><span class="st-choice-name">Netflix-Ansicht</span></button>
+            <button class="st-choice" data-group="media" data-val="classic" data-focusable onclick="setChoice('media','classic')"><span class="st-img" style="background-image:url(images/preview_netflix_off.jpg)"></span><span class="st-choice-name">Klassisch</span></button>
           </div>
-          <div class="ios-group">
-            <div class="ios-row" data-focusable onmouseover="setFocus(this)" onclick="manualPlaylistRefresh()">
-              <div class="ios-icon" style="color:var(--accent)">🔄</div>
-              <div class="ios-label" style="color:var(--accent)">Playlist jetzt aktualisieren</div>
+        </div>
+        <div class="st-card">
+          <div class="st-card-title">Im Menü anzeigen</div>
+          <div class="ios-group st-rows">
+            <div class="ios-row" data-focusable onmouseover="setFocus(this)" onclick="toggleSetting('showVod')">
+              <div class="ios-label">Filme</div>
+              <div class="ios-toggle sp-toggle" id="toggle-show-vod"><div class="sp-toggle-knob"></div></div>
             </div>
-            <div class="ios-row" data-focusable onmouseover="setFocus(this)" onclick="openPEModal()">
-              <div class="ios-icon" style="color:var(--hi)">🛠️</div>
-              <div class="ios-label">Playlist Editor öffnen</div>
-              <div class="ios-arrow">›</div>
+            <div class="ios-row" data-focusable onmouseover="setFocus(this)" onclick="toggleSetting('showSeries')">
+              <div class="ios-label">Serien</div>
+              <div class="ios-toggle sp-toggle" id="toggle-show-series"><div class="sp-toggle-knob"></div></div>
             </div>
           </div>
         </div>
+      </section>
 
-        <!-- Kategorie: System -->
-        <div id="set-cat-system" class="set-cat-group hidden">
-          <div class="ios-group" id="sp-profile-list">
-            <!-- Rendered by JS -->
+      <!-- Wiedergabe -->
+      <section id="set-cat-player" class="set-cat-group hidden">
+        <h2 class="st-h">Wiedergabe</h2>
+        <div class="st-card">
+          <div class="ios-group st-rows">
+            <div class="ios-row" data-focusable onmouseover="setFocus(this)" onclick="toggleSetting('nativePlayer')">
+              <div style="flex:1">
+                <div class="ios-label">Nativer TV-Player (MPEG-TS)</div>
+                <div class="st-sub" id="native-player-sub">TV-Decoder mit MPEG-TS · geringste CPU, beste Kompatibilität</div>
+              </div>
+              <div class="ios-toggle sp-toggle" id="toggle-native-player"><div class="sp-toggle-knob"></div></div>
+            </div>
+            <div class="ios-row" data-focusable onmouseover="setFocus(this)" onclick="changeEpgShift()">
+              <div style="flex:1">
+                <div class="ios-label">EPG-Zeitverschiebung</div>
+                <div class="st-sub" id="epg-shift-sub">Zeitversatz: 0 Stunden</div>
+              </div>
+              <div class="ios-arrow">&#x21BB;</div>
+            </div>
           </div>
-          
-          <div class="ios-group">
+        </div>
+      </section>
+
+      <!-- Playlist -->
+      <section id="set-cat-playlist" class="set-cat-group hidden">
+        <h2 class="st-h">Playlist</h2>
+        <div class="st-card">
+          <div class="ios-group st-rows">
+            <div class="ios-row" data-focusable onmouseover="setFocus(this)" onclick="Wizard.startOptimization()">
+              <div class="ios-icon">&#x21BB;</div>
+              <div style="flex:1">
+                <div class="ios-label">Einrichtung wiederholen</div>
+                <div class="st-sub">Länder, Kategorien und Namen erneut per Fragen einstellen</div>
+              </div>
+              <div class="ios-arrow">&#x203A;</div>
+            </div>
+            <div class="ios-row" data-focusable onmouseover="setFocus(this)" onclick="openPEModal()">
+              <div class="ios-icon">&#x1F6E0;&#xFE0F;</div>
+              <div style="flex:1">
+                <div class="ios-label">Playlist-Editor</div>
+                <div class="st-sub">Regeln, Kategorien und Sender einzeln bearbeiten</div>
+              </div>
+              <div class="ios-arrow">&#x203A;</div>
+            </div>
+            <div class="ios-row" data-focusable onmouseover="setFocus(this)" onclick="manualPlaylistRefresh()">
+              <div class="ios-icon">&#x1F504;</div>
+              <div style="flex:1">
+                <div class="ios-label">Playlist jetzt aktualisieren</div>
+                <div class="st-sub">Sender, Filme und Serien neu vom Anbieter laden</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Konto & Geräte -->
+      <section id="set-cat-system" class="set-cat-group hidden">
+        <h2 class="st-h">Konto &amp; Geräte</h2>
+        <div class="st-card st-acct-card" id="st-acct-card"></div>
+        <div class="st-card">
+          <div class="st-card-title">Profile</div>
+          <div class="ios-group st-rows" id="sp-profile-list"></div>
+          <div class="ios-group st-rows">
             <div class="ios-row" data-focusable onmouseover="setFocus(this)" onclick="openProfileModal(null)">
-              <div class="ios-icon" style="color:var(--accent)">+</div>
-              <div class="ios-label" style="color:var(--accent)">Neues Profil hinzufügen</div>
+              <div class="ios-icon" style="color:var(--accent2)">+</div>
+              <div class="ios-label">Neues Profil hinzufügen</div>
             </div>
             <div class="ios-row" data-focusable onmouseover="setFocus(this)" onclick="syncCloudProfile()">
-              <div class="ios-icon" style="color:var(--hi)">☁️</div>
+              <div class="ios-icon">&#x2601;&#xFE0F;</div>
               <div class="ios-label">Cloud Sync</div>
             </div>
           </div>
-
-          <div class="ios-group">
-            <div class="ios-row" style="cursor:default">
-              <div class="ios-label">TV MAC-Adresse</div>
-              <div style="font-family:monospace; color:var(--mid)" id="sp-mac-address">Laden...</div>
+        </div>
+        <div class="st-card">
+          <div class="st-card-title">Dieses Gerät</div>
+          <div class="ios-group st-rows">
+            <div class="ios-row st-static">
+              <div class="ios-label">Geräte-ID (für die Webseite)</div>
+              <div class="st-value" id="sp-mac-address">Laden...</div>
             </div>
           </div>
         </div>
+      </section>
 
-      </div>
-
-      <!-- Rechte Spalte: Mini-Preview Mockup -->
-      <div class="set-detail-right">
-        <div class="set-preview-box" id="set-preview-box">
-          <svg viewBox="0 0 400 225" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block;">
-            <rect width="400" height="225" fill="var(--bg)"/>
-            <text x="50%" y="50%" fill="var(--lo)" font-size="24" font-family="sans-serif" font-weight="600" text-anchor="middle" dominant-baseline="middle">Vorschau</text>
-          </svg>
+      <!-- Über -->
+      <section id="set-cat-about" class="set-cat-group hidden">
+        <h2 class="st-h">Über</h2>
+        <div class="st-card">
+          <div class="st-about-logo">XC Player <span>Beta</span></div>
+          <div class="ios-group st-rows">
+            <div class="ios-row st-static"><div class="ios-label">Version</div><div class="st-value" id="st-version"></div></div>
+            <div class="ios-row st-static"><div class="ios-label">Gerät</div><div class="st-value" id="st-platform"></div></div>
+          </div>
         </div>
-      </div>
-    </div>
+        <div class="st-card">
+          <div class="st-card-title">Bedienung</div>
+          <div id="st-help"></div>
+        </div>
+      </section>
+
+    </main>
   </div>
 </div>
 

@@ -120,6 +120,7 @@ var Wizard = {
     // Zugang ist gerade geprüft (kein zweiter Login), M3U schon geladen (kein zweiter Download)
     try { localStorage.setItem('xcp_last_auth_' + firstId, String(Date.now())); } catch(e) {}
     if(res.m3u) PlaylistDB.set('m3u_' + firstId, res.m3u);
+    if(res.user && typeof saveAccountInfo === 'function') saveAccountInfo(firstId, res.user);
     hideFullLoader();
     S.wizardMode = true;                          // Daten laden ohne Bildwechsel
     await activateProfile(firstId);
@@ -273,7 +274,7 @@ var PlaylistCheck = {
     if(max > 0) info.push(max + (max === 1 ? ' Verbindung' : ' Verbindungen'));
     var warn = (max > 0 && act >= max)
       ? 'Hinweis: Alle ' + max + ' Verbindungen sind gerade belegt – Sender starten erst, wenn eine frei wird.' : '';
-    return { ok: true, info: info.join(' · '), warn: warn };
+    return { ok: true, info: info.join(' · '), warn: warn, user: u };
   },
 
   _m3u: async function(p) {

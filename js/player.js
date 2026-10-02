@@ -117,6 +117,7 @@ var Player = {
         var ct=Math.floor(Player.vid.currentTime);
         if(ct>10&&ct%CONFIG.RESUME_SAVE_INTERVAL===0){
           S.resume[id]=ct; saveResume();
+          if(typeof ContinueDur !== 'undefined') ContinueDur.set(id, Player.vid.duration);   // Länge für den Weiterschauen-Balken
           // Für Serien zusätzlich pro series_id einen Eintrag mit Metadaten ablegen,
           // damit der Weiterschauen-Tab ohne erneuten Serien-Info-Fetch rendern kann.
           if(S.playerType==='series'){

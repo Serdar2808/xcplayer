@@ -457,6 +457,30 @@ window.addEventListener('keydown', function(e) {
     return;
   }
 
+  // Einstellungen: Bereichsleiste links und Inhalt rechts gezielt statt geometrisch
+  // verbinden - sonst sprang z.B. "hoch" aus dem Inhalt in einen anderen Bereich
+  if(S.screen === 'settings' && !S.sysMenuOpen && S.focusArea !== 'nav-tabs' && SpatialNav.focused && SpatialNav.focused.closest){
+    var sf = SpatialNav.focused, inRail = sf.closest('#st-rail'), inContent = sf.closest('#st-content');
+    if(inRail && (k===39 || k===13)){ e.preventDefault(); openSettingsCategory(sf.getAttribute('data-cat')); return; }
+    if(inContent && k===37){
+      e.preventDefault();
+      var stCat = S.settingsCatOpen;            // vor dem Bewegen merken: Fokus in der Leiste schaltet den Bereich um
+      SpatialNav.move('left');
+      if(SpatialNav.focused === sf || (SpatialNav.focused && SpatialNav.focused.closest('#st-rail'))) SpatialNav.focusBySelector('#st-nav-' + stCat);
+      return;
+    }
+    if((inRail || inContent) && (k===38 || k===40)){
+      e.preventDefault(); SpatialNav.move(k===38 ? 'up' : 'down');
+      var nf = SpatialNav.focused, left = nf && nf.closest && (inRail ? !nf.closest('#st-rail') : !nf.closest('#st-content'));
+      if(left || nf === sf){
+        SpatialNav.focus(sf);
+        // Ganz oben in der Leiste: weiter ins Menü wie überall
+        if(k===38 && inRail && !Settings.useSidebar && !document.getElementById('navbar').classList.contains('hidden')) navTabsEnter();
+      }
+      return;
+    }
+  }
+
   e.preventDefault();
   if(k===38) { var prevFoc = SpatialNav.focused; SpatialNav.move('up'); if(prevFoc === SpatialNav.focused && (!S.playerVisible || S.screen === 'settings') && !Settings.useSidebar && !document.getElementById('navbar').classList.contains('hidden')){ navTabsEnter(); } }
   else if(k===40) SpatialNav.move('down');

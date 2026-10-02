@@ -2059,3 +2059,84 @@ html.xc-phone .cs-badge{font-size:30px}
 html.xc-phone .cs-info .nf-info-meta{font-size:34px}
 html.xc-phone .cs-plot{font-size:32px}
 html.xc-phone .cs-hint{font-size:28px}
+.cs-prog.cs-prog-none{visibility:hidden}
+
+/* ── EINSTELLUNGEN: Bereichsleiste links, Inhalt als Karten rechts ──────────
+   Ohne Flex in Buttons mit %-Breiten und ohne flex-gap (webOS 5 / Chrome 68). */
+#settings-screen{overflow:hidden}
+.st-layout{display:flex;height:100%;min-height:0}
+.st-rail{width:440px;flex-shrink:0;display:flex;flex-direction:column;padding:30px 26px 30px 40px;overflow-y:auto;
+  border-right:1px solid var(--border);background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 70%)}
+.st-rail::-webkit-scrollbar{width:0}
+.st-rail-title{margin:0 0 22px 18px;font-family:'Sora',sans-serif;font-size:var(--fs-2xl);font-weight:700;color:var(--hi)}
+.st-rail-acct{display:flex;align-items:center;margin:0 0 24px 14px}
+.st-rail-acct:empty{display:none}
+.st-rail-acct-txt{min-width:0;font-size:var(--fs-sm);font-weight:600;color:var(--hi);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st-rail-acct-meta{margin-top:2px;font-size:var(--fs-xs);font-weight:400;color:var(--mid);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st-avatar{display:flex;align-items:center;justify-content:center;flex-shrink:0;width:96px;height:96px;margin-right:26px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-family:'Sora',sans-serif;font-size:38px;font-weight:700}
+.st-avatar-sm{width:54px;height:54px;margin-right:16px;font-size:22px}
+.st-nav{position:relative;display:flex;align-items:center;margin-bottom:8px;padding:18px 22px;border-radius:14px;border:1px solid transparent;
+  color:var(--mid);font-size:var(--fs-md);font-weight:500;cursor:pointer}
+.st-nav .st-ico{width:44px;margin-right:16px;font-size:30px;text-align:center;flex-shrink:0}
+.st-nav-label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st-nav.active{color:var(--hi);font-weight:600;background:rgba(59,130,246,.1);box-shadow:inset 4px 0 0 var(--accent2)}
+.st-nav.focused{background:rgba(59,130,246,.2) !important;color:#fff}
+.st-nav.focused::before,.st-nav.focused::after{content:'';position:absolute;left:0;right:0;height:2px;pointer-events:none;
+  background:linear-gradient(90deg,transparent,var(--accent),var(--accent2),transparent)}
+.st-nav.focused::before{top:0}.st-nav.focused::after{bottom:0}
+
+.st-content{flex:1;min-width:0;overflow-y:auto;padding:30px 60px 90px 50px}
+.st-content::-webkit-scrollbar{width:0}
+.st-h{margin:0 0 24px 4px;font-family:'Sora',sans-serif;font-size:var(--fs-2xl);font-weight:700;color:var(--hi)}
+.st-card{margin-bottom:24px;padding:26px 28px;border-radius:22px;border:1px solid var(--border);background:var(--bg-card);box-shadow:0 12px 40px rgba(0,0,0,.25)}
+.st-card-title{margin:0 0 18px 4px;font-size:var(--fs-sm);font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mid)}
+.st-choices{display:grid;grid-gap:20px}
+.st-choices-2{grid-template-columns:repeat(2,1fr);max-width:920px}
+.st-choices-3{grid-template-columns:repeat(3,1fr)}
+.st-choice{position:relative;display:block;width:100%;padding:12px 12px 16px;border-radius:18px;border:2px solid var(--border);
+  background:rgba(0,0,0,.2);color:var(--mid);font-family:inherit;text-align:left;cursor:pointer}
+.st-choice.selected{border-color:var(--accent2);background:rgba(6,182,212,.08);color:var(--hi)}
+.st-choice::after{content:'';position:absolute;top:22px;right:22px;width:34px;height:34px;box-sizing:border-box;border-radius:50%;
+  border:3px solid rgba(255,255,255,.55);background:rgba(0,0,0,.45);font-size:22px;font-weight:900;line-height:28px;text-align:center;color:#04202a}
+.st-choice.selected::after{content:'\2713';background:var(--accent2);border-color:var(--accent2)}
+.st-img,.st-swatch{display:block;width:100%;padding-top:56%;margin-bottom:12px;border-radius:12px;border:1px solid var(--border);
+  background-color:#000;background-position:center;background-size:cover;background-repeat:no-repeat}
+.st-swatch-dark{background-image:linear-gradient(180deg,#0d1220 0 16%,#07090f 16%),linear-gradient(90deg,#141b2d,#141b2d)}
+.st-swatch-light{background-image:linear-gradient(180deg,#bfdbfe 0 16%,#dbeafe 16%)}
+.st-choice-name{display:block;padding:0 6px;font-size:var(--fs-md);font-weight:600}
+.st-rows{margin:18px 0 0}
+.st-card .ios-group{margin-bottom:0}
+.st-card .ios-row{padding:16px 22px;background:rgba(255,255,255,.03)}
+.ios-row.st-static{cursor:default}
+.st-thumb{width:128px;height:72px;margin-right:20px;flex-shrink:0;object-fit:cover;border-radius:8px;border:1px solid var(--border);background:#000}
+.st-sub{margin-top:4px;font-size:var(--fs-xs);color:var(--lo)}
+.st-value{font-family:monospace;font-size:var(--fs-sm);color:var(--mid)}
+/* Unteroptionen nur, wenn sie zur gewählten Liste bzw. zum OSD passen */
+#settings-screen:not(.st-list-tiles) .st-only-tiles,
+#settings-screen:not(.st-list-compact) .st-only-compact,
+#settings-screen.st-list-tiles .st-only-list,
+#settings-screen:not(.st-osd-compact) .st-only-osdcompact{display:none !important}
+.st-acct{display:flex;align-items:center}
+.st-acct-txt{min-width:0}
+.st-acct-name{font-family:'Sora',sans-serif;font-size:var(--fs-xl);font-weight:700;color:var(--hi)}
+.st-acct-host{margin-top:4px;font-size:var(--fs-sm);color:var(--mid)}
+.st-acct-meta{margin-top:8px;font-size:var(--fs-sm);font-weight:600;color:var(--accent2)}
+.st-about-logo{margin:4px 0 12px 4px;font-family:'Sora',sans-serif;font-size:var(--fs-3xl);font-weight:800;color:var(--hi)}
+.st-about-logo span{color:var(--accent2)}
+#st-help .wiz-tut-grid{margin-bottom:0}
+/* Smartphones */
+html.xc-phone .st-rail{width:540px;padding:24px 22px 24px 30px}
+html.xc-phone .st-rail-title{font-size:58px}
+html.xc-phone .st-nav{padding:24px 24px;font-size:44px}
+html.xc-phone .st-nav .st-ico{width:60px;font-size:42px}
+html.xc-phone .st-rail-acct-txt{font-size:36px}
+html.xc-phone .st-rail-acct-meta{font-size:28px}
+html.xc-phone .st-h{font-size:58px}
+html.xc-phone .st-card-title{font-size:30px}
+html.xc-phone .st-choice-name{font-size:40px}
+html.xc-phone .st-sub{font-size:30px !important}
+html.xc-phone .st-thumb{width:176px;height:99px}
+html.xc-phone .st-value{font-size:36px}
+html.xc-phone .st-acct-name{font-size:52px}
+html.xc-phone .st-acct-host,html.xc-phone .st-acct-meta{font-size:36px}

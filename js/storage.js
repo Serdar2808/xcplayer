@@ -209,6 +209,12 @@ var Settings = {
       osd.classList.toggle('compact-osd', this.compactOsd);
       osd.classList.toggle('hide-hints', this.compactOsd && !this.compactOsdHints);
     }
+    // Einstellungen: Filme/Serien im Menü, Auswahl-Karten und Vorschaubilder
+    var tsv=$('toggle-show-vod');
+    if(tsv) tsv.classList.toggle('on', this.showVod !== false);
+    var tss=$('toggle-show-series');
+    if(tss) tss.classList.toggle('on', this.showSeries !== false);
+    if(typeof renderSettingsChoices === 'function') renderSettingsChoices();
   }
 };
 
@@ -218,7 +224,12 @@ function toggleSetting(key){
   if(key === 'tileList' && Settings.tileList) Settings.compactList = false;
   if(key === 'compactList' && Settings.compactList) Settings.tileList = false;
   Settings.save(); Settings._apply();
-  
+  // Filme/Serien im Menü sofort ein- bzw. ausblenden
+  if(key === 'showVod' || key === 'showSeries'){
+    ['nav-tab-vod','sys-vod'].forEach(function(id){ var el=$(id); if(el) el.style.display = Settings.showVod !== false ? '' : 'none'; });
+    ['nav-tab-series','sys-series'].forEach(function(id){ var el=$(id); if(el) el.style.display = Settings.showSeries !== false ? '' : 'none'; });
+  }
+
   if (S.streams && S.streams.length > 0) {
     if (key === 'groupVariants') S.filteredStreams = applyVariantGrouping(S.streams);
     if ((key === 'groupVariants' || key === 'compactList') && S.tab === 'live') {

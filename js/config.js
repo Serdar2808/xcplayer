@@ -256,6 +256,8 @@ Object.defineProperty(S, 'settingsCatOpen', {
   }
 });
 
+// App-Version (Anzeige unter Einstellungen > Über) - mit den Plattform-Dateien zusammen erhöhen
+var APP_VERSION = '0.2.5';
 var KEYS = { UP:38, DOWN:40, LEFT:37, RIGHT:39, ENTER:13, BACK:461, BACK2:10009, ESC:27, BKSP:8, RED:403, GREEN:404, YELLOW:405, BLUE:406, PLAY:415, PAUSE:19, CH_UP:427, CH_DOWN:428, NUM0:48, NUM9:57, NPAD0:96, NPAD9:105 };
 var GRID_LAYOUTS = ['default','list','hero','mini'];
 var GRID_LAYOUT_ICONS = {'default':'▦','list':'☰','hero':'▣','mini':'⠿'};

@@ -158,6 +158,7 @@ async function activateProfile(id){
     if (now - lastAuth > 60000) { // 60 Sekunden Cooldown
       var d = await API.auth();
       if(d && d.user_info && d.user_info.auth === 0) showToast('Achtung: XC Zugang abgelaufen oder ungültig!', 5000);
+      else if(d && d.user_info && typeof saveAccountInfo === 'function') saveAccountInfo(p.id, d.user_info);   // für Einstellungen > Konto
       try { localStorage.setItem('xcp_last_auth_' + p.id, now.toString()); } catch(e){ /* localStorage voll */ }
     }
   } catch(e) { Logger.warn('[Auth] Check failed:', e.message); }

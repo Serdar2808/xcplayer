@@ -7,15 +7,19 @@ function _teardownSettings() {
 }
 
 // ── SETTINGS ─────────────────────────────────────────────────────
+// Aufbau: links die Bereichsleiste (.st-nav), rechts der Inhalt des gewählten
+// Bereichs (#set-cat-*). Am TV wechselt der Inhalt schon beim Fokussieren eines
+// Bereichs; OK bzw. Rechts geht in den Inhalt, Links/BACK zurück in die Leiste.
 function openSettings(){
   if(S.screen === 'settings') return; // Sicherstellen, dass es nicht doppelt öffnet
-  
+
   S.prevScreenForSettings = S.screen;
   if(typeof NF !== 'undefined' && NF.stopTrailer) NF.stopTrailer(); // Trailer stoppen, statt das Grid komplett abzubauen
-  
+
   S.settingsOpen=true;
-  S.settingsCatOpen=null;
   S.screen = 'settings';
+  S.settingsCatOpen = S.settingsCatOpen || 'ansicht';
+  _showSettingsCat(S.settingsCatOpen);
 
   if(typeof _updateNavbarVisibility === 'function') _updateNavbarVisibility();
   if(typeof updateNavTabsActive === 'function') updateNavTabsActive('settings');
@@ -26,49 +30,163 @@ function openSettings(){
   }
 
   renderSettingsProfiles();
-  var macEl = $('sp-mac-address');
-  if(macEl) macEl.textContent = Device.getMac();
+  renderSettingsExtras();
   if(!S._navTabHold){
-    setTimeout(function(){ SpatialNav.focusBySelector('.ios-row') || SpatialNav.focusFirst(); }, 150);
+    setTimeout(function(){ SpatialNav.focusBySelector('#st-nav-' + S.settingsCatOpen) || SpatialNav.focusFirst(); }, 150);
   }
 }
+// BACK: aus dem Inhalt zurück in die Bereichsleiste, aus der Leiste raus
 function closeSettings(){
-  if (S.settingsCatOpen) {
-      // Fokus beim Zurückspringen auf die Hauptzeile setzen, aus der dieses
-      // Untermenü geöffnet wurde — nicht immer auf die erste Zeile der Liste.
-      var openedFrom = S.settingsCatOpen;
-      S.settingsCatOpen = null;
+  var foc = SpatialNav.focused;
+  if (foc && foc.closest && foc.closest('#st-content')) {
       S.focusArea = 'settings';
-      setTimeout(function(){ SpatialNav.focusBySelector('#set-main-'+openedFrom) || SpatialNav.focusBySelector('.ios-row') || SpatialNav.focusFirst(); }, 50);
+      SpatialNav.focusBySelector('#st-nav-' + (S.settingsCatOpen || 'ansicht'));
+      return;
+  }
+  if (S.playerVisible && S.playerType === 'live') {
+      _teardownSettings();
+      S.screen = 'live';
+
+      // Sicherstellen, dass der Player wieder im Vordergrund ist
+      var ps = document.getElementById('player-screen');
+      if (ps) ps.classList.remove('hidden');
+      var ms = document.getElementById('main-screen');
+      if (ms) ms.classList.add('hidden');
+      var cs = document.getElementById('continue-screen');
+      if (cs) cs.classList.add('hidden');
+
+      S.focusArea = 'player';
+      if(typeof Player !== 'undefined') Player.showControls();
+      if(typeof clearFocus === 'function') clearFocus();
   } else {
-      if (S.playerVisible && S.playerType === 'live') {
-          _teardownSettings();
-          S.screen = 'live';
-          
-          // Sicherstellen, dass der Player wieder im Vordergrund ist
-          var ps = document.getElementById('player-screen');
-          if (ps) ps.classList.remove('hidden');
-          var ms = document.getElementById('main-screen');
-          if (ms) ms.classList.add('hidden');
-          var cs = document.getElementById('continue-screen');
-          if (cs) cs.classList.add('hidden');
-          
-          S.focusArea = 'player';
-          if(typeof Player !== 'undefined') Player.showControls();
-          if(typeof clearFocus === 'function') clearFocus();
-      } else {
-          // Normal zurück zum Menü, ohne Settings zu schließen
-          if (Settings.useSidebar) { if(typeof openSysSidebar === 'function') openSysSidebar(); }
-          else { if(typeof navTabsEnter === 'function') navTabsEnter(); }
-      }
+      // Normal zurück zum Menü, ohne Settings zu schließen
+      if (Settings.useSidebar) { if(typeof openSysSidebar === 'function') openSysSidebar(); }
+      else { if(typeof navTabsEnter === 'function') navTabsEnter(); }
   }
 }
+// Bereich anzeigen (ohne den Fokus zu verschieben)
+function _showSettingsCat(cat) {
+  if(S.settingsCatOpen !== cat) S.settingsCatOpen = cat;
+  document.querySelectorAll('#settings-screen .set-cat-group').forEach(function(el){ el.classList.toggle('hidden', el.id !== 'set-cat-' + cat); });
+  document.querySelectorAll('#st-rail .st-nav').forEach(function(el){ el.classList.toggle('active', el.getAttribute('data-cat') === cat); });
+  var content = $('st-content');
+  if(content) content.scrollTop = 0;
+  if(cat === 'system' || cat === 'about') renderSettingsExtras();
+}
+// Bereich öffnen und in den Inhalt springen (OK/Rechts am TV, Antippen)
 function openSettingsCategory(cat) {
-  S.settingsCatOpen = cat;
-  setPreview(); // Reset beim Kategorie-Wechsel
-  setTimeout(function(){ SpatialNav.focusBySelector('#set-cat-'+cat+' [data-focusable]'); }, 50);
+  _showSettingsCat(cat);
+  setTimeout(function(){ SpatialNav.focusBySelector('#set-cat-' + cat + ' [data-focusable]'); }, 50);
+}
+function settingsNavClick(cat) {
+  // Am Handy bleibt man in der Leiste (Inhalt steht ja daneben), am TV geht OK in den Inhalt
+  if(document.documentElement.classList.contains('xc-phone')) { _showSettingsCat(cat); SpatialNav.focus($('st-nav-' + cat)); return; }
+  openSettingsCategory(cat);
+}
+// Fokus auf einem Bereich der Leiste zeigt dessen Inhalt
+document.addEventListener('xcfocus', function(e){
+  var nav = e.target && e.target.closest && e.target.closest('.st-nav');
+  if(nav) _showSettingsCat(nav.getAttribute('data-cat'));
+}, true);
+
+// ── Auswahl-Karten statt sich ausschließender Schalter ───────────
+function _settingsChoiceValue(group) {
+  if(group === 'theme') return Settings.lightTheme ? 'light' : 'dark';
+  if(group === 'nav') return Settings.useSidebar ? 'sidebar' : 'tabs';
+  if(group === 'list') return Settings.tileList ? 'tiles' : (Settings.compactList ? 'compact' : 'normal');
+  if(group === 'osd') return Settings.compactOsd ? 'compact' : 'normal';
+  if(group === 'media') return Settings.useNetflixStyle !== false ? 'netflix' : 'classic';
+  return null;
+}
+function setChoice(group, val) {
+  // Über toggleSetting, damit alle Nebenwirkungen (Listen, Navigation ...) greifen
+  if(group === 'list') {
+    if(val === 'tiles' && !Settings.tileList) toggleSetting('tileList');
+    else if(val === 'compact' && !Settings.compactList) toggleSetting('compactList');
+    else if(val === 'normal') { if(Settings.tileList) toggleSetting('tileList'); if(Settings.compactList) toggleSetting('compactList'); }
+  } else if(group === 'theme') { if(Settings.lightTheme !== (val === 'light')) toggleSetting('lightTheme'); }
+  else if(group === 'nav') { if(Settings.useSidebar !== (val === 'sidebar')) toggleSetting('useSidebar'); }
+  else if(group === 'osd') { if(!!Settings.compactOsd !== (val === 'compact')) toggleSetting('compactOsd'); }
+  else if(group === 'media') { if((Settings.useNetflixStyle !== false) !== (val === 'netflix')) toggleSetting('useNetflixStyle'); }
+  renderSettingsChoices();
+}
+// Markierung der Karten, passende Unteroptionen, Vorschaubilder der Zeilen
+function renderSettingsChoices() {
+  var scr = $('settings-screen');
+  if(!scr) return;
+  scr.querySelectorAll('.st-choice').forEach(function(el){
+    el.classList.toggle('selected', _settingsChoiceValue(el.getAttribute('data-group')) === el.getAttribute('data-val'));
+  });
+  var list = _settingsChoiceValue('list');
+  scr.classList.toggle('st-list-tiles', list === 'tiles');
+  scr.classList.toggle('st-list-compact', list === 'compact');
+  scr.classList.toggle('st-list-normal', list === 'normal');
+  scr.classList.toggle('st-osd-compact', !!Settings.compactOsd);
+  scr.querySelectorAll('img.st-thumb').forEach(function(img){
+    var src = settingsPreviewImage(img.getAttribute('data-thumb'));
+    if(src && img.getAttribute('src') !== src) img.setAttribute('src', src);
+    img.style.display = src ? '' : 'none';
+  });
+}
+// Vorschaubild passend zum aktuellen Zustand einer Einstellung
+function settingsPreviewImage(key) {
+  var on = { kompakt_epg: Settings.compactListEpg, split: Settings.splitList, ch_numbers: Settings.showChNumbers,
+             ch_logos: Settings.showChLogos, osd_hints: Settings.compactOsdHints }[key];
+  if(key === 'varianten') return 'images/preview_varianten.jpg';
+  if(on === undefined) return '';
+  return 'images/preview_' + key + (on ? '_on' : '_off') + '.jpg';
 }
 
+// ── Konto, Gerät, Über ───────────────────────────────────────────
+// Kontodaten vom Anbieter (gemerkt beim letzten Login, siehe saveAccountInfo)
+function _accountInfo(pid) {
+  try { return JSON.parse(localStorage.getItem('xcp_acct_' + pid) || 'null'); } catch(e) { return null; }
+}
+function saveAccountInfo(pid, u) {
+  if(!pid || !u) return;
+  try {
+    localStorage.setItem('xcp_acct_' + pid, JSON.stringify({ exp: parseInt(u.exp_date, 10) || 0, max: parseInt(u.max_connections, 10) || 0,
+      act: parseInt(u.active_cons, 10) || 0, status: u.status || '', trial: u.is_trial === '1' || u.is_trial === 1, ts: Date.now() }));
+  } catch(e) {}
+}
+function _fmtDate(ms) {
+  var d = new Date(ms), p = function(n){ return (n < 10 ? '0' : '') + n; };
+  return p(d.getDate()) + '.' + p(d.getMonth() + 1) + '.' + d.getFullYear();
+}
+function renderSettingsExtras() {
+  var p = Profiles.getActive(), a = p ? _accountInfo(p.id) : null;
+  var host = p ? (p.type === 'm3u' ? 'M3U-Playlist' : (p.host || '').replace(/^https?:\/\//, '').split(':')[0]) : '';
+  var lines = [];
+  if(p && p.type === 'm3u') lines.push('M3U-Playlist – keine Kontodaten verfügbar');
+  else if(a) {
+    var expMs = a.exp * 1000, days = a.exp ? Math.ceil((expMs - Date.now()) / 86400000) : null;
+    lines.push(a.exp ? 'Gültig bis ' + _fmtDate(expMs) + (days !== null && days >= 0 && days <= 30 ? ' (noch ' + days + (days === 1 ? ' Tag)' : ' Tage)') : '') : 'Unbegrenzt gültig');
+    if(a.max) lines.push(a.max + (a.max === 1 ? ' Verbindung' : ' Verbindungen'));
+    if(a.trial) lines.push('Testzugang');
+  } else if(p) lines.push('Kontodaten werden beim nächsten Start geladen');
+  var initials = p ? Profiles.initials(p.name) : '?';
+  var card = $('st-acct-card');
+  if(card) card.innerHTML = p
+    ? '<div class="st-acct"><div class="st-avatar">' + esc(initials) + '</div><div class="st-acct-txt"><div class="st-acct-name">' + esc(p.name) + '</div>' +
+      '<div class="st-acct-host">' + esc(host) + '</div><div class="st-acct-meta">' + esc(lines.join(' · ')) + '</div></div></div>'
+    : '<div class="st-acct-meta">Kein Profil aktiv</div>';
+  var rail = $('st-rail-acct');
+  if(rail) rail.innerHTML = p ? '<div class="st-avatar st-avatar-sm">' + esc(initials) + '</div><div class="st-rail-acct-txt"><div>' + esc(p.name) + '</div>' +
+    '<div class="st-rail-acct-meta">' + esc(lines[0] || host) + '</div></div>' : '';
+  var macEl = $('sp-mac-address');
+  if(macEl) macEl.textContent = Device.getMac();
+  var v = $('st-version');
+  if(v) v.textContent = (typeof APP_VERSION !== 'undefined' ? APP_VERSION : '') + ' Beta';
+  var pl = $('st-platform');
+  if(pl) pl.textContent = window.PalmSystem || (window.webOS && webOS.platform) ? 'LG webOS' : window.tizen ? 'Samsung Tizen' :
+    (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.xcp) ? 'iPhone / iPad' :
+    typeof AndroidBridge !== 'undefined' ? (document.documentElement.classList.contains('xc-phone') ? 'Android Smartphone' : 'Android / Android TV') : 'Browser';
+  // Bedienung: dieselbe Übersicht wie in der Einrichtung (am Handy die Touch-Fassung)
+  var help = $('st-help'), tut = document.querySelector('#wiz-step-2 .wiz-tut-grid');
+  if(help && tut && !help.firstChild) help.innerHTML = tut.outerHTML;
+}
+
+// Alte rechte Vorschau-Spalte (entfallen) - bleibt als No-Op für den Fokus-Aufruf
 function setPreview(key) {
   var box = document.getElementById('set-preview-box');
   if(!box) return;

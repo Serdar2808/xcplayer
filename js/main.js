@@ -120,26 +120,11 @@ StateEvents.on('audioPanelOpenChanged', function(isOpen) {
   if (panel) panel.classList.toggle('hidden', !isOpen);
 });
 
+// Einstellungen: gewählten Bereich anzeigen (Inhalt rechts, Markierung in der Leiste)
 StateEvents.on('settingsCatChanged', function(cat) {
-  var mainView = document.getElementById('set-view-main');
-  var detailView = document.getElementById('set-view-detail');
-  var titleEl = document.getElementById('set-title');
-
-  if (cat) {
-    if (mainView) mainView.classList.add('hidden');
-    if (detailView) detailView.classList.remove('hidden');
-
-    document.querySelectorAll('.set-cat-group').forEach(function(el) { el.classList.add('hidden'); });
-    var catEl = document.getElementById('set-cat-' + cat);
-    if (catEl) catEl.classList.remove('hidden');
-
-    var titles = { 'ansicht': '🎨 Ansicht & Darstellung', 'player': '⚙️ Wiedergabe & Player', 'playlist': '📋 Playlist & Sender', 'system': '👤 Konto & System' };
-    if (titleEl) titleEl.textContent = titles[cat] || 'Einstellungen';
-  } else {
-    if (detailView) detailView.classList.add('hidden');
-    if (mainView) mainView.classList.remove('hidden');
-    if (titleEl) titleEl.textContent = 'Einstellungen';
-  }
+  if (!cat) return;
+  document.querySelectorAll('#settings-screen .set-cat-group').forEach(function(el) { el.classList.toggle('hidden', el.id !== 'set-cat-' + cat); });
+  document.querySelectorAll('#st-rail .st-nav').forEach(function(el) { el.classList.toggle('active', el.getAttribute('data-cat') === cat); });
 });
 
 // ── AUTO-CLOSE TIMEOUTS ─────────────────────────────────────────

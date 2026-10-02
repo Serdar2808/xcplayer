@@ -111,6 +111,7 @@ var API = {
   getVod:function(c){  return this.call(c&&c!=='fav'?'action=get_vod_streams&category_id='+c:'action=get_vod_streams'); },
   getSeries:function(c){ return this.call(c&&c!=='fav'?'action=get_series&category_id='+c:'action=get_series'); },
   getSeriesInfo:function(id){ return this.call('action=get_series_info&series_id='+id); },
+  getVodInfo:function(id){ return this.call('action=get_vod_info&vod_id='+id); },
   liveUrl:function(s){
     if(S.isM3U&&s.url) return s.url;
     var p=this._p;

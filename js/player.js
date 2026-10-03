@@ -82,10 +82,12 @@ var Player = {
       $('buf-info').textContent='Buffering…';
     });
     this.vid.addEventListener('playing',function(){
+      Player.syncBackground();
       $('buf-overlay').classList.add('hidden');
       $('btn-pp-vod').innerHTML='&#10074;&#10074;';
     });
     this.vid.addEventListener('pause',function(){
+      Player.syncBackground();
       $('btn-pp-vod').innerHTML='&#9654;';
     });
     this.vid.addEventListener('loadedmetadata',function(){
@@ -818,8 +820,21 @@ var Player = {
   },
 
   // Wird aufgerufen, wenn die App in den Hintergrund geht (Home-Taste)
+  // ── WIEDERGABE IM HINTERGRUND (Handy, Einstellung) ────────────
+  // Die App (Android/iOS) fragt beim Verlassen nicht nach - sie bekommt den
+  // Zustand bei jeder Änderung mitgeteilt und hält den Player dann nicht an.
+  keepInBackground: function(){
+    var app = window.AndroidBridge || (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.xcp);
+    return !!(app && Settings.bgPlay && S.playerVisible && this.vid && !this.vid.paused);
+  },
+  syncBackground: function(){
+    var on = this.keepInBackground();
+    try { if(window.AndroidBridge && AndroidBridge.setBackgroundPlay) AndroidBridge.setBackgroundPlay(on); } catch(e){}
+    try { if(window.webkit && webkit.messageHandlers && webkit.messageHandlers.xcp) webkit.messageHandlers.xcp.postMessage({ cmd:'bgPlay', on:on }); } catch(e){}
+  },
   suspend:function(){
     if(!S.playerVisible||this._suspended) return;
+    if(this.keepInBackground()) return;   // Einstellung "Im Hintergrund weiterspielen"
     this._suspended=true;
     this._resumeStream=S.currentStream;
     this._resumeType=S.playerType;
@@ -866,6 +881,7 @@ var Player = {
     }
     this.destroy();
     S.playerVisible=false; S.epgOpen=false; S.chListOpen=false;
+    this.syncBackground();
     if(typeof _updateNavbarVisibility === 'function') _updateNavbarVisibility();
     
     if(S.seriesDetailOpen) {

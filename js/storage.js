@@ -6,6 +6,7 @@ var Settings = {
   compactListEpg: false,
   tileList: null,          // null = noch nie gewählt -> Standard in load()
   tileNames: false,        // Kacheln: Sendername klein unter dem Logo
+  bgPlay: false,           // Handy: Wiedergabe läuft weiter, wenn die App in den Hintergrund geht
   tileMarquee: true,       // Handy: lange Namen als Lauftext (TV: immer zweizeilig)
   compactOsd: false,
   useNetflixStyle: true,
@@ -58,6 +59,7 @@ var Settings = {
         if (d.tileList !== undefined && d.tileList !== null) this.tileList = !!d.tileList;
         this.tileNames      = !!d.tileNames;
         this.tileMarquee    = d.tileMarquee !== false;
+        this.bgPlay         = !!d.bgPlay;
       }
     }catch(e){ Logger.warn('[Settings] load error:', e); }
     // Kachel-Senderliste: Standard auf Smartphones an (außer die kompakte Liste
@@ -117,7 +119,7 @@ var Settings = {
     try{ localStorage.setItem('xcp_settings',JSON.stringify({
       splitList:this.splitList,
       compactList:this.compactList, compactListEpg:this.compactListEpg,
-      tileList:this.tileList, tileNames:this.tileNames, tileMarquee:this.tileMarquee,
+      tileList:this.tileList, tileNames:this.tileNames, tileMarquee:this.tileMarquee, bgPlay:this.bgPlay,
       compactOsd:this.compactOsd, compactOsdHints:this.compactOsdHints,
       useNetflixStyle:this.useNetflixStyle,
       groupVariants:this.groupVariants,
@@ -158,6 +160,9 @@ var Settings = {
     if(ttn) ttn.classList.toggle('on',!!this.tileNames);
     var ttm=$('toggle-tile-marquee');
     if(ttm) ttm.classList.toggle('on',!!this.tileMarquee);
+    var tbp=$('toggle-bg-play');
+    if(tbp) tbp.classList.toggle('on',!!this.bgPlay);
+    if(typeof Player !== 'undefined' && Player.syncBackground) Player.syncBackground();
     var subTl=$('sub-tileList');
     if(subTl) subTl.classList.toggle('expanded', !!this.tileList);
     var tco=$('toggle-compact-osd');

@@ -925,6 +925,9 @@ var Player = {
     var v = this.vid; if(!v) return;
     var mode = this._aspectMode();
     var lbl = $('btn-aspect-lbl'); if(lbl) lbl.textContent = 'Bild: ' + mode.label;
+    // iOS: Video läuft nativ (VLC) und hat kein Element-Rechteck - Format dorthin weiterreichen
+    if(typeof v.setAspect === 'function'){ v.setAspect(S.playerType === 'live' ? 'orig' : mode.id); return; }
+    if(!v.style) return;
     // Live bleibt wie bisher bildschirmfüllend
     if(S.playerType === 'live' || mode.id === 'stretch'){
       v.style.width = v.style.height = v.style.left = v.style.top = '';

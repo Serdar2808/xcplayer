@@ -164,7 +164,7 @@ applyUniversalScale();
       <div class="st-nav" id="st-nav-live" data-cat="live" data-focusable data-onfocus onclick="settingsNavClick('live')"><span class="st-ico">&#x1F4FA;</span><span class="st-nav-label">Live TV</span></div>
       <div class="st-nav" id="st-nav-media" data-cat="media" data-focusable data-onfocus onclick="settingsNavClick('media')"><span class="st-ico">&#x1F3AC;</span><span class="st-nav-label">Filme &amp; Serien</span></div>
       <div class="st-nav" id="st-nav-player" data-cat="player" data-focusable data-onfocus onclick="settingsNavClick('player')"><span class="st-ico">&#x25B6;&#xFE0F;</span><span class="st-nav-label">Wiedergabe</span></div>
-      <div class="st-nav" id="st-nav-playlist" data-cat="playlist" data-focusable data-onfocus onclick="settingsNavClick('playlist')"><span class="st-ico">&#x1F5C2;&#xFE0F;</span><span class="st-nav-label">Playlist</span></div>
+      <div class="st-nav" id="st-nav-playlist" data-cat="playlist" data-focusable data-onfocus onclick="settingsNavClick('playlist')"><span class="st-ico">&#x1F4C2;</span><span class="st-nav-label">Playlist</span></div>
       <div class="st-nav" id="st-nav-system" data-cat="system" data-focusable data-onfocus onclick="settingsNavClick('system')"><span class="st-ico">&#x1F464;</span><span class="st-nav-label">Konto &amp; Geräte</span></div>
       <div class="st-nav" id="st-nav-about" data-cat="about" data-focusable data-onfocus onclick="settingsNavClick('about')"><span class="st-ico">&#x2139;&#xFE0F;</span><span class="st-nav-label">Über</span></div>
     </nav>
@@ -207,6 +207,10 @@ applyUniversalScale();
             <div class="ios-row st-only-tiles" data-focusable onmouseover="setFocus(this)" onclick="toggleSetting('tileNames')">
               <div class="ios-label">Sendername unter dem Logo</div>
               <div class="ios-toggle sp-toggle" id="toggle-tile-names"><div class="sp-toggle-knob"></div></div>
+            </div>
+            <div class="ios-row st-only-tiles st-only-phone" data-focusable onmouseover="setFocus(this)" onclick="toggleSetting('tileMarquee')">
+              <div class="ios-label">Lange Namen als Lauftext</div>
+              <div class="ios-toggle sp-toggle" id="toggle-tile-marquee"><div class="sp-toggle-knob"></div></div>
             </div>
             <div class="ios-row st-only-compact" data-focusable onmouseover="setFocus(this)" onclick="toggleSetting('compactListEpg')">
               <img class="st-thumb" data-thumb="kompakt_epg" alt="">
@@ -309,7 +313,7 @@ applyUniversalScale();
                 <div class="ios-label">EPG-Zeitverschiebung</div>
                 <div class="st-sub" id="epg-shift-sub">Zeitversatz: 0 Stunden</div>
               </div>
-              <div class="ios-arrow">&#x21BB;</div>
+              <div class="ios-arrow">&#x1F504;</div>
             </div>
           </div>
         </div>
@@ -321,7 +325,7 @@ applyUniversalScale();
         <div class="st-card">
           <div class="ios-group st-rows">
             <div class="ios-row" data-focusable onmouseover="setFocus(this)" onclick="Wizard.startOptimization()">
-              <div class="ios-icon">&#x21BB;</div>
+              <div class="ios-icon">&#x1F501;</div>
               <div style="flex:1">
                 <div class="ios-label">Einrichtung wiederholen</div>
                 <div class="st-sub">Länder, Kategorien und Namen erneut per Fragen einstellen</div>
@@ -329,7 +333,7 @@ applyUniversalScale();
               <div class="ios-arrow">&#x203A;</div>
             </div>
             <div class="ios-row" data-focusable onmouseover="setFocus(this)" onclick="openPEModal()">
-              <div class="ios-icon">&#x1F6E0;&#xFE0F;</div>
+              <div class="ios-icon">&#x1F527;</div>
               <div style="flex:1">
                 <div class="ios-label">Playlist-Editor</div>
                 <div class="st-sub">Regeln, Kategorien und Sender einzeln bearbeiten</div>
@@ -525,7 +529,7 @@ applyUniversalScale();
   <div id="pe-view-rules" style="flex:1; display:flex; flex-direction:column; padding:30px 40px; gap:20px; overflow:hidden;">
     <div style="display:flex; gap:20px; flex-shrink:0;">
       <button id="pe-btn-wizard" class="btn btn-secondary" data-focusable onclick="Wizard.startOptimization()" style="flex:1; font-size:var(--fs-lg); height:70px; display:flex; align-items:center; justify-content:center; gap:12px; background:rgba(255,255,255,.05); border:1px solid var(--border);">
-        <span style="font-size:32px;">&#x21BB;</span> Einrichtung wiederholen
+        <span style="font-size:32px;">&#x1F501;</span> Einrichtung wiederholen
       </button>
       <button id="pe-btn-manual" class="btn btn-secondary" data-focusable onclick="openPEManualModal()" style="flex:1; font-size:var(--fs-lg); height:70px; display:flex; align-items:center; justify-content:center; gap:12px; background:rgba(255,255,255,.05); border:1px solid var(--border);">
         <span style="font-size:32px;">➕</span> Manuelle Regel

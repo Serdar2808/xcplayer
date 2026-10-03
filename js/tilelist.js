@@ -123,6 +123,12 @@ var LiveUi = (function () {
       '.xc-tile.has-cap .xc-tile-cap{display:block;flex-shrink:0;width:272px;max-width:272px;margin-top:8px;font-size:24px;font-weight:500;' +
         'line-height:1.2;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}' +
       'html.xc-phone .xc-tile.has-cap .xc-tile-cap{font-size:28px}' +
+      // Ohne Lauftext (TV immer, Handy per Einstellung): Name zweizeilig, feste Höhe -
+      // das Logo wird etwas kleiner, die Kachel bleibt gleich groß
+      '.xc-cap2 .xc-tile.has-cap .xc-tile-cap{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;white-space:normal;' +
+        'text-overflow:ellipsis;height:2.4em;font-size:22px;word-break:break-word}' +
+      'html.xc-phone .xc-cap2 .xc-tile.has-cap .xc-tile-cap{font-size:26px}' +
+      '.xc-cap2 .xc-tile .xc-cap-in{display:inline}' +
       '.xc-tile .xc-cap-in{display:inline-block;font:inherit;color:inherit;line-height:inherit;overflow:visible;-webkit-line-clamp:none}' +
       '.xc-tile.has-cap .xc-tile-cap.run{text-overflow:clip;text-align:left}' +
       '.xc-tile span{color:#fff;font-size:34px;font-weight:600;line-height:1.2;text-align:center;overflow:hidden;' +
@@ -279,6 +285,11 @@ var LiveUi = (function () {
     if (jumpToCurrent && curPos >= 0) scrollIntoList(tiles, tiles.children[curPos], true);
     markTiles();
     markCats();
+    // Lauftext kostet auf TVs zu viel Leistung: dort (und auf Handys ohne die
+    // Einstellung) zweizeilige Namen statt Animation
+    var marquee = document.documentElement.classList.contains('xc-phone') && Settings.tileMarquee !== false;
+    tiles.classList.toggle('xc-cap2', !marquee);
+    if (!marquee) return;
     // Lange Namen unter den Logos als Lauftext (Weite erst nach dem Layout messbar).
     // Web Animations statt CSS-Variablen in @keyframes - die kennen ältere TV-Browser nicht.
     requestAnimationFrame(function(){

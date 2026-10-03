@@ -2131,9 +2131,11 @@ html.xc-phone .cs-hint{font-size:28px}
 .st-choices{display:grid;grid-gap:20px}
 .st-choices-2{grid-template-columns:repeat(2,1fr);max-width:920px}
 .st-choices-3{grid-template-columns:repeat(3,1fr)}
-.st-choice{position:relative;display:block;width:100%;padding:12px 12px 16px;border-radius:18px;border:2px solid var(--border);
-  background:rgba(0,0,0,.2);color:var(--mid);font-family:inherit;text-align:left;cursor:pointer}
-.st-choice.selected{border-color:var(--accent2);background:rgba(var(--accent2-rgb),.08);color:var(--hi)}
+.st-choice{position:relative;display:block;width:100%;padding:12px 12px 16px;border-radius:18px;border:2px solid transparent;
+  background:transparent;color:var(--mid);font-family:inherit;text-align:left;cursor:pointer}
+.st-choice.selected{color:var(--hi)}
+/* Rahmen nur beim Fokus - die Auswahl zeigt schon das Häkchen */
+#settings-screen .st-choice.focused{border-color:var(--accent2)!important;background:rgba(255,255,255,.06)!important;color:var(--hi)!important}
 .st-choice::after{content:'';position:absolute;top:22px;right:22px;width:34px;height:34px;box-sizing:border-box;border-radius:50%;
   border:3px solid rgba(255,255,255,.55);background:rgba(0,0,0,.45);font-size:22px;font-weight:900;line-height:28px;text-align:center;color:#04202a}
 .st-choice.selected::after{content:'\2713';background:var(--accent2);border-color:var(--accent2)}
@@ -2188,3 +2190,4 @@ html.xc-phone .man-act{width:76px;height:68px;margin-left:8px;border-radius:12px
   display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
 html.xc-phone .man-act:active{background:var(--accent);color:#fff}
 html.xc-phone .man-hints,html.xc-phone .man-handle{display:none}
+html:not(.xc-phone) .st-only-phone{display:none!important}

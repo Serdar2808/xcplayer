@@ -12,7 +12,7 @@ function renderProfileScreen(){
       +'<div class="profile-name">'+esc(p.name)+'</div>'
       +'<div class="profile-host">'+esc(host)+'</div></div>';
   }
-  html+='<div class="add-profile-btn" id="cloud-sync-btn" data-focusable><span class="plus" style="font-size:36px">&#x21BB;</span><span>Cloud Sync</span></div>';
+  html+='<div class="add-profile-btn" id="cloud-sync-btn" data-focusable><span class="plus" style="font-size:36px">&#x1F504;</span><span>Cloud Sync</span></div>';
   html+='<div class="add-profile-btn" id="add-profile-btn" data-focusable><span class="plus" style="font-size:36px">+</span><span>Lokal Hinzufügen</span></div>';
   grid.innerHTML=html;
   grid.querySelectorAll('.profile-card').forEach(function(card){

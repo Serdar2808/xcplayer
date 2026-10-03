@@ -486,6 +486,13 @@ async function manSetTab(tab) {
 // vom OK-Tastendruck (über den normalen Click-Dispatch von SpatialNav.select)
 // ausgelöst — und beim Ablegen per Taste direkt aus dem Keyhandler.
 function manRowActivate(kind, id) {
+  // Handy: Antippen wählt nur aus (Vorschau/Umbenennen-Feld) - verschoben
+  // wird über die Schaltflächen in der Zeile
+  if (_manTouch()) {
+    var row = document.querySelector((kind === 'cats' ? '#man-cat-list' : '#man-stream-list') + ' [data-man-id="'+id+'"]');
+    if (row) { setFocus(row); _manAutoPreview(); }
+    return;
+  }
   if (manState.grabbed) {
     if (manState.grabbed.kind === kind && manState.grabbed.id === id) {
       manState.grabbed = null;
@@ -509,9 +516,31 @@ function manCancelGrab() {
   return true;
 }
 
+function _manTouch() { return document.documentElement.classList.contains('xc-phone'); }
+
+// Schaltflächen am Zeilenende (nur auf Handys sichtbar, ersetzen OK/GELB/GRÜN)
+function _manActs(kind, id) {
+  var a = esc(id);
+  function b(act, ico, title) {
+    return '<button class="man-act" title="'+title+'" onclick="manAct(event,\''+kind+'\',\''+a+'\',\''+act+'\')">'+ico+'</button>';
+  }
+  return '<span class="man-acts">' + b('up', '&#x25B2;', 'Nach oben') + b('down', '&#x25BC;', 'Nach unten')
+       + b('vis', '&#x1F441;', 'Aus-/Einblenden') + b('ren', '&#x270E;', 'Umbenennen') + '</span>';
+}
+
+function manAct(e, kind, id, act) {
+  if (e) { e.preventDefault(); e.stopPropagation(); }
+  if (act === 'up' || act === 'down') { manMoveItem(kind, id, act === 'up' ? -1 : 1); return; }
+  if (act === 'vis') { if (kind === 'cats') manToggleSingleCatVisibility(id); else manToggleSingleStreamVisibility(id); return; }
+  if (act === 'ren') { if (kind === 'cats') manEditCat(id); else manEditStream(id); }
+}
+
 function manMoveGrabbed(dir) {
   if (!manState.grabbed) return;
-  var kind = manState.grabbed.kind, id = manState.grabbed.id;
+  manMoveItem(manState.grabbed.kind, manState.grabbed.id, dir);
+}
+
+function manMoveItem(kind, id, dir) {
   var arr = kind === 'cats' ? peDraftOrders.cats[manState.tab] : (manState.catId ? peDraftOrders.streams[manState.catId] : null);
   if (!arr) return;
   var idx = arr.indexOf(id);
@@ -519,7 +548,7 @@ function manMoveGrabbed(dir) {
   if (idx === -1 || newIdx < 0 || newIdx >= arr.length) return;
   var tmp = arr[idx]; arr[idx] = arr[newIdx]; arr[newIdx] = tmp;
   if (kind === 'cats') renderManCats(); else renderManStreams();
-  SpatialNav.focusBySelector('[data-man-id="'+id+'"]');
+  SpatialNav.focusBySelector((kind === 'cats' ? '#man-cat-list' : '#man-stream-list') + ' [data-man-id="'+id+'"]');
 }
 
 function manToggleSingleCatVisibility(cid) {
@@ -598,6 +627,7 @@ function renderManCats() {
             + 'data-focusable data-man-id="'+esc(cid)+'" onclick="manRowActivate(\'cats\',\''+cid+'\')">'
             + '<span class="man-handle">&#x2261;</span>'
             + '<span class="man-row-name">'+esc(cname)+'</span>'
+            + _manActs('cats', cid)
             + '</div>';
   }
   $('man-cat-list').innerHTML = html || '<div class="empty-s">Keine Einträge</div>';
@@ -653,6 +683,7 @@ function renderManStreams() {
             + 'data-focusable data-man-id="'+esc(sid)+'" onclick="manRowActivate(\'streams\',\''+sid+'\')">'
             + '<span class="man-handle">&#x2261;</span>'
             + '<span class="man-row-name">'+esc(sname)+'</span>'
+            + _manActs('streams', sid)
             + '</div>';
   }
   $('man-stream-list').innerHTML = html || '<div class="empty-s">Keine Einträge</div>';

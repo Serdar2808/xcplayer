@@ -58,7 +58,7 @@ var LiveUi = (function () {
       '.xc-center .xc-lb{margin:0 75px}' +
       '#xc-live-ui.compact .xc-center .xc-lb{margin:0 40px}' +
       '.xc-center .xc-lb{width:180px;height:180px}.xc-center svg{width:92px;height:92px}' +
-      '.xc-center .xc-pp{width:220px;height:220px;background:rgba(59,130,246,.8)}.xc-center .xc-pp svg{width:110px;height:110px}' +
+      '.xc-center .xc-pp{width:220px;height:220px;background:rgba(var(--accent-rgb),.8)}.xc-center .xc-pp svg{width:110px;height:110px}' +
       // Cyan Fokus-Linien oben/unten wie in Senderliste und Filme/Serien.
       // Touch: markiert den laufenden Sender; Fernbedienung: den Fokus.
       '.xc-line{position:relative}' +
@@ -79,7 +79,7 @@ var LiveUi = (function () {
       '.xc-var{border:none;border-radius:0;background:transparent;color:rgba(255,255,255,.75);text-align:left;font-family:inherit;' +
         'font-size:36px;padding:0 30px;min-height:92px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;flex-shrink:0}' +
       '.xc-var.cur{color:#fff;font-weight:600}' +
-      '#xc-live-ui:not(.tv) .xc-var.cur,.xc-var.foc{background:rgba(59,130,246,.14);color:#fff}' +
+      '#xc-live-ui:not(.tv) .xc-var.cur,.xc-var.foc{background:rgba(var(--accent-rgb),.14);color:#fff}' +
       // Smartphone mit Kacheln: Duplikate zugeklappt als Griff am rechten Rand, Antippen klappt auf
       '.xc-var-handle{display:none;position:absolute;right:0;top:50%;transform:translateY(-50%);width:64px;height:340px;border:none;' +
         'border-radius:26px 0 0 26px;background:var(--accent);color:#fff;padding:0;cursor:pointer;flex-direction:column;' +
@@ -109,7 +109,7 @@ var LiveUi = (function () {
         'font-size:34px;padding:14px 26px;white-space:nowrap;cursor:pointer}' +
       '.xc-cat.cur{color:#fff;font-weight:700}' +
       '.xc-cat::before{display:none}' +
-      '.xc-cat.foc{background:rgba(59,130,246,.14);border-radius:10px}' +
+      '.xc-cat.foc{background:rgba(var(--accent-rgb),.14);border-radius:10px}' +
       '.xc-tiles{padding-top:12px;padding-bottom:12px}.xc-tile{margin-right:20px}' +
       '.xc-tile{flex-shrink:0;width:300px;height:170px;border-radius:16px;border:none;transition:transform .12s;' +
         'background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;padding:14px;cursor:pointer;overflow:hidden}' +
@@ -127,9 +127,9 @@ var LiveUi = (function () {
       '.xc-tile.has-cap .xc-tile-cap.run{text-overflow:clip;text-align:left}' +
       '.xc-tile span{color:#fff;font-size:34px;font-weight:600;line-height:1.2;text-align:center;overflow:hidden;' +
         'display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;pointer-events:none}' +
-      '#xc-live-ui:not(.tv) .xc-tile.cur{background:rgba(59,130,246,.2);box-shadow:0 0 30px var(--glow)}' +
+      '#xc-live-ui:not(.tv) .xc-tile.cur{background:rgba(var(--accent-rgb),.2);box-shadow:0 0 30px var(--glow)}' +
       '#xc-live-ui.tv .xc-tile.cur{background:rgba(255,255,255,.18)}' +
-      '.xc-tile.foc{background:rgba(59,130,246,.22);box-shadow:0 0 30px var(--glow);transform:scale(1.06)}' +
+      '.xc-tile.foc{background:rgba(var(--accent-rgb),.22);box-shadow:0 0 30px var(--glow);transform:scale(1.06)}' +
       '.xc-listbtn{position:absolute;left:50%;bottom:60px;transform:translateX(-50%);border:none;border-radius:60px;' +
         'background:rgba(0,0,0,.55);color:#fff;font-size:40px;padding:26px 50px;display:flex;align-items:center}' +
       '.xc-listbtn svg{width:52px;height:52px;margin-right:20px}' +

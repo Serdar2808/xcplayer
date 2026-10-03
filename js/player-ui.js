@@ -106,6 +106,7 @@ document.getElementById('ctrl-vod-container').innerHTML = `
       <div style="display:flex; gap:16px; justify-content:center;">
         <button class="pbtn" id="btn-audio" onclick="Player.toggleAudio()" data-focusable><span class="ico-w">&#x1F50A;</span> Audiospur</button>
         <button class="pbtn" id="btn-sub" onclick="Player.toggleSubtitles()" data-focusable><span class="ico-w">&#x1F4AC;</span> Untertitel</button>
+        <button class="pbtn" id="btn-aspect" onclick="Player.cycleAspect()" data-focusable><span class="ico-w">&#x25AD;</span> <span id="btn-aspect-lbl">Bild: Original</span></button>
       </div>
     </div>
   </div>

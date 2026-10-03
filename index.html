@@ -176,9 +176,12 @@ applyUniversalScale();
         <h2 class="st-h">Aussehen</h2>
         <div class="st-card">
           <div class="st-card-title">Design</div>
-          <div class="st-choices st-choices-2">
-            <button class="st-choice" data-group="theme" data-val="dark" data-focusable onclick="setChoice('theme','dark')"><span class="st-swatch st-swatch-dark"></span><span class="st-choice-name">Dunkel</span></button>
-            <button class="st-choice" data-group="theme" data-val="light" data-focusable onclick="setChoice('theme','light')"><span class="st-swatch st-swatch-light"></span><span class="st-choice-name">Hell</span></button>
+          <div class="st-choices st-choices-3">
+            <button class="st-choice" data-group="theme" data-val="dark" data-focusable onclick="setChoice('theme','dark')"><span class="st-swatch st-swatch-dark"></span><span class="st-choice-name">Standard</span></button>
+            <button class="st-choice" data-group="theme" data-val="oled" data-focusable onclick="setChoice('theme','oled')"><span class="st-swatch st-swatch-oled"></span><span class="st-choice-name">OLED Schwarz &amp; Gold</span></button>
+            <button class="st-choice" data-group="theme" data-val="aurora" data-focusable onclick="setChoice('theme','aurora')"><span class="st-swatch st-swatch-aurora"></span><span class="st-choice-name">Aurora Violett</span></button>
+            <button class="st-choice" data-group="theme" data-val="emerald" data-focusable onclick="setChoice('theme','emerald')"><span class="st-swatch st-swatch-emerald"></span><span class="st-choice-name">Smaragd</span></button>
+            <button class="st-choice" data-group="theme" data-val="light" data-focusable onclick="setChoice('theme','light')"><span class="st-swatch st-swatch-light"></span><span class="st-choice-name">Warmes Hell</span></button>
           </div>
         </div>
         <div class="st-card">
@@ -400,7 +403,7 @@ applyUniversalScale();
   <div class="sys-header">XC Player Beta</div>
   <div class="sys-item" data-focusable id="sys-search" onclick="navTabClick('search')">
     <div class="sys-icon">&#x1F50D;</div><div class="sys-label">Suchen</div><div class="sys-spacer"></div>
-    <div class="sys-dot" style="width:10px;height:10px;border-radius:50%;background:#3b82f6;box-shadow:0 0 8px rgba(59,130,246,.7)"></div>
+    <div class="sys-dot" style="width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px rgba(var(--accent-rgb),.7)"></div>
   </div>
   <div class="sys-item active" data-focusable id="sys-live" onclick="navTabClick('live')">
     <div class="sys-icon">&#x1F4FA;</div><div class="sys-label">Live TV</div>
@@ -507,7 +510,7 @@ applyUniversalScale();
 </div>
 
 <!-- PLAYLIST EDITOR MODAL -->
-<div id="pe-modal" class="hidden screen" style="background:rgba(7,9,15,0.85); backdrop-filter:blur(16px); z-index:2300; display:flex; flex-direction:column;">
+<div id="pe-modal" class="hidden screen" style="background:rgba(var(--bg-rgb),0.85); backdrop-filter:blur(16px); z-index:2300; display:flex; flex-direction:column;">
   <div style="height:80px; padding:0 40px; display:flex; align-items:center; border-bottom:1px solid var(--border); background:transparent;">
     <div style="font-family:'Sora',sans-serif; font-size:var(--fs-xl); font-weight:700; color:var(--hi);">Playlist Editor</div>
     <div class="pmodal-tabs" style="margin:0 0 0 50px;">
@@ -655,7 +658,7 @@ applyUniversalScale();
 
 <!-- BENUTZERDEFINIERTES BESTÄTIGUNGS-MODAL -->
 <div id="confirm-modal" class="hidden" style="position:fixed;top:0;left:0;right:0;bottom:0;width:1920px;height:1080px;background:rgba(0,0,0,.85);z-index:9000;display:flex;align-items:center;justify-content:center">
-  <div style="width:520px;background:rgba(15,21,35,0.85);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:22px;padding:40px;box-shadow:0 40px 80px rgba(0,0,0,.7)">
+  <div style="width:520px;background:rgba(var(--card-rgb),0.85);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:22px;padding:40px;box-shadow:0 40px 80px rgba(0,0,0,.7)">
     <div id="confirm-title" style="font-family:'Sora',sans-serif;font-size:var(--fs-xl);font-weight:700;color:var(--hi);margin-bottom:14px"></div>
     <div id="confirm-msg" style="font-size:var(--fs-md);color:var(--mid);margin-bottom:30px;line-height:1.5"></div>
     <div style="display:flex;gap:14px">

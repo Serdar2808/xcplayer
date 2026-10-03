@@ -91,7 +91,10 @@ var Player = {
     this.vid.addEventListener('loadedmetadata',function(){
       var w=Player.vid.videoWidth,h=Player.vid.videoHeight;
       if(w&&h) Player._updateBadges();
+      Player.applyAspect();
     });
+    // Auflösungswechsel im laufenden Stream
+    this.vid.addEventListener('resize',function(){ Player.applyAspect(); });
     this.vid.addEventListener('timeupdate',function(){
       if(_seek.active) return; // WICHTIG: Überschreibe die Leiste nicht, wenn gespult wird
       if(S.playerType === 'catchup' && S.currentStream && S.currentStream.cu_durationMin) {
@@ -357,6 +360,7 @@ var Player = {
     this.destroy();
     S._bingeTriggered = false;
     S.currentStream=stream; S.playerType=type||S.tab;
+    this.applyAspect();
     if(type==='live') buildVariants(stream);
     closeVariantBar();
     this._bitrate = 0; // Bitrate für neuen Stream zurücksetzen
@@ -884,6 +888,56 @@ var Player = {
       // Fallback für Live/Unbekannt — Systemmenü öffnen
       openSysSidebar();
     }
+  },
+  // ── SEITENVERHÄLTNIS (Filme/Serien) ───────────────────────────
+  // Über Größe/Lage des Video-Elements statt object-fit: die Videoebene der
+  // TVs folgt dem Element-Rechteck zuverlässig
+  ASPECTS: [
+    { id:'orig',    label:'Original' },
+    { id:'16:9',    label:'16:9',  r:16/9 },
+    { id:'4:3',     label:'4:3',   r:4/3 },
+    { id:'16:10',   label:'16:10', r:16/10 },
+    { id:'21:9',    label:'21:9',  r:21/9 },
+    { id:'fill',    label:'Füllen' },
+    { id:'stretch', label:'Strecken' }
+  ],
+  _aspect: null,
+  _aspectMode: function(){
+    if(this._aspect === null){
+      var id = 'orig';
+      try { id = localStorage.getItem('xcp_vod_aspect') || 'orig'; } catch(e){}
+      this._aspect = 'orig';
+      for(var i = 0; i < this.ASPECTS.length; i++) if(this.ASPECTS[i].id === id) this._aspect = id;
+    }
+    for(var j = 0; j < this.ASPECTS.length; j++) if(this.ASPECTS[j].id === this._aspect) return this.ASPECTS[j];
+    return this.ASPECTS[0];
+  },
+  cycleAspect: function(){
+    var cur = this._aspectMode(), idx = this.ASPECTS.indexOf(cur);
+    var next = this.ASPECTS[(idx + 1) % this.ASPECTS.length];
+    this._aspect = next.id;
+    try { localStorage.setItem('xcp_vod_aspect', next.id); } catch(e){}
+    this.applyAspect();
+    showToast('Bildformat: ' + next.label, 1500);
+    this.showControls();
+  },
+  applyAspect: function(){
+    var v = this.vid; if(!v) return;
+    var mode = this._aspectMode();
+    var lbl = $('btn-aspect-lbl'); if(lbl) lbl.textContent = 'Bild: ' + mode.label;
+    // Live bleibt wie bisher bildschirmfüllend
+    if(S.playerType === 'live' || mode.id === 'stretch'){
+      v.style.width = v.style.height = v.style.left = v.style.top = '';
+      return;
+    }
+    var ps = $('player-screen'), W = ps.clientWidth || 1920, H = ps.clientHeight || 1080;
+    var src = (v.videoWidth && v.videoHeight) ? v.videoWidth / v.videoHeight : W / H;
+    var r = mode.r || src, w, h;
+    // Füllen: Fläche ganz bedecken (Ränder abgeschnitten), sonst einpassen
+    if(mode.id === 'fill' ? r < W / H : r > W / H){ w = W; h = W / r; }
+    else { h = H; w = H * r; }
+    v.style.width = Math.round(w) + 'px'; v.style.height = Math.round(h) + 'px';
+    v.style.left = Math.round((W - w) / 2) + 'px'; v.style.top = Math.round((H - h) / 2) + 'px';
   },
   togglePP:function(){ this.vid.paused?this.vid.play().catch(function(){}):this.vid.pause(); },
 

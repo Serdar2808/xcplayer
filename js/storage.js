@@ -1,4 +1,5 @@
 // ── EINSTELLUNGEN ────────────────────────────────────────────────
+var THEMES = ['dark', 'oled', 'aurora', 'emerald', 'light'];
 var Settings = {
   splitList: false,
   compactList: false,
@@ -16,6 +17,7 @@ var Settings = {
   liveHls: false,
   extendedEpg: false,
   lightTheme: false,
+  theme: 'dark',           // dark | oled | aurora | emerald | light (Warmes Hell)
   useSidebar: false,
   showVod: true,
   showSeries: true,
@@ -46,7 +48,9 @@ var Settings = {
         this.liveHls        = !!d.liveHls;
         this.extendedEpg    = !!d.extendedEpg;
         this.useSidebar     = !!d.useSidebar;
-        this.lightTheme     = !!d.lightTheme;
+        // früher nur Hell/Dunkel: altes "Hell" wird zum neuen Warmes Hell
+        this.theme          = THEMES.indexOf(d.theme) !== -1 ? d.theme : (d.lightTheme ? 'light' : 'dark');
+        this.lightTheme     = this.theme === 'light';
         this.showVod        = d.showVod !== false;
         this.showSeries     = d.showSeries !== false;
         this.epgShift       = d.epgShift !== undefined ? parseInt(d.epgShift) : 0;
@@ -119,7 +123,7 @@ var Settings = {
       startFirstChannel:this.startFirstChannel,
       nativePlayer:this.nativePlayer,
       liveHls:this.liveHls,
-      extendedEpg:this.extendedEpg, lightTheme:this.lightTheme,
+      extendedEpg:this.extendedEpg, lightTheme:this.lightTheme, theme:this.theme,
       useSidebar:this.useSidebar,
       showVod: this.showVod,
       showSeries: this.showSeries,
@@ -180,7 +184,8 @@ var Settings = {
     if(tee) tee.classList.toggle('on',this.extendedEpg);
     var tlt=$('toggle-light-theme');
     if(tlt) tlt.classList.toggle('on',this.lightTheme);
-    document.documentElement.classList.toggle('theme-light', this.lightTheme);
+    var root = document.documentElement, th = this.theme;
+    THEMES.forEach(function(t){ root.classList.toggle('theme-' + t, t === th && t !== 'dark'); });
     document.body.classList.toggle('use-sidebar', this.useSidebar);
     var tus=$('toggle-use-sidebar');
     if(tus) tus.classList.toggle('on',this.useSidebar);

@@ -97,7 +97,8 @@ function renderVirtualGrid(){
     var row=Math.floor(i/m.cols), col=i%m.cols;
     
     // Position per GPU-Beschleunigung setzen (beseitigt Layout-Thrashing beim Scrollen)
-    el.style.cssText='position:absolute;cursor:pointer;width:'+m.w+'px;height:'+m.h+'px;transform:translate3d('+(col*m.tw)+'px,'+(row*m.th)+'px,0);display:block';
+    // Position über Variablen: die Fokus-Regel (scale) überschreibt sonst das transform
+    el.style.cssText='position:absolute;cursor:pointer;width:'+m.w+'px;height:'+m.h+'px;--gx:'+(col*m.tw)+'px;--gy:'+(row*m.th)+'px;display:block';
     el.id='gwrap-'+i;
     el.setAttribute('data-idx', i);
     el.className='grid-item-wrap'+(i===S.cursors.grid && S.focusArea === 'grid'?' card-focused':'');

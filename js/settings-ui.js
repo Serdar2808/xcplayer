@@ -91,7 +91,7 @@ document.addEventListener('xcfocus', function(e){
 
 // ── Auswahl-Karten statt sich ausschließender Schalter ───────────
 function _settingsChoiceValue(group) {
-  if(group === 'theme') return Settings.lightTheme ? 'light' : 'dark';
+  if(group === 'theme') return Settings.theme;
   if(group === 'nav') return Settings.useSidebar ? 'sidebar' : 'tabs';
   if(group === 'list') return Settings.tileList ? 'tiles' : (Settings.compactList ? 'compact' : 'normal');
   if(group === 'osd') return Settings.compactOsd ? 'compact' : 'normal';
@@ -104,7 +104,7 @@ function setChoice(group, val) {
     if(val === 'tiles' && !Settings.tileList) toggleSetting('tileList');
     else if(val === 'compact' && !Settings.compactList) toggleSetting('compactList');
     else if(val === 'normal') { if(Settings.tileList) toggleSetting('tileList'); if(Settings.compactList) toggleSetting('compactList'); }
-  } else if(group === 'theme') { if(Settings.lightTheme !== (val === 'light')) toggleSetting('lightTheme'); }
+  } else if(group === 'theme') { Settings.theme = val; Settings.lightTheme = val === 'light'; Settings.save(); Settings._apply(); }
   else if(group === 'nav') { if(Settings.useSidebar !== (val === 'sidebar')) toggleSetting('useSidebar'); }
   else if(group === 'osd') { if(!!Settings.compactOsd !== (val === 'compact')) toggleSetting('compactOsd'); }
   else if(group === 'media') { if((Settings.useNetflixStyle !== false) !== (val === 'netflix')) toggleSetting('useNetflixStyle'); }

@@ -2060,6 +2060,11 @@ html.xc-phone .cs-info .nf-info-meta{font-size:34px}
 html.xc-phone .cs-plot{font-size:32px}
 html.xc-phone .cs-hint{font-size:28px}
 .cs-prog.cs-prog-none{visibility:hidden}
+/* Weiterschauen: keine cyan Linie unten am Fokus (stört den Balken), und der
+   Balken liegt über dem dunklen Schatten der fokussierten Karte - sonst wirkt
+   er dort dunkler als bei den anderen */
+.nf-card.cs-card.nf-focused::after{display:none}
+.cs-prog{position:relative;z-index:21}
 
 /* ── EINSTELLUNGEN: Bereichsleiste links, Inhalt als Karten rechts ──────────
    Ohne Flex in Buttons mit %-Breiten und ohne flex-gap (webOS 5 / Chrome 68). */

@@ -261,6 +261,59 @@ function selectCat(id,el){
     setTimeout(function(){ SpatialNav.focusBySelector('#gwrap-0') || SpatialNav.focusBySelector('.grid-item-wrap'); }, 50);
   });
 }
+
+function _streamIndex(arr, s){
+  var i = arr.indexOf(s);
+  if(i !== -1) return i;
+  var key = S.tab === 'series' ? 'series_id' : 'stream_id';
+  for(i = 0; i < arr.length; i++) if(arr[i] && String(arr[i][key]) === String(s[key])) return i;
+  return -1;
+}
+
+// Nach einer Suche: Filme/Serien im Hintergrund auf die Kategorie des Treffers
+// stellen und ihn fokussieren - "Zurück" aus Player bzw. Serie landet dann dort
+async function showInCategory(s){
+  var tab = S.tab;
+  if(tab !== 'vod' && tab !== 'series') return;
+  if(S.screen !== 'main'){
+    if(S.playerVisible) return;
+    S._navTabHold = false;
+    await launchTab(tab);
+  }
+  var cid = s.category_id != null ? String(s.category_id) : '';
+  if(document.body.classList.contains('nf-active')){
+    var r = -1, c = -1;
+    // Erst die echte Kategorie, die Favoriten-Reihe nur als Notlösung
+    for(var pass = 0; pass < 2 && r === -1; pass++){
+      for(var i = 0; i < NF.data.length; i++){
+        var id = String(NF.data[i].cat.category_id);
+        if(pass === 0 ? (id === 'fav' || id !== cid) : id !== 'fav') continue;
+        c = _streamIndex(NF.data[i].streams, s);
+        if(c !== -1){ r = i; break; }
+      }
+    }
+    if(r === -1) return;
+    if(c >= NF.MAX_PER_ROW) NF.data[r].limit = c + 1;   // Reihe zeigt sonst nur die ersten 50
+    NF._rowPos[r] = c;
+    NF._goRow(r, true);
+    NF.stopTrailer();
+    S.focusArea = 'netflix';
+  } else {
+    var items = document.querySelectorAll('.cat-item'), catEl = null;
+    for(var j = 0; j < items.length; j++){
+      if(items[j].getAttribute('data-id') === cid){ catEl = items[j]; S.cursors.cat = j; break; }
+    }
+    if(!catEl){ catEl = $('cat-1'); cid = ''; S.cursors.cat = 0; }
+    for(var k = 0; k < items.length; k++) items[k].classList.remove('active');
+    if(catEl){ catEl.classList.add('active'); catEl.scrollIntoView({ block:'nearest' }); }
+    S.selectedCat = cid || null;
+    $('search-input').value = '';
+    await loadStreams(S.selectedCat);
+    S.cursors.grid = Math.max(0, _streamIndex(S.filteredStreams, s));
+    S.focusArea = 'grid';
+    ensureCursorInView(); renderVirtualGrid();
+  }
+}
 var _searchTimer = null;
 var _gridSearchId = 0;
 $('search-input').addEventListener('input',function(){

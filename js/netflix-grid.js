@@ -178,7 +178,7 @@ var NF = {
     var inner = $('nf-inner-'+r); if(!inner) return;
     var spL = $('nf-sp-l-'+r), spR = $('nf-sp-r-'+r);
     var row = NF.data[r]; if(!row) return;
-    var total = Math.min(row.streams.length, NF.MAX_PER_ROW);
+    var total = Math.min(row.streams.length, row.limit || NF.MAX_PER_ROW);
 
     var windowStart = Math.max(0, focusCol - 2);
     var windowEnd = Math.min(total - 1, windowStart + NF.WINDOW_SIZE - 1);
@@ -481,7 +481,7 @@ var NF = {
   _goRow: function(nr, jump) {
     NF._rowPos[NF.rowIdx]=NF.colIdx;
     var nc=(NF._rowPos[nr]!==undefined)?NF._rowPos[nr]:0;
-    var maxC = Math.min(NF.data[nr].streams.length, NF.MAX_PER_ROW)-1;
+    var maxC = Math.min(NF.data[nr].streams.length, NF.data[nr].limit || NF.MAX_PER_ROW)-1;
     nc = Math.min(nc, maxC);
     var oldRow = NF.rowIdx;
     NF.rowIdx = nr; NF.colIdx = nc;
@@ -538,7 +538,7 @@ var NF = {
     }
   },
   moveRight: function(){
-    var maxC = Math.min(NF.data[NF.rowIdx].streams.length, NF.MAX_PER_ROW)-1;
+    var maxC = Math.min(NF.data[NF.rowIdx].streams.length, NF.data[NF.rowIdx].limit || NF.MAX_PER_ROW)-1;
     if(NF.colIdx<maxC){
       NF.colIdx++;
       NF._updateRowWindow(NF.rowIdx, NF.colIdx, true);

@@ -25,11 +25,12 @@ var NFSearch = {
     setTimeout(function(){ inp.focus(); }, 50);
   },
 
-  close: function(){
+  close: function(keepFocus){
     var ov=$('nf-search-overlay'), inp=$('search-input-nf');
     if(ov) ov.classList.add('hidden');
     if(inp){ inp.blur(); inp.classList.remove('nfs-active'); }
     NFSearch.mode='input';
+    if(keepFocus){ S.prevFocusForSearch = null; return; }   // Aufrufer setzt den Fokus selbst
     // Zurück in den richtigen Zustand abhängig vom aktuellen Bildschirm
     if(S.prevFocusForSearch === 'nav-tabs' || S.prevFocusForSearch === 'sys-sidebar' || S.prevFocusForSearch === 'topbar'){
       if (typeof Settings !== 'undefined' && Settings.useSidebar) {
@@ -164,9 +165,18 @@ var NFSearch = {
     }
   },
 
-  select: function(){
+  select: async function(){
     var s = NFSearch.results[NFSearch.focusedIdx]; if(!s) return;
-    NFSearch.close();
+    NFSearch.close(true);
+    // Menü (Top-Leiste bzw. Seitenleiste) schließen statt dorthin zurückzukehren
+    S.sysMenuOpen = false; S._navTabHold = false;
+    if(typeof _navTabClearFocus === 'function') _navTabClearFocus();
+    var ov=$('sys-overlay'), sb=$('sys-sidebar');
+    if(ov) ov.classList.remove('show');
+    if(sb) sb.classList.remove('open');
+    if(typeof _updateNavbarVisibility === 'function') _updateNavbarVisibility();
+    // Ansicht dahinter auf die Kategorie des Treffers stellen ("Zurück" landet dort)
+    try { await showInCategory(s); } catch(e){ Logger.warn('[NFSearch] showInCategory:', e.message); }
     if(S.tab==='series') openSeries(s);
     else { S.currentStreamIdx = NFSearch.focusedIdx; Player.play(API.streamUrl(s), s, S.tab); }
   },

@@ -371,7 +371,7 @@ window.addEventListener('keydown', function(e) {
       if(S.focusArea==='nav-tabs' || S.focusArea==='nf-search' || S.focusArea==='live-search' || S.screen === 'settings'){ } 
       else {
       if(!S.sysMenuOpen && k!==KEYS.BACK && k!==KEYS.BACK2 && k!==KEYS.ESC && k!==KEYS.BKSP) Player.showControls();
-      if(typeof ZapHistory !== 'undefined' && ZapHistory._osdOpen){ if(k===38){ e.preventDefault(); ZapHistory.moveUp(); return; } if(k===40){ e.preventDefault(); ZapHistory.moveDown(); return; } if(k===13){ e.preventDefault(); ZapHistory.select(); return; } if(k===KEYS.BACK||k===KEYS.BACK2||k===KEYS.ESC){ e.preventDefault(); ZapHistory.hideOsd(); return; } }
+      if(typeof ZapHistory !== 'undefined' && ZapHistory._osdOpen){ if(k===38){ e.preventDefault(); ZapHistory.moveUp(); return; } if(k===40){ e.preventDefault(); ZapHistory.moveDown(); return; } if(k===13){ e.preventDefault(); ZapHistory.select(); return; } if(k===48||k===96){ e.preventDefault(); ZapHistory.open(); return; } if(k===KEYS.BACK||k===KEYS.BACK2||k===KEYS.ESC){ e.preventDefault(); S._backConsumed = true; ZapHistory.hideOsd(); return; } }
       if(typeof BingeMode !== 'undefined' && BingeMode._active){ if(k===37||k===39){ e.preventDefault(); var focused = SpatialNav.focused; if(!focused || focused.id==='binge-skip') SpatialNav.focusBySelector('#binge-stop'); else SpatialNav.focusBySelector('#binge-skip'); return; } if(k===13){ e.preventDefault(); var bf = SpatialNav.focused; if(bf && bf.id==='binge-stop') bingeStop(); else bingeSkipNow(); return; } if(k===KEYS.BACK||k===KEYS.BACK2){ e.preventDefault(); bingeStop(); return; } if(!SpatialNav.focused || (!SpatialNav.focused.closest('#binge-bar'))){ SpatialNav.focusBySelector('#binge-skip'); } }
       if(k===KEYS.PLAY||k===KEYS.PAUSE){ e.preventDefault(); Player.togglePP(); return; }
       if(k===412){ e.preventDefault(); if(S.playerType!=='live') progressiveSeek(-1); return; }
@@ -387,7 +387,7 @@ window.addEventListener('keydown', function(e) {
       if(k===KEYS.YELLOW||k===89){ e.preventDefault(); if(S.playerType==='live') Player.toggleEpg(); return; }
       if(k===KEYS.GREEN||k===71){ e.preventDefault(); Player.toggleSubtitles(); return; }
       if(k===KEYS.BLUE||k===66){ e.preventDefault(); if(typeof openContextSearch === 'function') openContextSearch(); else if (typeof NFSearch !== 'undefined') NFSearch.open(); return; }
-      if(k===48||k===96){ e.preventDefault(); if(typeof ZapHistory !== 'undefined') ZapHistory.goBack(); return; }
+      if(k===48||k===96){ e.preventDefault(); if(typeof ZapHistory !== 'undefined') ZapHistory.open(); return; }
       if((k>=49&&k<=57)||(k>=97&&k<=105)){ e.preventDefault(); handleChNum(k>=96?k-96:k-48); return; }
       return;
       }

@@ -324,6 +324,10 @@ var LiveUi = (function () {
   }
 
   function restartTimer() {
+    // Schon geschlossen (z.B. Kachel gewählt): sonst würde hier die Ausblendzeit des
+    // OSD gelöscht, die Player.play gerade für den neuen Sender gesetzt hat - dann
+    // blieb das OSD dauerhaft stehen
+    if (!st.open) return;
     clearTimeout(timer);
     clearTimeout(S.controlsTimer);              // OSD bleibt so lange stehen wie die Bedienung
     if (compactOpen()) {                        // Kompakte Liste: deren eigene Auto-Schließzeit gilt
@@ -449,7 +453,8 @@ var LiveUi = (function () {
     if (wasCompact && S.chListOpen) Player.toggleChList();
     document.documentElement.classList.remove('xc-liveui-compact');
     st.list = null;
-    if (keepOsd) return;
+    // OSD bleibt stehen, braucht aber wieder seine eigene Ausblendzeit (restartTimer hatte sie gelöscht)
+    if (keepOsd) { if (!blocked() && typeof Player !== 'undefined') Player.showControls(); return; }
     clearTimeout(S.controlsTimer);
     var osd = $('live-osd');
     if (osd) osd.classList.add('fade');         // bei Senderwechsel blendet Player.play sie gleich wieder ein
@@ -506,14 +511,15 @@ var LiveUi = (function () {
     if (k === 13) { playTile(st.tileFoc); return true; }
     return false;
   }
-  // Vorerst links/rechts wie bei der alten waagerechten Leiste: links = oberer, rechts = unterer Eintrag
+  // Senkrechte Liste: hoch/runter wählt, links/rechts (womit sie geöffnet wurde) schließt sie wieder
   function dupsKey(k) {
     var n = (S.variants || []).length;
-    if (k === 37 || k === 39) {
-      st.dupFoc = Math.max(0, Math.min(n - 1, st.dupFoc + (k === 39 ? 1 : -1)));
+    if (k === 38 || k === 40) {
+      st.dupFoc = Math.max(0, Math.min(n - 1, st.dupFoc + (k === 40 ? 1 : -1)));
       renderVariants(true);
       return true;
     }
+    if (k === 37 || k === 39) { hide(); return true; }
     if (k === 13) { playVariant(st.dupFoc); return true; }
     return false;
   }

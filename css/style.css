@@ -16,7 +16,7 @@
 html.theme-light{
   --bg:#f4f1ea;--bg2:#e8e2d4;--bg-card:#fffdf8;--bg-hover:#efe6d3;
   --accent:#d9480f;--accent2:#f08c00;--glow:rgba(217,72,15,.25);
-  --accent-rgb:217,72,15;--accent2-rgb:240,140,0;--lpanel-rgb:247,244,237;
+  --accent-rgb:217,72,15;--accent2-rgb:240,140,0;--lpanel-rgb:247,244,237;--bg-rgb:244,241,234;
   --hi:#1c1a17;--mid:#4a4339;--lo:#8a8173;
   --border:rgba(28,26,23,.12);--red:#dc2626;--green:#16a34a;--yellow:#d97706;
 }
@@ -1255,7 +1255,9 @@ html.theme-light .epg-item:hover, html.theme-light .epg-item.focused{background:
 
 /* ── ZAPPING HISTORIE OSD ───────────────────────────────── */
 #zap-history-osd{position:fixed;top:50%;right:60px;transform:translateY(-50%);z-index:1100;background:rgba(var(--panel-rgb),0.85);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:14px;padding:16px;width:320px;opacity:0;pointer-events:none;transition:opacity .2s ease}
-#zap-history-osd.show{opacity:1}
+#zap-history-osd.show{opacity:1;pointer-events:auto}
+.zh-item{cursor:pointer}
+.zh-now{flex-shrink:0;font-size:16px;color:var(--lo);text-transform:uppercase;letter-spacing:1px}
 .zh-title{font-size:var(--fs-xs);color:var(--lo);text-transform:uppercase;letter-spacing:2px;margin-bottom:12px}
 .zh-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;margin-bottom:4px;transition:background .1s}
 .zh-item.zh-current{background:rgba(var(--accent-rgb),.15);border-left:3px solid var(--accent)}
@@ -1547,18 +1549,14 @@ body.nf-active #nf-search-bar { display:none !important; }
   position:absolute;
   left:0; top:0; bottom:0;
   width:120px;
+  /* Hintergrundfarbe des Themes - fest eingetragenes Schwarz endete in den anderen
+     Themes als dunkler Block unter den Postern */
   background:linear-gradient(90deg,
-    rgba(10,10,10,0.92) 0%,
-    rgba(10,10,10,0.55) 60%,
-    rgba(10,10,10,0) 100%);
+    rgba(var(--bg-rgb),0.92) 0%,
+    rgba(var(--bg-rgb),0.55) 60%,
+    rgba(var(--bg-rgb),0) 100%);
   z-index:5;
   pointer-events:none;
-}
-html.theme-light .nf-row-track::before {
-  background:linear-gradient(90deg,
-    rgba(255,255,255,0.92) 0%,
-    rgba(255,255,255,0.55) 60%,
-    rgba(255,255,255,0) 100%);
 }
 
 /* Inner: Flex-Container, transform animiert */
@@ -1652,6 +1650,9 @@ html.theme-light .nf-row-track::before {
   display:flex;
   flex-direction:column;
 }
+/* Ohne Beschreibungen (siehe NF.render): Reihe nur so hoch wie Poster + Infozeile */
+#netflix-grid.nf-noplot .nf-row { min-height:610px; contain-intrinsic-size:100% 610px; }
+#netflix-grid.nf-noplot .nf-row-info { height:auto; min-height:0; max-height:none; }
 .nf-info-meta {
   font-size:var(--fs-sm);
   color:var(--mid);

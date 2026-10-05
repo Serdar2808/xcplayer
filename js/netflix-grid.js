@@ -137,6 +137,12 @@ var NF = {
   render: function() {
     var grid=$('netflix-grid'); if(!grid) return;
     NF._destroyObservers(); NF._hydrated={}; NF._rowState={};
+    // Viele Anbieter liefern zu Filmen keine Beschreibung: dann die Reihen ohne den
+    // leeren Bereich für den Text (sonst klafft unter jeder Reihe eine Lücke)
+    var hasPlot=false;
+    for(var pr=0; pr<NF.data.length && !hasPlot; pr++)
+      for(var pc=0; pc<NF.data[pr].streams.length && pc<40; pc++) if(NF.data[pr].streams[pc].plot){ hasPlot=true; break; }
+    grid.classList.toggle('nf-noplot', !hasPlot);
     if(!NF.data.length){ grid.innerHTML='<div class="empty-s" style="padding:60px"><p>Keine Einträge</p></div>'; return; }
     var html='';
     for(var r=0;r<NF.data.length;r++)

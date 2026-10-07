@@ -60,6 +60,9 @@ var Settings = {
         this.tileNames      = !!d.tileNames;
         this.tileMarquee    = d.tileMarquee !== false;
         this.bgPlay         = !!d.bgPlay;
+        // Weitere Einstellungen (options.js); früherer Schalter "mit Kanal 1 starten"
+        for (var ok in OPTION_DEFS) if (d[ok] !== undefined) this[ok] = d[ok];
+        if (d.startChannel === undefined && d.startFirstChannel) this.startChannel = 'first';
       }
     }catch(e){ Logger.warn('[Settings] load error:', e); }
     // Kachel-Senderliste: Standard auf Smartphones an (außer die kompakte Liste
@@ -116,7 +119,7 @@ var Settings = {
     }
   },
   save: function(){
-    try{ localStorage.setItem('xcp_settings',JSON.stringify({
+    var data = {
       splitList:this.splitList,
       compactList:this.compactList, compactListEpg:this.compactListEpg,
       tileList:this.tileList, tileNames:this.tileNames, tileMarquee:this.tileMarquee, bgPlay:this.bgPlay,
@@ -132,7 +135,9 @@ var Settings = {
       showVod: this.showVod,
       showSeries: this.showSeries,
       epgShift:this.epgShift
-    })); }catch(e){ Logger.warn('[Settings] save error:', e); }
+    };
+    for (var ok in OPTION_DEFS) data[ok] = this[ok];
+    try{ localStorage.setItem('xcp_settings',JSON.stringify(data)); }catch(e){ Logger.warn('[Settings] save error:', e); }
     
     var p = Profiles.getActive();
     if(p) this.saveProfile(p.id);
@@ -229,8 +234,12 @@ var Settings = {
     var tss=$('toggle-show-series');
     if(tss) tss.classList.toggle('on', this.showSeries !== false);
     if(typeof renderSettingsChoices === 'function') renderSettingsChoices();
+    if(typeof Options !== 'undefined') Options.apply();
   }
 };
+// Standardwerte der weiteren Einstellungen (options.js)
+for (var _ok in OPTION_DEFS) Settings[_ok] = OPTION_DEFS[_ok];
+
 
 function toggleSetting(key){
   Settings[key]=!Settings[key];
@@ -530,6 +539,15 @@ var PlaylistDB = {
       var tx = PlaylistDB.db.transaction(['data'], 'readonly');
       var req = tx.objectStore('data').get(id);
       req.onsuccess = function() { resolve(req.result ? req.result.payload : null); };
+      req.onerror = function() { resolve(null); };
+    });
+  },
+  // Eintrag mit Speicherzeitpunkt (für die automatische Playlist-Aktualisierung)
+  getEntry: function(id) {
+    return new Promise(function(resolve) {
+      if (!PlaylistDB.db) return resolve(null);
+      var req = PlaylistDB.db.transaction(['data'], 'readonly').objectStore('data').get(id);
+      req.onsuccess = function() { resolve(req.result || null); };
       req.onerror = function() { resolve(null); };
     });
   },

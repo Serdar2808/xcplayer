@@ -9,6 +9,8 @@ var BingeMode = {
 
   start: function(){
     if(S.playerType !== 'series') return;
+    var secs = +Settings.bingeSecs; if(!secs) return;   // Einstellung "Nächste Folge automatisch"
+    this._secs = secs; this._totalMs = secs * 1000;
     var nextIdx = S.currentEpIdx + 1;
     if(nextIdx >= S.currentEpsArray.length) return; // No next ep
     var nextEp = S.currentEpsArray[nextIdx];
@@ -16,9 +18,9 @@ var BingeMode = {
     var sTitle = $('s-title') ? $('s-title').textContent : '';
     $('binge-ep-name').textContent = sTitle + ' · ' + epName;
     this._active = true;
-    this._remaining = 8;
+    this._remaining = secs;
     this._startTs = Date.now();
-    $('binge-countdown').textContent = '8';
+    $('binge-countdown').textContent = String(secs);
     $('binge-prog-fill').style.width = '100%';
     $('binge-bar').classList.add('show');
     
@@ -31,7 +33,7 @@ var BingeMode = {
   _tick: function(){
     if(!this._active) return;
     var elapsed = Date.now() - this._startTs;
-    var rem = Math.max(0, 8 - Math.floor(elapsed / 1000));
+    var rem = Math.max(0, this._secs - Math.floor(elapsed / 1000));
     var pct = Math.max(0, 100 - (elapsed / this._totalMs * 100));
     $('binge-countdown').textContent = rem;
     $('binge-prog-fill').style.width = pct.toFixed(1) + '%';

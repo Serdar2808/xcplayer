@@ -82,10 +82,10 @@ document.getElementById('live-osd-container').innerHTML = `
       <span class="kh hide-compact"><span class="kbp">OK</span> <span class="kh-full">Senderliste</span><span class="kh-short">Senderl.</span></span>
       <span class="kh hide-compact"><span class="kbp">&#x2191;&#x2193;</span> Sender&#177;</span>
       <span class="kh"><span class="kbp">&#x2194;</span> Duplikate</span>
-      <span class="kh"><span class="kbp">ROT</span> Timeshift</span>
-      <span class="kh"><span class="kbp">GELB</span> EPG</span>
-      <span class="kh"><span class="kbp">GRÜN</span> <span class="kh-full">Untertitel</span><span class="kh-short">Untert.</span></span>
-      <span class="kh"><span class="kbp">BLAU</span> Suche</span>
+      <span class="kh" id="kh-red"><span class="kbp">ROT</span> <span class="kh-act">Timeshift</span></span>
+      <span class="kh" id="kh-yellow"><span class="kbp">GELB</span> <span class="kh-act">EPG</span></span>
+      <span class="kh" id="kh-green"><span class="kbp">GRÜN</span> <span class="kh-act">Untertitel</span></span>
+      <span class="kh" id="kh-blue"><span class="kbp">BLAU</span> <span class="kh-act">Suche</span></span>
       <span class="kh"><span class="kbp">BACK</span> Stop</span>
     </div>
   </div>
@@ -106,6 +106,7 @@ document.getElementById('ctrl-vod-container').innerHTML = `
       <div style="display:flex; gap:16px; justify-content:center;">
         <button class="pbtn" id="btn-audio" onclick="Player.toggleAudio()" data-focusable><span class="ico-w">&#x1F50A;</span> Audiospur</button>
         <button class="pbtn" id="btn-sub" onclick="Player.toggleSubtitles()" data-focusable><span class="ico-w">&#x1F4AC;</span> Untertitel</button>
+        <button class="pbtn hidden" id="btn-skip-intro" onclick="Player.skipIntro()" data-focusable><span class="ico-w">&#x00BB;</span> <span id="btn-skip-intro-lbl">Intro überspringen</span></button>
         <button class="pbtn" id="btn-aspect" onclick="Player.cycleAspect()" data-focusable><span class="ico-w">&#x1F4D0;</span> <span id="btn-aspect-lbl">Bild: Original</span></button>
       </div>
     </div>

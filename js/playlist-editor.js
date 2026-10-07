@@ -417,15 +417,25 @@ function processStreamsFilter(arr, overrideTab, overrideCats) {
 }
 
 // Gruppiert Duplikate: Nur der erste Sender eines Basisnamens bleibt sichtbar
+// Qualitäts-Muster für "Bevorzugte Qualität bei Duplikaten"
+var DUP_PREF_RE = {
+  uhd: /(^|[\s(])(uhd|4k)([\s)*+]|$)|ᵁᴴᴰ/i,
+  fhd: /(^|[\s(])(fhd|1080p?)([\s)*+]|$)|ᶠᴴᴰ/i,
+  hd: /(^|[\s(])(hd|720p?)([\s)*+]|$)|(^|[^ᶠᵁ])ᴴᴰ/i,
+  hevc: /hevc|h\.?265/i
+};
 function applyVariantGrouping(arr) {
   if (S.tab !== 'live' || !Settings.groupVariants) return arr;
   var seen = {};
   var res = [];
+  var re = DUP_PREF_RE[Settings.dupPref];
   for (var i=0; i<arr.length; i++) {
     var base = _baseName(arr[i].name);
-    if (!seen[base]) {
-      seen[base] = true;
+    if (seen[base] === undefined) {
+      seen[base] = res.length;
       res.push(arr[i]);
+    } else if (re && !re.test(res[seen[base]].name) && re.test(arr[i].name)) {
+      res[seen[base]] = arr[i];          // bevorzugte Variante steht an der Stelle der ersten
     }
   }
   return res;

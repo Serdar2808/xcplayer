@@ -68,7 +68,7 @@ var NFSearch = {
     }
     var out=[];
     for(var i=0;i<NF.fullData.length;i++){
-      if(NF.fullData[i].cat && NF.fullData[i].cat.category_id === 'fav') continue;   // Favoriten stehen auch in ihrer Kategorie
+      if(NF.fullData[i].cat && (NF.fullData[i].cat.category_id === 'fav' || NF.fullData[i].cat.category_id === 'new')) continue;   // stehen auch in ihrer Kategorie
       out = out.concat(NF.fullData[i].streams);
     }
     return out;

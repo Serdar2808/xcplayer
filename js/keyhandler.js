@@ -80,7 +80,7 @@ function handleBack(){
   // Playlist-Editor Verwalten: BACK während des Greifens legt die Zeile an
   // ihrer aktuellen Position ab, statt gleich den ganzen Editor zu verlassen.
   if(typeof manCancelGrab === 'function' && manCancelGrab()){ return; }
-  if($('confirm-modal')&&!$('confirm-modal').classList.contains('hidden')){ closeConfirm(false); return; }
+  if($('confirm-modal')&&!$('confirm-modal').classList.contains('hidden')){ closeConfirm(null); return; }
   if($('pe-manual-modal')&&!$('pe-manual-modal').classList.contains('hidden')){ closePEManualModal(); return; }
   if(!$('wizard-screen').classList.contains('hidden')) {
     // Zurück-Verhalten hängt vom AKTUELL SICHTBAREN Schritt ab
@@ -150,6 +150,12 @@ function handleBack(){
     openSysSidebar(); return;
   }
   if(S.screen==='live'||S.screen==='profile'){
+    if(Settings.exitMode === 'off' || Settings.exitMode === 'dialog'){
+      var quit = function(){ if(window.webOS&&webOS.platformBack) webOS.platformBack(); else if(window.tizen&&tizen.application) tizen.application.getCurrentApplication().exit(); else window.close(); };
+      if(Settings.exitMode === 'off') quit();
+      else showConfirm('App beenden', 'XC Player wirklich beenden?', 'Beenden', function(yes){ if(yes) quit(); }, 'Abbrechen', true);
+      return;
+    }
     if(S.exitConfirm){
       clearTimeout(S.exitTimer);
       if(window.webOS&&webOS.platformBack) webOS.platformBack();
@@ -376,17 +382,17 @@ window.addEventListener('keydown', function(e) {
       if(k===KEYS.PLAY||k===KEYS.PAUSE){ e.preventDefault(); Player.togglePP(); return; }
       if(k===412){ e.preventDefault(); if(S.playerType!=='live') progressiveSeek(-1); return; }
       if(k===417){ e.preventDefault(); if(S.playerType!=='live') progressiveSeek(1); return; }
-      if(k===KEYS.RED||k===82){ e.preventDefault(); if(S.playerType==='live') Player.startLiveTimeshift(); else Player.close(); return; }
+      if(k===KEYS.RED||k===82){ e.preventDefault(); if(S.playerType==='live') Options.colorAction('Red'); else Player.close(); return; }
       if(k===KEYS.CH_UP){ e.preventDefault(); Player.nextCh(); return; }
       if(k===KEYS.CH_DOWN){ e.preventDefault(); Player.prevCh(); return; }
-      if(k===13){ e.preventDefault(); if(typeof _seek !== 'undefined' && _seek.active) { commitSeek(); return; } if(S.playerType==='catchup'){ if(SpatialNav.focused && SpatialNav.focused.closest('#player-topbar')){ SpatialNav.select(); return; } Player.togglePP(); Player.showControls(); return; } if(SpatialNav.focused && SpatialNav.focused.closest('#player-topbar, #ctrl-vod')){ SpatialNav.select(); return; } if(S.epgOpen){ SpatialNav.select(); return; } if(S.variantBarOpen){ switchVariant(S.variantIdx); return; } if(S.playerType==='live' && (Date.now() - (typeof _catchupJustStarted !== 'undefined' ? _catchupJustStarted : 0)) > 400) Player.toggleChList(); else Player.togglePP(); return; }
-      if(k===38){ e.preventDefault(); if(S.playerType!=='live'){ var foc = SpatialNav.focused; if(foc && (foc.id === 'btn-audio' || foc.id === 'btn-sub' || foc.id === 'btn-aspect')) { SpatialNav.focusBySelector('#btn-pp-vod'); return; } if(foc && foc.id === 'btn-pp-vod') { var nextEp = document.getElementById('btn-next-ep'); var restart = document.getElementById('btn-restart-vod'); if(nextEp && !nextEp.classList.contains('hidden') && nextEp.offsetWidth > 0){ SpatialNav.focus(nextEp); return; } if(restart && !restart.classList.contains('hidden') && restart.offsetWidth > 0){ SpatialNav.focus(restart); return; } SpatialNav.focusBySelector('.p-back'); return; } SpatialNav.move('up'); return; } Player.nextCh(); return; }
+      if(k===13){ e.preventDefault(); if(typeof _seek !== 'undefined' && _seek.active) { commitSeek(); return; } if(S.playerType==='catchup'){ if(SpatialNav.focused && SpatialNav.focused.closest('#player-topbar')){ SpatialNav.select(); return; } Player.togglePP(); Player.showControls(); return; } if(SpatialNav.focused && SpatialNav.focused.closest('#player-topbar, #ctrl-vod')){ SpatialNav.select(); return; } if(S.epgOpen){ SpatialNav.select(); return; } if(S.variantBarOpen){ switchVariant(S.variantIdx); return; } if(S.playerType==='live' && (Date.now() - (typeof _catchupJustStarted !== 'undefined' ? _catchupJustStarted : 0)) > 400){ if(Settings.okAction==='osd' && !S.chListOpen && $('live-osd').classList.contains('fade')){ Player.showControls(); return; } Player.toggleChList(); } else Player.togglePP(); return; }
+      if(k===38){ e.preventDefault(); if(S.playerType!=='live'){ var foc = SpatialNav.focused; if(foc && (foc.id === 'btn-audio' || foc.id === 'btn-sub' || foc.id === 'btn-aspect' || foc.id === 'btn-skip-intro')) { SpatialNav.focusBySelector('#btn-pp-vod'); return; } if(foc && foc.id === 'btn-pp-vod') { var nextEp = document.getElementById('btn-next-ep'); var restart = document.getElementById('btn-restart-vod'); if(nextEp && !nextEp.classList.contains('hidden') && nextEp.offsetWidth > 0){ SpatialNav.focus(nextEp); return; } if(restart && !restart.classList.contains('hidden') && restart.offsetWidth > 0){ SpatialNav.focus(restart); return; } SpatialNav.focusBySelector('.p-back'); return; } SpatialNav.move('up'); return; } Player.nextCh(); return; }
       if(k===40){ e.preventDefault(); if(S.playerType!=='live'){ var foc2 = SpatialNav.focused; if(foc2 && foc2.closest('#ctrl-vod') && foc2.id !== 'btn-pp-vod') return; /* unterste Reihe: nicht weiter nach unten */ if(foc2 && foc2.closest('#player-topbar')) { SpatialNav.focusBySelector('#btn-pp-vod'); return; } if(foc2 && foc2.id === 'btn-pp-vod') { var btnAudio = document.getElementById('btn-audio'); var btnSub = document.getElementById('btn-sub'); if(btnAudio && !btnAudio.classList.contains('hidden') && btnAudio.offsetWidth > 0) { SpatialNav.focus(btnAudio); return; } if(btnSub && !btnSub.classList.contains('hidden') && btnSub.offsetWidth > 0) { SpatialNav.focus(btnSub); return; } if(SpatialNav.focusBySelector('#btn-aspect')) return; } SpatialNav.move('down'); return; } Player.prevCh(); return; }
       if(k===37){ e.preventDefault(); if(S.playerType!=='live'){ var foc3 = SpatialNav.focused; if(foc3 && (foc3.closest('#player-topbar') || (foc3.closest('#ctrl-vod') && foc3.id !== 'btn-pp-vod'))){ SpatialNav.move('left'); return; } if(foc3 && foc3.id === 'btn-audio') { SpatialNav.focusBySelector('#btn-sub'); return; } if(foc3 && foc3.id === 'btn-sub') { return; } progressiveSeek(-1); return; } if(S.variantBarOpen){ S.variantIdx=Math.max(0,S.variantIdx-1); renderVariantChips(); resetVariantTimer(); } else openVariantBar(); return; }
       if(k===39){ e.preventDefault(); if(S.playerType!=='live'){ var foc4 = SpatialNav.focused; if(foc4 && (foc4.closest('#player-topbar') || (foc4.closest('#ctrl-vod') && foc4.id !== 'btn-pp-vod'))){ SpatialNav.move('right'); return; } if(foc4 && foc4.id === 'btn-sub') { var btnAudio2 = document.getElementById('btn-audio'); if(btnAudio2 && !btnAudio2.classList.contains('hidden') && btnAudio2.offsetWidth > 0) { SpatialNav.focus(btnAudio2); return; } return; } if(foc4 && foc4.id === 'btn-audio') { return; } progressiveSeek(1); return; } if(S.variantBarOpen){ S.variantIdx=Math.min(S.variants.length-1,S.variantIdx+1); renderVariantChips(); resetVariantTimer(); } else openVariantBar(); return; }
-      if(k===KEYS.YELLOW||k===89){ e.preventDefault(); if(S.playerType==='live') Player.toggleEpg(); return; }
-      if(k===KEYS.GREEN||k===71){ e.preventDefault(); Player.toggleSubtitles(); return; }
-      if(k===KEYS.BLUE||k===66){ e.preventDefault(); if(typeof openContextSearch === 'function') openContextSearch(); else if (typeof NFSearch !== 'undefined') NFSearch.open(); return; }
+      if(k===KEYS.YELLOW||k===89){ e.preventDefault(); if(S.playerType==='live') Options.colorAction('Yellow'); return; }
+      if(k===KEYS.GREEN||k===71){ e.preventDefault(); if(S.playerType==='live') Options.colorAction('Green'); else Player.toggleSubtitles(); return; }
+      if(k===KEYS.BLUE||k===66){ e.preventDefault(); if(S.playerType==='live'){ Options.colorAction('Blue'); return; } if(typeof openContextSearch === 'function') openContextSearch(); else if (typeof NFSearch !== 'undefined') NFSearch.open(); return; }
       if(k===48||k===96){ e.preventDefault(); if(typeof ZapHistory !== 'undefined') ZapHistory.open(); return; }
       if((k>=49&&k<=57)||(k>=97&&k<=105)){ e.preventDefault(); handleChNum(k>=96?k-96:k-48); return; }
       return;

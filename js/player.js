@@ -1,7 +1,8 @@
 // ── PROGRESSIVES SPULEN ──────────────────────────────────────────
 var _seek = { active: false, target: 0, holdStart: 0, timer: null };
 
-function progressiveSeek(dir){
+// fixedStep: feste Schrittweite (Doppeltipp am Handy) statt der Tasten-Logik
+function progressiveSeek(dir, fixedStep){
   if(typeof BingeMode !== 'undefined' && BingeMode._active) return;
   var now = Date.now();
   var isCatchup = S.playerType === 'catchup' && S.currentStream;
@@ -19,7 +20,7 @@ function progressiveSeek(dir){
 
   // YouTube-Logik: Erste 2 Sekunden -> 10s Schritte. Danach -> 60s Schritte
   var holdTime = now - _seek.holdStart;
-  var step = (holdTime > CONFIG.SEEK_HOLD_THRESHOLD) ? CONFIG.SEEK_FAST_STEP : CONFIG.SEEK_NORMAL_STEP;
+  var step = fixedStep || ((holdTime > CONFIG.SEEK_HOLD_THRESHOLD) ? CONFIG.SEEK_FAST_STEP : CONFIG.SEEK_NORMAL_STEP);
 
   _seek.target += dir * step;
   _seek.target = Math.max(0, Math.min(dur, _seek.target));
@@ -66,7 +67,7 @@ var Player = {
       var t = fmtClock();
       var dt = fmtDateClock();
       if($('osd-clock')) $('osd-clock').textContent = t;
-      if($('nav-clock')) $('nav-clock').textContent = dt;
+      if($('nav-clock')) $('nav-clock').textContent = Settings.clock === 'time' ? t : dt;
     };
     updateClocks();
     this._clockTimer=setInterval(updateClocks, CONFIG.CLOCK_INTERVAL);
@@ -83,6 +84,8 @@ var Player = {
     });
     this.vid.addEventListener('playing',function(){
       Player.syncBackground();
+      // Tonspuren/Untertitel kennt der Player oft erst kurz nach dem Start
+      if(!Player._autoDone){ setTimeout(function(){ Player._autoTracks(); }, 1200); setTimeout(function(){ Player._autoTracks(); }, 4000); }
       $('buf-overlay').classList.add('hidden');
       $('btn-pp-vod').innerHTML='&#10074;&#10074;';
     });
@@ -107,6 +110,7 @@ var Player = {
       }
       if(!Player.vid.duration) return;
       Player._updateProgressUI(Player.vid.currentTime, Player.vid.duration);
+      Player._updateIntroBtn();
       
       // Binge-Modus 90 Sekunden vor Ende starten
       if(S.playerType === 'series' && !S._bingeTriggered && !BingeMode._active && Player.vid.duration > 75) {
@@ -120,7 +124,10 @@ var Player = {
       if(S.playerType!=='live'&&S.currentStream){
         var id=S.playerType==='series'?(S.currentStream.episode_id||S.currentStream.series_id):S.currentStream.stream_id;
         var ct=Math.floor(Player.vid.currentTime);
-        if(ct>10&&ct%CONFIG.RESUME_SAVE_INTERVAL===0){
+        // Einstellung "Als gesehen markieren ab": Fortsetzen-Eintrag schon vor dem Ende löschen
+        var wp=+Settings.watchedPct||100;
+        if(wp<100&&!S._watchedMarked&&Player.vid.currentTime/Player.vid.duration*100>=wp){ S._watchedMarked=true; Player._clearResume(); }
+        if(ct>10&&!S._watchedMarked&&ct%CONFIG.RESUME_SAVE_INTERVAL===0){
           S.resume[id]=ct; saveResume();
           if(typeof ContinueDur !== 'undefined') ContinueDur.set(id, Player.vid.duration);   // Länge für den Weiterschauen-Balken
           // Für Serien zusätzlich pro series_id einen Eintrag mit Metadaten ablegen,
@@ -152,23 +159,9 @@ var Player = {
       }
     });
     this.vid.addEventListener('ended',function(){ 
-      // Fortsetzen-Speicher für beendete Inhalte leeren
-      if(S.playerType!=='live' && S.currentStream){
-        var rid = S.playerType==='series' ? (S.currentStream.episode_id||S.currentStream.series_id) : S.currentStream.stream_id;
-        if(S.resume[rid]){ delete S.resume[rid]; saveResume(); }
-        // Bei Serien zusätzlich den Series-Eintrag entfernen, wenn es die letzte Episode war.
-        if(S.playerType==='series'){
-          var cs2 = S.currentSeriesStream || {};
-          var sid2 = String(cs2.series_id || S.currentStream.series_id || '');
-          var isLast = !(S.currentEpsArray && (S.currentEpIdx + 1) < S.currentEpsArray.length);
-          if(sid2 && isLast && S.resumeSeries && S.resumeSeries[sid2]){
-            delete S.resumeSeries[sid2];
-            if(typeof saveResumeSeries === 'function') saveResumeSeries();
-          }
-        }
-      }
+      Player._clearResume();
       if(S.playerType==='series'){
-        if(S._bingeCancelled) {
+        if(S._bingeCancelled || !+Settings.bingeSecs) {
             Player.close(); // Zurück zur Episodenübersicht
         } else {
             var nextIdx = S.currentEpIdx + 1;
@@ -338,6 +331,25 @@ var Player = {
   },
 
   play:function(url,stream,type){
+    // Einstellung "Angefangene Titel": fragen bzw. immer von vorn
+    this._startFresh = !!(this._resumeDecided && this._resumeFresh);
+    if(type !== 'live' && type !== 'catchup' && Settings.resumeMode !== 'auto' && !this._resumeDecided){
+      var rid0 = type==='series' ? (stream.episode_id||stream.series_id) : stream.stream_id;
+      var pos0 = S.resume[rid0];
+      if(pos0 > 0){
+        if(Settings.resumeMode === 'never'){ this._startFresh = true; }
+        else {
+          var self0 = this;
+          showConfirm('Weiterschauen', 'Bei ' + fmtDur(pos0) + ' fortsetzen oder von vorn beginnen?', 'Fortsetzen', function(yes){
+            if(yes === null) return;                       // Zurück: gar nicht starten
+            self0._resumeDecided = true; self0._resumeFresh = !yes;
+            try { self0.play(url, stream, type); } finally { self0._resumeDecided = false; self0._resumeFresh = false; }
+          }, 'Von vorn', true);
+          return;
+        }
+      }
+    }
+    if(type !== 'live' && Settings.aspectDefault && Settings.aspectDefault !== 'last') this._aspect = Settings.aspectDefault;
     _streamLoadStart = Date.now();
     if (this._lastPlayedId !== (stream.stream_id || stream.series_id)) {
        this._retriedLive = false; 
@@ -361,6 +373,9 @@ var Player = {
     }
     this.destroy();
     S._bingeTriggered = false;
+    S._watchedMarked = false;
+    this._autoDone = false; this._autoA = false; this._autoS = false; this._introSkipped = false;
+    if($('btn-skip-intro')) $('btn-skip-intro').classList.add('hidden');
     S.currentStream=stream; S.playerType=type||S.tab;
     this.applyAspect();
     if(type==='live') buildVariants(stream);
@@ -410,17 +425,18 @@ var Player = {
     var startAt=0;
     if(!isLive){
       var rid=type==='series'?(stream.episode_id||stream.series_id):stream.stream_id;
-      if(S.resume[rid]) startAt=S.resume[rid];
+      if(S.resume[rid] && !this._startFresh) startAt=S.resume[rid];
     }
 
     var self=this;
     // Zuerst natives HLS versuchen (webOS WebKit unterstützt es)
     var isHlsUrl=url.indexOf('.m3u8')!==-1||url.indexOf('/live/')!==-1;
 
+    var bufF = { short:0.5, normal:1, long:2 }[Settings.buffer] || 1;
     if(isHlsUrl&&window.Hls&&Hls.isSupported()&&!Settings.nativePlayer&&!Settings.liveHls){
       this.hls=new Hls({
-        maxBufferLength:isLive?10:30,
-        maxMaxBufferLength:isLive?20:60,
+        maxBufferLength:Math.round((isLive?10:30)*bufF),
+        maxMaxBufferLength:Math.round((isLive?20:60)*bufF),
         liveSyncDurationCount:2,
         liveMaxLatencyDurationCount:5,
         // Worker entlastet den Main-Thread auf älteren webOS-TVs deutlich.
@@ -830,6 +846,8 @@ var Player = {
   syncBackground: function(){
     var on = this.keepInBackground();
     try { if(window.AndroidBridge && AndroidBridge.setBackgroundPlay) AndroidBridge.setBackgroundPlay(on); } catch(e){}
+    // Android: Bild-im-Bild beim Verlassen (Einstellung), solange etwas läuft
+    try { if(window.AndroidBridge && AndroidBridge.setPip) AndroidBridge.setPip(!!(Settings.pip && S.playerVisible && this.vid && !this.vid.paused)); } catch(e){}
     try { if(window.webkit && webkit.messageHandlers && webkit.messageHandlers.xcp) webkit.messageHandlers.xcp.postMessage({ cmd:'bgPlay', on:on }); } catch(e){}
   },
   suspend:function(){
@@ -957,6 +975,80 @@ var Player = {
     else { h = H; w = H * r; }
     v.style.width = Math.round(w) + 'px'; v.style.height = Math.round(h) + 'px';
     v.style.left = Math.round((W - w) / 2) + 'px'; v.style.top = Math.round((H - h) / 2) + 'px';
+  },
+  // ── Intro überspringen (Einstellung, Serien) ──────────────────
+  _updateIntroBtn: function(){
+    var b = $('btn-skip-intro'); if(!b) return;
+    var secs = +Settings.introSkip, t = this.vid.currentTime || 0;
+    var show = S.playerType === 'series' && secs > 0 && !this._introSkipped && t > 2 && t < 300;
+    if(show) $('btn-skip-intro-lbl').textContent = 'Intro +' + secs + ' s';
+    if(b.classList.contains('hidden') === show) b.classList.toggle('hidden', !show);
+  },
+  skipIntro: function(){
+    var secs = +Settings.introSkip || 90;
+    this._introSkipped = true;
+    try { this.vid.currentTime = Math.min((this.vid.duration || 1e9) - 5, (this.vid.currentTime || 0) + secs); } catch(e){}
+    this._updateIntroBtn();
+    SpatialNav.focusBySelector('#btn-pp-vod');
+    this.showControls();
+  },
+
+  // ── Bevorzugte Ton-/Untertitelsprache (Einstellungen) ─────────
+  _LANG_SYN: { de:['de','deu','ger','deutsch','german'], en:['en','eng','english','englisch'], tr:['tr','tur','turk','türk','turkish','türkçe'],
+              fr:['fr','fra','fre','french','français','franz'], es:['es','spa','spanish','español','spanisch'], it:['it','ita','italian','italiano','italienisch'] },
+  _langMatch: function(lang, label, want){
+    var syn = this._LANG_SYN[want] || [want], s = ' ' + ((lang||'') + ' ' + (label||'')).toLowerCase().replace(/[^a-zäöüçñ]+/g, ' ') + ' ';
+    for(var i = 0; i < syn.length; i++) if(s.indexOf(' ' + syn[i] + ' ') !== -1 || (syn[i].length > 3 && s.indexOf(syn[i]) !== -1)) return true;
+    return false;
+  },
+  _autoTracks: function(){
+    if(this._autoDone || !S.playerVisible) return;
+    var al = Settings.audioLang, sl = Settings.subLang, v = this.vid, i;
+    if(!al) this._autoA = true;
+    if(!sl) this._autoS = true;
+    if(!this._autoA){
+      if(this.hls && this.hls.audioTracks && this.hls.audioTracks.length){
+        this._autoA = true;
+        for(i = 0; i < this.hls.audioTracks.length; i++){ var ht = this.hls.audioTracks[i];
+          if(this._langMatch(ht.lang, ht.name, al)){ if(this.hls.audioTrack !== i) this.hls.audioTrack = i; break; } }
+      } else if(v.audioTracks && v.audioTracks.length){
+        this._autoA = true;
+        for(i = 0; i < v.audioTracks.length; i++){ var at = v.audioTracks[i];
+          if(this._langMatch(at.language, at.label, al)){ if(!at.enabled){ for(var j = 0; j < v.audioTracks.length; j++) v.audioTracks[j].enabled = (j === i); } break; } }
+      }
+    }
+    if(!this._autoS){
+      var tracks = this._getSubTracks();
+      if(tracks.length){
+        this._autoS = true;
+        for(i = 0; i < tracks.length; i++){ var tt = tracks[i];
+          if(!this._langMatch(tt.lang, tt.label, sl)) continue;
+          if(tt.source === 'hls' && this.hls){ this.hls.subtitleTrack = tt.idx; this.hls.subtitleDisplay = true; }
+          else if(v.textTracks && v.textTracks[tt.idx]){ for(var k = 0; k < v.textTracks.length; k++) if(k !== tt.idx) v.textTracks[k].mode = 'disabled'; v.textTracks[tt.idx].mode = 'showing'; }
+          this._activeSubIdx = tt.idx;
+          if($('sub-indicator')) $('sub-indicator').classList.remove('hidden');
+          break;
+        }
+      }
+    }
+    this._autoDone = this._autoA && this._autoS;
+  },
+
+  // Fortsetzen-Speicher für (fast) zu Ende gesehene Inhalte leeren
+  _clearResume: function(){
+    if(S.playerType==='live' || !S.currentStream) return;
+    var rid = S.playerType==='series' ? (S.currentStream.episode_id||S.currentStream.series_id) : S.currentStream.stream_id;
+    if(S.resume[rid]){ delete S.resume[rid]; saveResume(); }
+    // Bei Serien zusätzlich den Series-Eintrag entfernen, wenn es die letzte Episode war.
+    if(S.playerType==='series'){
+      var cs2 = S.currentSeriesStream || {};
+      var sid2 = String(cs2.series_id || S.currentStream.series_id || '');
+      var isLast = !(S.currentEpsArray && (S.currentEpIdx + 1) < S.currentEpsArray.length);
+      if(sid2 && isLast && S.resumeSeries && S.resumeSeries[sid2]){
+        delete S.resumeSeries[sid2];
+        if(typeof saveResumeSeries === 'function') saveResumeSeries();
+      }
+    }
   },
   togglePP:function(){ this.vid.paused?this.vid.play().catch(function(){}):this.vid.pause(); },
 
@@ -1170,7 +1262,7 @@ var Player = {
           $('player-topbar').classList.add('fade');
           $('live-osd').classList.add('fade');
           $('ctrl-vod').classList.add('fade');
-        }, CONFIG.CONTROLS_FADE_MS);
+        }, S.playerType === 'live' ? (+Settings.osdTime || 6) * 1000 : CONFIG.CONTROLS_FADE_MS);
       }
     }
   }

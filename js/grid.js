@@ -365,9 +365,11 @@ async function loadCats(){
   cats = processCatsFilter(cats, S.tab);
   S.categories=cats;
   var html='<div class="cat-item" data-focusable data-id="" id="cat-1"><span class="cat-name">Alle</span></div>';
+  var favHtml='<div class="cat-item" data-focusable data-id="fav" id="cat-fav"><span class="cat-name">&#x2B50; Favoriten</span></div>';
+  if(Settings.favFirst) html+=favHtml;
   for(var i=0;i<cats.length;i++)
     html+='<div class="cat-item" data-focusable data-id="'+cats[i].category_id+'" id="cat-'+(i+2)+'"><span class="cat-name">'+esc(cats[i].category_name)+'</span></div>';
-  html+='<div class="cat-item" data-focusable data-id="fav" id="cat-fav"><span class="cat-name">&#x2B50; Favoriten</span></div>';
+  if(!Settings.favFirst) html+=favHtml;
   $('category-list').innerHTML=html;
   S.cursors.cat=1; $('cat-1').classList.add('active'); S.selectedCat=null;
 }
@@ -423,8 +425,14 @@ function applySortMethod(arr){
     arr.sort(function(a,b){
       return (parseFloat(b.rating)||0) - (parseFloat(a.rating)||0);
     });
+  } else if(method === 'new'){
+    arr.sort(function(a,b){ return streamAddedTs(b) - streamAddedTs(a); });
   }
   return arr;
+}
+// Zeitpunkt, an dem der Anbieter den Titel aufgenommen hat (Filme: added, Serien: last_modified)
+function streamAddedTs(s){
+  return parseInt(s.added || s.last_modified || 0, 10) || 0;
 }
 
 var _sortMenuOpen = false;
@@ -451,7 +459,7 @@ function setSort(method){
   $('sort-menu').classList.remove('open');
   FocusTrap.release('sort-menu');
   // Button-Text aktualisieren
-  var labels = {default:'Standard', az:'A → Z', za:'Z → A', rating:'Bewertung'};
+  var labels = {default:'Standard', az:'A → Z', za:'Z → A', rating:'Bewertung', new:'Neueste'};
   $('sort-btn').innerHTML = '&#x21C5; ' + (labels[method]||'Sortierung');
   // Grid neu laden
   loadStreams(S.selectedCat);
@@ -471,7 +479,7 @@ async function switchTab(tab){
   if(sw) sw.classList.toggle('hidden', tab==='live');
   if(tab!=='live'){
     var method = (Settings.sortMethod && Settings.sortMethod[tab]) || 'default';
-    var labels = {default:'Standard', az:'A → Z', za:'Z → A', rating:'Bewertung'};
+    var labels = {default:'Standard', az:'A → Z', za:'Z → A', rating:'Bewertung', new:'Neueste'};
     $('sort-btn').innerHTML = '&#x21C5; ' + (labels[method]||'Sortierung');
   }
   // Layout-Button: nur für VOD/Serien

@@ -18,6 +18,7 @@ function openSettings(){
 
   S.settingsOpen=true;
   S.screen = 'settings';
+  if(typeof Options !== 'undefined') Options.render();   // weitere Einstellungen einfügen
   S.settingsCatOpen = S.settingsCatOpen || 'ansicht';
   _showSettingsCat(S.settingsCatOpen);
 

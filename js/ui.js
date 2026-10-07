@@ -165,7 +165,10 @@ async function launchLiveTv(){
     S.fullStreams.live = S.streams;
     
     var last = loadLastStream();
-    if (Settings.startFirstChannel) {
+    if (Settings.startChannel === 'fav' && S.favs && S.favs.live && S.favs.live.length) {
+      var favId = S.favs.live[0];
+      for (var fi = 0; fi < S.streams.length; fi++) if (S.streams[fi].stream_id === favId) { last = S.streams[fi]; break; }
+    } else if (Settings.startChannel === 'first') {
       try { 
         var p = Profiles.getActive(); var pid = p ? p.id : 'default';
         var firstStream = localStorage.getItem('xcp_first_live_' + pid);

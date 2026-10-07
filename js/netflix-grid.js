@@ -127,9 +127,17 @@ var NF = {
     }
     var favs=all.filter(isFav);
     if(favs.length) NF.fullData.push({cat:{category_id:'fav',category_name:'⭐ Favoriten'},streams:favs});
+    // Einstellung: Reihe mit den zuletzt beim Anbieter aufgenommenen Titeln
+    if(Settings.newRow !== false){
+      var fresh=all.filter(function(s){ return streamAddedTs(s) > 0; });
+      if(fresh.length){
+        fresh=fresh.slice().sort(function(a,b){ return streamAddedTs(b)-streamAddedTs(a); }).slice(0,40);
+        NF.fullData.push({cat:{category_id:'new',category_name:'Neu hinzugekommen'},streams:fresh});
+      }
+    }
     for(var j=0;j<cats.length;j++){
       var streams=bycat[String(cats[j].category_id)]||[];
-      if(streams.length) NF.fullData.push({cat:cats[j],streams:streams});
+      if(streams.length) NF.fullData.push({cat:cats[j],streams:applySortMethod(streams)});
     }
     NF.data = NF.fullData;
   },

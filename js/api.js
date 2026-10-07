@@ -39,8 +39,13 @@ async function getOrFetchData(type, tab) {
   var pId = p ? p.id : 'unknown';
   var dbKey = pId + '_' + type + '_' + tab;
   
-  var dbData = await PlaylistDB.get(dbKey);
-  if (dbData) {
+  // Einstellung "Playlist automatisch aktualisieren": zu alte Daten neu holen
+  // (klappt der Abruf nicht, bleiben die gespeicherten im Einsatz)
+  var entry = await PlaylistDB.getEntry(dbKey);
+  var dbData = entry ? entry.payload : null;
+  var maxAge = { daily: 86400000, weekly: 604800000 }[Settings.plRefresh];
+  var stale = !!(maxAge && entry && entry.ts && Date.now() - entry.ts > maxAge);
+  if (dbData && !stale) {
     if (!Array.isArray(dbData) && typeof dbData === 'object') dbData = Object.values(dbData);
     if (Array.isArray(dbData) && dbData.length > 0) {
       memCache[tab] = dbData;
@@ -54,7 +59,11 @@ async function getOrFetchData(type, tab) {
     else freshData = await (tab==='live' ? API.getLive(null) : (tab==='vod' ? API.getVod(null) : API.getSeries(null)));
   } catch(e) {
     Logger.warn('[DataManager] API fetch error for', type, tab, ':', e.message);
-    return [];
+    freshData = [];
+  }
+  if (stale && !(Array.isArray(freshData) ? freshData.length : freshData && Object.keys(freshData).length)) {
+    if (!Array.isArray(dbData) && dbData && typeof dbData === 'object') dbData = Object.values(dbData);
+    if (Array.isArray(dbData) && dbData.length) { memCache[tab] = dbData; return dbData; }
   }
 
   if (freshData && !Array.isArray(freshData) && typeof freshData === 'object') freshData = Object.values(freshData);

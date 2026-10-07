@@ -79,6 +79,8 @@ function chListSelect(){
   S.chListOpen=false;
   saveLastStream(s);
   Player.play(API.liveUrl(s),s,'live');
+  // Einstellung: Liste bleibt offen (Player.play schließt sie) - gleich wieder öffnen
+  if(Settings.chListStay && !Settings.compactList) setTimeout(function(){ if(S.playerVisible && !S.chListOpen) Player.toggleChList(); }, 60);
 }
 
 // ── KATEGORIEN-ANSICHT (GRÜN) in Senderliste ──────────────────────
@@ -176,8 +178,9 @@ async function chListCatChange(dir){
 
 function buildCatOpts(){
   var opts=[{id:null,name:'Alle'}];
+  if(Settings.favFirst) opts.push({id:'fav',name:'Favoriten'});
   for(var i=0;i<S.categories.length;i++) opts.push({id:S.categories[i].category_id,name:S.categories[i].category_name});
-  opts.push({id:'fav',name:'Favoriten'});
+  if(!Settings.favFirst) opts.push({id:'fav',name:'Favoriten'});
   return opts;
 }
 

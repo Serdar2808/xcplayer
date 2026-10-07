@@ -2192,3 +2192,64 @@ html.xc-phone .man-act{width:76px;height:68px;margin-left:8px;border-radius:12px
 html.xc-phone .man-act:active{background:var(--accent);color:#fff}
 html.xc-phone .man-hints,html.xc-phone .man-handle{display:none}
 html:not(.xc-phone) .st-only-phone{display:none!important}
+
+/* ── WEITERE EINSTELLUNGEN (options.js) ─────────────────────── */
+.st-val{flex-shrink:0;margin-left:20px;padding:6px 16px;border-radius:20px;background:rgba(255,255,255,.07);
+  color:var(--hi);font-size:var(--fs-sm);font-weight:600;white-space:nowrap}
+.st-val:empty{display:none}
+html.theme-light .st-val{background:rgba(0,0,0,.06)}
+.ios-row.st-danger .ios-label{color:var(--red)}
+html.xc-phone .st-val{font-size:34px;padding:8px 22px}
+
+/* Code-Eingabe (Einstellungen übertragen) */
+#xc-code-modal{position:fixed;top:0;left:0;width:100%;height:100%;z-index:2450;background:rgba(0,0,0,.8);
+  display:flex;align-items:center;justify-content:center}
+#xc-code-modal.hidden{display:none}
+.xc-code-box{width:560px;background:var(--bg-card);border:1px solid var(--border);border-radius:22px;padding:40px;text-align:center}
+.xc-code-title{font-size:var(--fs-lg);font-weight:700;color:var(--hi);margin-bottom:24px}
+#xc-code-inp{width:100%;height:84px;font-size:56px;letter-spacing:14px;text-align:center;border-radius:14px;
+  border:2px solid var(--border);background:rgba(255,255,255,.05);color:var(--hi);font-family:inherit}
+.xc-code-btns{display:flex;justify-content:center;margin-top:28px}
+.xc-code-btns .btn{margin:0 10px}
+
+/* Fokus-Markierung: Rahmen bzw. nur Vergrößern statt der Linien */
+html.focus-frame .card-focused .card-live::before, html.focus-frame .card-focused .card-live::after,
+html.focus-frame .card-focused .card-poster::before, html.focus-frame .card-focused .card-poster::after,
+html.focus-frame .nf-card.nf-focused::before, html.focus-frame .nf-card.nf-focused::after,
+html.focus-frame .ep-item.focused::before, html.focus-frame .ep-item.focused::after,
+html.focus-frame .ios-row.focused::before, html.focus-frame .ios-row.focused::after,
+html.focus-frame .man-row.focused::before, html.focus-frame .man-row.focused::after,
+html.focus-frame .zh-item.focused::before, html.focus-frame .zh-item.focused::after,
+html.focus-zoom .card-focused .card-live::before, html.focus-zoom .card-focused .card-live::after,
+html.focus-zoom .card-focused .card-poster::before, html.focus-zoom .card-focused .card-poster::after,
+html.focus-zoom .nf-card.nf-focused::before, html.focus-zoom .nf-card.nf-focused::after,
+html.focus-zoom .ep-item.focused::before, html.focus-zoom .ep-item.focused::after,
+html.focus-zoom .ios-row.focused::before, html.focus-zoom .ios-row.focused::after,
+html.focus-zoom .man-row.focused::before, html.focus-zoom .man-row.focused::after,
+html.focus-zoom .zh-item.focused::before, html.focus-zoom .zh-item.focused::after { display:none !important; }
+html.focus-frame .nf-card.nf-focused { border-color:var(--accent) !important; }
+html.focus-frame .card-focused .card-poster, html.focus-frame .card-focused .card-live { border:3px solid var(--accent) !important; }
+html.focus-frame .ep-item.focused, html.focus-frame .ios-row.focused, html.focus-frame .man-row.focused,
+html.focus-frame .zh-item.focused { box-shadow:inset 0 0 0 3px var(--accent) !important; }
+html.focus-zoom .nf-card.nf-focused, html.focus-zoom .card-focused .card-poster, html.focus-zoom .card-focused .card-live { border-color:transparent !important; }
+
+/* Animationen reduzieren (Ladekreise laufen weiter) */
+html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after { transition:none !important; animation:none !important; scroll-behavior:auto !important; }
+html.reduce-motion .spinner, html.reduce-motion .buf-ring { animation:spin .7s linear infinite !important; }
+
+/* Uhr aus */
+html.clock-off #nav-clock, html.clock-off #osd-clock { display:none !important; }
+
+/* Leichter Verlauf im Hintergrund */
+html.bg-gradient #main-screen, html.bg-gradient #settings-screen, html.bg-gradient #continue-screen, html.bg-gradient #series-detail {
+  background:radial-gradient(ellipse 90% 60% at 50% -10%, rgba(var(--accent-rgb),.16), transparent 70%), var(--bg) !important; }
+
+/* Senderliste ohne Fortschrittsbalken */
+html.no-epg-bar .clo-bar-wrap { display:none !important; }
+
+/* Kachelgröße */
+html.tiles-s .xc-tiles .xc-tile { zoom:.8; }
+html.tiles-l .xc-tiles .xc-tile { zoom:1.2; }
+
+/* Android Bild-im-Bild: im kleinen Fenster nur das Video */
+html.xc-pip body > *:not(#player-screen), html.xc-pip #player-screen > *:not(#video-el) { visibility:hidden !important; }

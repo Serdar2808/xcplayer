@@ -464,6 +464,7 @@ applyUniversalScale();
           <button class="sort-btn" id="sort-btn" data-focusable onclick="toggleSortMenu()">&#x21C5; Sortierung</button>
           <div class="sort-menu" id="sort-menu">
             <div class="sort-opt active" data-sort="default" data-focusable onclick="setSort('default')">Standard</div>
+            <div class="sort-opt" data-sort="new" data-focusable onclick="setSort('new')">Neueste</div>
             <div class="sort-opt" data-sort="az" data-focusable onclick="setSort('az')">A → Z</div>
             <div class="sort-opt" data-sort="za" data-focusable onclick="setSort('za')">Z → A</div>
             <div class="sort-opt" data-sort="rating" data-focusable onclick="setSort('rating')">Bewertung</div>
@@ -699,6 +700,7 @@ applyUniversalScale();
 <script src="js/api.js"></script>
 <script src="js/epg.js"></script>
 <script src="js/epggrid.js"></script>
+<script src="js/options.js"></script>
 <script src="js/storage.js"></script>
 <script src="js/playlist-editor.js"></script>
 <script src="js/wizard.js"></script>

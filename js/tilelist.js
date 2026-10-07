@@ -287,7 +287,7 @@ var LiveUi = (function () {
     markCats();
     // Lauftext kostet auf TVs zu viel Leistung: dort (und auf Handys ohne die
     // Einstellung) zweizeilige Namen statt Animation
-    var marquee = document.documentElement.classList.contains('xc-phone') && Settings.tileMarquee !== false;
+    var marquee = document.documentElement.classList.contains('xc-phone') && Settings.tileMarquee !== false && !Settings.reduceMotion;
     tiles.classList.toggle('xc-cap2', !marquee);
     if (!marquee) return;
     // Lange Namen unter den Logos als Lauftext (Weite erst nach dem Layout messbar).
@@ -486,6 +486,8 @@ var LiveUi = (function () {
     if (k === 13) {
       if (Date.now() - (typeof _catchupJustStarted !== 'undefined' ? _catchupJustStarted : 0) <= 400) return;
       e.preventDefault(); e.stopImmediatePropagation();
+      var osd = $('live-osd');
+      if (Settings.okAction === 'osd' && osd && osd.classList.contains('fade')) { Player.showControls(); return; }   // erst Senderinfo
       showTiles();
     } else if (k === 37 || k === 39) {
       e.preventDefault(); e.stopImmediatePropagation();

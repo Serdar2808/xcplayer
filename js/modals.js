@@ -1,13 +1,16 @@
 // ── BENUTZERDEFINIERTER BESTÄTIGUNGSDIALOG ────────────────────────
 var _confirmCallback = null;
-function showConfirm(title, msg, yesLabel, callback) {
+// noLabel: Beschriftung des zweiten Buttons (Standard "Abbrechen"), focusYes: Fokus auf "Ja".
+// Zurück schließt mit null (Callbacks mit if(yes) behandeln das wie "Nein").
+function showConfirm(title, msg, yesLabel, callback, noLabel, focusYes) {
   $('confirm-title').textContent = title;
   $('confirm-msg').textContent = msg;
   $('confirm-yes').textContent = yesLabel || 'Löschen';
+  $('confirm-no').textContent = noLabel || 'Abbrechen';
   _confirmCallback = callback;
   $('confirm-modal').classList.remove('hidden');
   FocusTrap.trap('confirm-modal');
-  setTimeout(function(){ SpatialNav.focusBySelector('#confirm-no'); }, 50);
+  setTimeout(function(){ SpatialNav.focusBySelector(focusYes ? '#confirm-yes' : '#confirm-no'); }, 50);
 }
 function closeConfirm(result) {
   $('confirm-modal').classList.add('hidden');

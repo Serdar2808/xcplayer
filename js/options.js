@@ -34,7 +34,7 @@ var ACCENTS = {
 };
 
 // Bereiche: cat = Einstellungs-Bereich, rows: toggle | cycle | action
-// only: 'tv' | 'phone' | 'android' blendet Zeilen je Gerät aus
+// only: 'tv' | 'phone' | 'android' | 'notios' blendet Zeilen je Gerät aus
 var OPTION_UI = [
   { cat: 'ansicht', title: 'Darstellung', rows: [
     { key: 'accent', type: 'cycle', label: 'Akzentfarbe', sub: 'Überschreibt die Farbe des Designs', opts: [['', 'Wie Design'], ['blue', 'Blau'], ['cyan', 'Cyan'], ['purple', 'Violett'], ['pink', 'Pink'], ['red', 'Rot'], ['orange', 'Orange'], ['gold', 'Gold'], ['green', 'Grün']] },
@@ -48,20 +48,27 @@ var OPTION_UI = [
     { key: 'startChannel', type: 'cycle', label: 'Beim App-Start', opts: [['last', 'Letzter Sender'], ['first', 'Erster Sender der Liste'], ['fav', 'Erster Favorit']] },
     { key: 'osdTime', type: 'cycle', label: 'Senderinfo anzeigen für', opts: [[3, '3 Sekunden'], [6, '6 Sekunden'], [10, '10 Sekunden'], [20, '20 Sekunden']] },
     { key: 'chListStay', type: 'toggle', label: 'Senderliste nach der Wahl offen lassen' },
-    { key: 'tileSize', type: 'cycle', label: 'Kachelgröße', opts: [['s', 'Klein'], ['m', 'Mittel'], ['l', 'Groß']] },
     { key: 'zapCount', type: 'cycle', label: 'Letzte Sender (Taste 0)', opts: [[3, '3 Sender'], [5, '5 Sender'], [10, '10 Sender']] },
-    { key: 'favFirst', type: 'toggle', label: 'Favoriten als erste Kategorie' },
-    { key: 'epgBar', type: 'toggle', label: 'Fortschrittsbalken in der Senderliste' },
-    { key: 'dupPref', type: 'cycle', label: 'Reihenfolge der Duplikate', sub: 'Die erste Variante spielt, die anderen folgen in der Duplikate-Liste', opts: [['auto', 'Wie beim Anbieter'], ['uhd', 'Beste zuerst: 4K, FHD, HD, SD'], ['worst', 'Schlechteste zuerst: SD, HD, FHD, 4K'], ['fhd', 'FHD, 4K, HD, SD'], ['hd', 'HD, FHD, SD, 4K'], ['hevc', 'HEVC zuerst, dann beste']] }
+    { key: 'favFirst', type: 'toggle', label: 'Favoriten als erste Kategorie' }
   ]},
   // into: Zeilen in eine vorhandene Karte aus index.html einhängen (hinter die Zeile mit diesem Element)
+  // cls: Zeile nur sichtbar, wenn die zugehörige Einstellung aktiv ist (Klassen setzt renderSettingsChoices)
+  { cat: 'live', into: 'toggle-tile-marquee', rows: [
+    { key: 'tileSize', type: 'cycle', cls: 'st-only-tiles', label: 'Kachelgröße', opts: [['s', 'Klein'], ['m', 'Mittel'], ['l', 'Groß']] }
+  ]},
+  { cat: 'live', into: 'toggle-compact-list-epg', rows: [
+    { key: 'epgBar', type: 'toggle', cls: 'st-only-normal', label: 'Fortschrittsbalken in der Senderliste' }
+  ]},
+  { cat: 'live', into: 'toggle-group-variants', rows: [
+    { key: 'dupPref', type: 'cycle', cls: 'st-only-variants', label: 'Reihenfolge der Duplikate', sub: 'Die erste Variante spielt, die anderen folgen in der Duplikate-Liste', opts: [['auto', 'Wie beim Anbieter'], ['uhd', 'Beste zuerst: 4K, FHD, HD, SD'], ['worst', 'Schlechteste zuerst: SD, HD, FHD, 4K'], ['fhd', 'FHD, 4K, HD, SD'], ['hd', 'HD, FHD, SD, 4K'], ['hevc', 'HEVC zuerst, dann beste']] }
+  ]},
   { cat: 'media', into: 'toggle-show-series', rows: [
     { key: 'showContinue', type: 'toggle', label: 'Weiterschauen' }
   ]},
   { cat: 'media', title: 'Verhalten', rows: [
     { key: 'sortVod', type: 'cycle', label: 'Sortierung Filme', opts: [['default', 'Wie beim Anbieter'], ['new', 'Neueste zuerst'], ['az', 'A - Z'], ['za', 'Z - A'], ['rating', 'Bewertung']] },
     { key: 'sortSeries', type: 'cycle', label: 'Sortierung Serien', opts: [['default', 'Wie beim Anbieter'], ['new', 'Neueste zuerst'], ['az', 'A - Z'], ['za', 'Z - A'], ['rating', 'Bewertung']] },
-    { key: 'newRow', type: 'toggle', label: 'Reihe "Neu hinzugekommen"', sub: 'Oben in der Netflix-Ansicht' },
+    { key: 'newRow', type: 'toggle', cls: 'st-only-netflix', label: 'Reihe "Neu hinzugekommen"', sub: 'Oben in der Netflix-Ansicht' },
     { key: 'watchedPct', type: 'cycle', label: 'Als gesehen markieren ab', sub: 'Danach verschwindet der Eintrag aus Weiterschauen', opts: [[90, '90 %'], [95, '95 %'], [100, 'Erst am Ende']] }
   ]},
   { cat: 'player', title: 'Filme & Serien', rows: [
@@ -77,7 +84,7 @@ var OPTION_UI = [
     { key: 'subLang', type: 'cycle', label: 'Untertitel automatisch', sub: 'Schaltet Untertitel in dieser Sprache ein, wenn vorhanden', opts: [['', 'Aus']].concat(LANG_OPTS.slice(1)) },
     { key: 'subSize', type: 'cycle', label: 'Untertitel-Größe', opts: [['s', 'Klein'], ['m', 'Normal'], ['l', 'Groß'], ['xl', 'Sehr groß']] },
     { key: 'subColor', type: 'cycle', label: 'Untertitel-Farbe', opts: [['white', 'Weiß'], ['yellow', 'Gelb']] },
-    { key: 'subBg', type: 'cycle', label: 'Untertitel-Hintergrund', sub: 'Auf iOS nicht verfügbar', opts: [['shadow', 'Nur Schatten'], ['box', 'Halbtransparent'], ['black', 'Schwarz']] }
+    { key: 'subBg', type: 'cycle', label: 'Untertitel-Hintergrund', only: 'notios', opts: [['shadow', 'Nur Schatten'], ['box', 'Halbtransparent'], ['black', 'Schwarz']] }
   ]},
   { cat: 'player', title: 'Sleep-Timer', rows: [
     { key: '_sleep', type: 'action', label: 'Wiedergabe beenden nach', sub: 'Gilt bis zum nächsten App-Start', action: 'sleepCycle' }
@@ -119,6 +126,7 @@ var Options = {
     if (only === 'tv') return !phone;
     if (only === 'phone') return phone;
     if (only === 'android') return phone && !!(window.AndroidBridge && AndroidBridge.setPip);
+    if (only === 'notios') return !(window.webkit && webkit.messageHandlers && webkit.messageHandlers.xcp);
     return true;
   },
 
@@ -160,7 +168,7 @@ var Options = {
         if (!self._onlyOk(r.only)) return;
         var click = r.type === 'toggle' ? "Options.toggle('" + r.key + "')"
                   : r.type === 'cycle' ? "Options.cycle('" + r.key + "')" : "Options." + r.action + "()";
-        html += '<div class="ios-row' + (r.danger ? ' st-danger' : '') + '" data-focusable onmouseover="setFocus(this)" onclick="' + click + '">'
+        html += '<div class="ios-row' + (r.danger ? ' st-danger' : '') + (r.cls ? ' ' + r.cls : '') + '" data-focusable onmouseover="setFocus(this)" onclick="' + click + '">'
           + '<div style="flex:1"><div class="ios-label">' + esc(r.label) + '</div>' + (r.sub ? '<div class="st-sub">' + esc(r.sub) + '</div>' : '') + '</div>'
           + (r.type === 'toggle' ? '<div class="ios-toggle sp-toggle" id="opt-' + r.key + '"><div class="sp-toggle-knob"></div></div>'
             : r.type === 'cycle' ? '<div class="st-val" id="opt-' + r.key + '"></div>'

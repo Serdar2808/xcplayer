@@ -123,6 +123,8 @@ function renderSettingsChoices() {
   scr.classList.toggle('st-list-compact', list === 'compact');
   scr.classList.toggle('st-list-normal', list === 'normal');
   scr.classList.toggle('st-osd-compact', !!Settings.compactOsd);
+  scr.classList.toggle('st-variants', !!Settings.groupVariants);
+  scr.classList.toggle('st-media-netflix', Settings.useNetflixStyle !== false);
   scr.querySelectorAll('img.st-thumb').forEach(function(img){
     var src = settingsPreviewImage(img.getAttribute('data-thumb'));
     if(src && img.getAttribute('src') !== src) img.setAttribute('src', src);

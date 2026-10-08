@@ -2159,7 +2159,10 @@ html.xc-phone .cs-hint{font-size:28px}
 #settings-screen:not(.st-list-tiles) .st-only-tiles,
 #settings-screen:not(.st-list-compact) .st-only-compact,
 #settings-screen.st-list-tiles .st-only-list,
-#settings-screen:not(.st-osd-compact) .st-only-osdcompact{display:none !important}
+#settings-screen:not(.st-osd-compact) .st-only-osdcompact,
+#settings-screen:not(.st-list-normal) .st-only-normal,
+#settings-screen:not(.st-variants) .st-only-variants,
+#settings-screen:not(.st-media-netflix) .st-only-netflix{display:none !important}
 .st-acct{display:flex;align-items:center}
 .st-acct-txt{min-width:0}
 .st-acct-name{font-family:'Sora',sans-serif;font-size:var(--fs-xl);font-weight:700;color:var(--hi)}

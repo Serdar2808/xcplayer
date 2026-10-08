@@ -1693,7 +1693,7 @@ body.nf-active #nf-search-bar { display:none !important; }
   display:block;
   height:100px;
   margin-top:-100px;
-  background:linear-gradient(180deg, transparent 0%, var(--bg) 90%);
+  background:linear-gradient(180deg, rgba(var(--bg-rgb),0) 0%, rgba(var(--bg-rgb),1) 90%);
   pointer-events:none;
   z-index:30;
 }
@@ -2124,7 +2124,7 @@ html.xc-phone .cs-hint{font-size:28px}
   background:linear-gradient(90deg,transparent,var(--accent),var(--accent2),transparent)}
 .st-nav.focused::before{top:0}.st-nav.focused::after{bottom:0}
 
-.st-content{flex:1;min-width:0;overflow-y:auto;padding:30px 60px 90px 50px}
+.st-content{flex:1;min-width:0;overflow-y:auto;padding:30px 60px 150px 50px}
 .st-content::-webkit-scrollbar{width:0}
 .st-h{margin:0 0 24px 4px;font-family:'Sora',sans-serif;font-size:var(--fs-2xl);font-weight:700;color:var(--hi)}
 .st-card{margin-bottom:24px;padding:26px 28px;border-radius:22px;border:1px solid var(--border);background:var(--bg-card);box-shadow:0 12px 40px rgba(0,0,0,.25)}

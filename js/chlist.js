@@ -76,16 +76,17 @@ function chListMove(dir){
 function chListSelect(){
   var s=S.filteredStreams[S.chListCursor]; if(!s) return;
   S.currentStreamIdx=S.chListCursor;
-  S.chListOpen=false;
   saveLastStream(s);
+  // Einstellung "Liste offen lassen": Player.play lässt sie dann stehen (kein Schließen/OSD-Blinken)
+  if(Settings.chListStay && S.playerVisible && S.playerType === 'live'){
+    S._keepChList = true;
+    try { Player.play(API.liveUrl(s),s,'live'); } finally { S._keepChList = false; }
+    renderChListOverlay();
+    if(typeof _resetAutoClose === 'function') _resetAutoClose();
+    return;
+  }
+  S.chListOpen=false;
   Player.play(API.liveUrl(s),s,'live');
-  // Einstellung: Liste bleibt offen (Player.play schließt sie) - gleich wieder öffnen
-  // Handy mit kompakter Liste: die gehört zur Live-Bedienung (LiveUi) - die wieder öffnen
-  if(Settings.chListStay) setTimeout(function(){
-    if(!S.playerVisible || S.chListOpen) return;
-    if(Settings.compactList && document.documentElement.classList.contains('xc-phone') && window.LiveUi) LiveUi.showPhone();
-    else Player.toggleChList();
-  }, 60);
 }
 
 // ── KATEGORIEN-ANSICHT (GRÜN) in Senderliste ──────────────────────

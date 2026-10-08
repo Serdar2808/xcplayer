@@ -493,9 +493,13 @@ window.addEventListener('keydown', function(e) {
       return;
     }
     if((inRail || inContent) && (k===38 || k===40)){
-      e.preventDefault(); SpatialNav.move(k===38 ? 'up' : 'down');
+      e.preventDefault();
+      var stCat2 = S.settingsCatOpen;
+      SpatialNav.move(k===38 ? 'up' : 'down');
       var nf = SpatialNav.focused, left = nf && nf.closest && (inRail ? !nf.closest('#st-rail') : !nf.closest('#st-content'));
       if(left || nf === sf){
+        // kurz in der Leiste gelandet: das hat schon den Bereich umgeschaltet - zurück
+        if(inContent && S.settingsCatOpen !== stCat2){ var keepTop = $('st-content').scrollTop; _showSettingsCat(stCat2); $('st-content').scrollTop = keepTop; }
         SpatialNav.focus(sf);
         // Ganz oben in der Leiste: weiter ins Menü wie überall
         if(k===38 && inRail && !Settings.useSidebar && !document.getElementById('navbar').classList.contains('hidden')) navTabsEnter();

@@ -383,7 +383,8 @@ var Player = {
     this._bitrate = 0; // Bitrate für neuen Stream zurücksetzen
     S.playerVisible=true;
     S._mediaErrorRetries = 0; // Fehler-Counter zurücksetzen
-    S.epgOpen=false; S.chListOpen=false;
+    S.epgOpen=false;
+    if(!S._keepChList) S.chListOpen=false;   // "Senderliste offen lassen": Liste bleibt beim Umschalten stehen
     if(typeof _updateNavbarVisibility === 'function') _updateNavbarVisibility();
     this._closeSubPanel(); this._activeSubIdx=-1; $('sub-indicator').classList.add('hidden');
     this._closeAudioPanel();

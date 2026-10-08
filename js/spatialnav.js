@@ -73,7 +73,7 @@ var SpatialNav = {
     el.classList.add(fc);
     // Elemente, die auf ihren Fokus reagieren wollen (z.B. Weiterschauen-Karten)
     if(el.hasAttribute('data-onfocus')){ try { el.dispatchEvent(new CustomEvent('xcfocus')); } catch(e){} }
-    var scrollContainerSel = '#episode-list, #epg-body, #sub-list, #audio-list, #clo-list, #wiz-cat-grid, #wiz-detect-results, .wq-tiles, #wq-list, .wq-sum';
+    var scrollContainerSel = '#st-content, #episode-list, #epg-body, #sub-list, #audio-list, #clo-list, #wiz-cat-grid, #wiz-detect-results, .wq-tiles, #wq-list, .wq-sum';
     var container = el.closest(scrollContainerSel);
     if(container){
       var elRect = el.getBoundingClientRect();
@@ -84,7 +84,8 @@ var SpatialNav = {
       var pb = parseInt(window.getComputedStyle(container).paddingBottom) || 0;
       var cTop   = container.scrollTop + pt;
       var cBot   = container.scrollTop + container.clientHeight - pb;
-      if(relTop < cTop) container.scrollTop = relTop - pt - 12;
+      if(container.id === 'st-content' && relTop < 300) container.scrollTop = 0;   // Einstellungen: Überschrift oben mitzeigen
+      else if(relTop < cTop) container.scrollTop = relTop - pt - 12;
       else if(relBot > cBot) container.scrollTop = relBot - container.clientHeight + pb + 12;
     } else if(!el.hasAttribute('data-noscroll')) { el.scrollIntoView({block:'nearest', inline:'nearest'}); }   // data-noscroll: Element scrollt selbst (xcfocus)
     if(el.classList.contains('profile-card')||el.classList.contains('add-profile-btn')){ S.focusArea='profile_grid'; } 

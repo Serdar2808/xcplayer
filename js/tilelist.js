@@ -315,17 +315,21 @@ var LiveUi = (function () {
   }
   function playTile(i) {
     var s = st.streams[i]; if (!s) return;
-    hide();
+    // Einstellung "Senderliste nach der Wahl offen lassen": Kacheln bleiben einfach stehen
+    var stay = Settings.chListStay && st.open && isLive();
+    if (!stay) hide();
     S.filteredStreams = st.streams;            // Zappen läuft danach in dieser Kategorie
     S.chListCatIdx = st.catIdx;
     S.currentStreamIdx = i;
     saveLastStream(s);
     Player.play(API.liveUrl(s), s, 'live');     // zeigt die OSD-Leiste mit dem neuen Sender
-    // Einstellung "Senderliste nach der Wahl offen lassen": Kacheln gleich wieder zeigen
-    if (Settings.chListStay) setTimeout(function () {
-      if (!isLive() || st.open) return;
-      if (isPhone()) showPhone(); else showTiles();
-    }, 60);
+    if (stay) {
+      var ch = ui.querySelector('.xc-tiles').children;
+      for (var c = 0; c < ch.length; c++) ch[c].classList.toggle('cur', c === i);
+      renderVariants(st.kind === 'phone' || st.kind === 'dups');
+      layout();
+      restartTimer();
+    }
   }
 
   function restartTimer() {

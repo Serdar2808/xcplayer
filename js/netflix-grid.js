@@ -159,6 +159,7 @@ var NF = {
     grid.onclick=function(e){
       var c=e.target.closest('.nf-card'); if(!c) return;
       var r=parseInt(c.dataset.row),col=parseInt(c.dataset.col);
+      if(NF._phone()){ NF.rowIdx=r; NF.colIdx=col; NF.select(); return; }
       if(r===NF.rowIdx&&col===NF.colIdx) NF.select(); else NF.focusCard(r,col);
     };
     NF._setupObservers();
@@ -196,7 +197,9 @@ var NF = {
 
     var windowStart = Math.max(0, focusCol - 2);
     var windowEnd = Math.min(total - 1, windowStart + NF.WINDOW_SIZE - 1);
-    if(windowEnd - windowStart < NF.WINDOW_SIZE - 1){
+    // Handy: die Reihe scrollt selbst (Wischen) - alle Karten auf einmal
+    if(NF._phone()){ windowStart = 0; windowEnd = total - 1; }
+    else if(windowEnd - windowStart < NF.WINDOW_SIZE - 1){
       windowStart = Math.max(0, windowEnd - NF.WINDOW_SIZE + 1);
     }
 
@@ -275,8 +278,12 @@ var NF = {
     return el;
   },
 
+  // Handy (wie die Netflix-App): alle Poster gleich groß, Reihen frei wischbar, Antippen öffnet
+  _phone: function(){ return document.documentElement.classList.contains('xc-phone'); },
+
   _updateFocusDOMForRow: function(r) {
     var state = NF._rowState[r]; if(!state) return;
+    if(NF._phone()) return;
     Object.keys(state.cardEls).forEach(function(c){
       var ci = parseInt(c);
       var el = state.cardEls[ci];
@@ -295,12 +302,13 @@ var NF = {
     document.querySelectorAll('.nf-row.nf-at-left').forEach(function(el){ el.classList.remove('nf-at-left'); });
     if(S.focusArea === 'netflix') {
       NF._updateFocusDOMForRow(NF.rowIdx);
-      NF._scrollRowInView(NF.rowIdx, true);
+      if(!NF._phone()) NF._scrollRowInView(NF.rowIdx, true);   // Handy: Liste bleibt, wo sie war
     }
     NF._renderInfo(NF.rowIdx, NF.colIdx);
   },
 
   _renderInfo: function(r,c) {
+    if(NF._phone()) return;                      // keine Beschreibung und kein Trailer am Handy
     // Statt querySelectorAll: Nur den vorherigen Info-Container leeren
     if(NF._lastInfoRow !== undefined && NF._lastInfoRow !== r){
       var prev = $('nf-info-' + NF._lastInfoRow);
@@ -433,6 +441,7 @@ var NF = {
   // → translateX = PEEK_OFFSET - PADDING_LEFT - focusCol * 316
   _applyTransform: function(r, c, animate) {
     var inner = $('nf-inner-'+r); if(!inner) return;
+    if(NF._phone()){ inner.style.transform = 'none'; return; }
     var tx = NF.PEEK_OFFSET - NF.PADDING_LEFT - c * (NF.CARD_W + NF.GAP);
     inner.style.transition = animate ? 'transform .35s cubic-bezier(0.25,0.46,0.45,0.94)' : 'none';
     inner.style.transform = 'translate3d(' + tx + 'px, 0, 0)';

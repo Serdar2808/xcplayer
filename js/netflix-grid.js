@@ -536,6 +536,7 @@ var NF = {
   },
 
   _scrollRowInView: function(r, jump) {
+    if(NF._noScroll) return;                     // Handy: Reihe nach dem Wischen fokussiert, steht schon
     var el=$('nf-row-'+r),g=$('netflix-grid'); if(!el||!g) return;
     g.scrollTo({ top: el.offsetTop, behavior: jump ? 'auto' : 'smooth' });
   },

@@ -2253,3 +2253,22 @@ html.tiles-l .xc-tiles .xc-tile { zoom:1.2; }
 
 /* Android Bild-im-Bild: im kleinen Fenster nur das Video */
 html.xc-pip body > *:not(#player-screen), html.xc-pip #player-screen > *:not(#video-el) { visibility:hidden !important; }
+
+/* Intro überspringen: wie "Nächste Episode", aber unten links; steht über der Bedienung, solange sie sichtbar ist */
+#intro-bar{position:fixed;bottom:40px;left:48px;z-index:1050;
+  background:rgba(var(--bg-rgb),0.85);backdrop-filter:blur(16px);border:1px solid rgba(var(--accent-rgb),.3);
+  border-radius:14px;padding:14px 20px;width:440px;box-shadow:0 8px 32px rgba(0,0,0,.6);
+  transform:translateY(80px);opacity:0;transition:transform .25s ease,opacity .25s ease,bottom .25s ease;pointer-events:none}
+#intro-bar.show{transform:translateY(0);opacity:1;pointer-events:auto}
+#ctrl-vod:not(.fade):not(.hidden) ~ #intro-bar{bottom:250px}
+#intro-bar .binge-progress-fill{transition:width .5s linear}
+#intro-bar .binge-btn{white-space:nowrap}
+#intro-skip,#intro-hide{background:rgba(255,255,255,.06);color:var(--mid);border:1px solid var(--border)}
+html.theme-light #intro-bar{background:rgba(var(--lpanel-rgb),.96);border-color:var(--border);box-shadow:0 8px 32px rgba(0,0,0,.1)}
+
+/* Klassische Ansicht: Fokus so deutlich wie in der Netflix-Ansicht (schmale Karten -
+   Linien kräftiger und fast bis an den Rand, dazu Leuchten in der Akzentfarbe) */
+.card-focused .card-poster::before, .card-focused .card-poster::after {
+  height:4px; background:linear-gradient(90deg, rgba(var(--accent-rgb),.25), var(--accent), var(--accent2), rgba(var(--accent2-rgb),.25)) !important; }
+.grid-item-wrap.card-focused { box-shadow:0 0 0 2px rgba(var(--accent2-rgb),.55), 0 0 34px rgba(var(--accent2-rgb),.45) !important; }
+body.focus-in-topbar .grid-item-wrap.card-focused { box-shadow:none !important; }

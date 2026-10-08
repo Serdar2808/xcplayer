@@ -375,7 +375,7 @@ var Player = {
     S._bingeTriggered = false;
     S._watchedMarked = false;
     this._autoDone = false; this._autoA = false; this._autoS = false; this._introSkipped = false;
-    if($('btn-skip-intro')) $('btn-skip-intro').classList.add('hidden');
+    this._showIntroBar(false);
     S.currentStream=stream; S.playerType=type||S.tab;
     this.applyAspect();
     if(type==='live') buildVariants(stream);
@@ -888,6 +888,7 @@ var Player = {
   },
   close:function(){
     BingeMode.stop();
+    this._showIntroBar(false);
     if(typeof FocusTrap !== 'undefined') FocusTrap.clearAll();
     if(S.playerType === 'catchup') {
       _catchupJustStarted = 0; // Zurücksetzen, damit OK im Live-Modus die Senderliste öffnet
@@ -977,20 +978,40 @@ var Player = {
     v.style.left = Math.round((W - w) / 2) + 'px'; v.style.top = Math.round((H - h) / 2) + 'px';
   },
   // ── Intro überspringen (Einstellung, Serien) ──────────────────
+  // Kasten unten links wie "Nächste Episode": sichtbar vom Start der Folge bis
+  // 30 s nach der eingestellten Intro-Länge, der Balken zeigt die verbleibende Zeit
   _updateIntroBtn: function(){
-    var b = $('btn-skip-intro'); if(!b) return;
-    var secs = +Settings.introSkip, t = this.vid.currentTime || 0;
-    var show = S.playerType === 'series' && secs > 0 && !this._introSkipped && t > 2 && t < 300;
-    if(show) $('btn-skip-intro-lbl').textContent = 'Intro +' + secs + ' s';
-    if(b.classList.contains('hidden') === show) b.classList.toggle('hidden', !show);
+    var secs = +Settings.introSkip, t = this.vid.currentTime || 0, end = secs + 30;
+    var show = S.playerType === 'series' && secs > 0 && !this._introSkipped && t > 2 && t < end &&
+               !(typeof BingeMode !== 'undefined' && BingeMode._active);
+    if(show){
+      $('intro-bar-lbl').textContent = '+' + secs + ' Sekunden überspringen';
+      $('intro-prog-fill').style.width = Math.max(0, Math.min(100, (end - t) / (end - 2) * 100)).toFixed(1) + '%';
+    }
+    this._showIntroBar(show);
+  },
+  _showIntroBar: function(show){
+    var bar = $('intro-bar'); if(!bar || bar.classList.contains('show') === !!show) return;
+    bar.classList.toggle('show', !!show);
+    var foc = typeof SpatialNav !== 'undefined' && SpatialNav.focused;
+    if(show){
+      // Fokus nur holen, wenn gerade nicht in der Player-Bedienung navigiert wird
+      if($('ctrl-vod').classList.contains('fade') || !foc || !foc.closest('#ctrl-vod, #player-topbar'))
+        SpatialNav.focusBySelector('#intro-skip');
+    } else if(foc && foc.closest && foc.closest('#intro-bar') && S.playerVisible) {
+      SpatialNav.focusBySelector('#btn-pp-vod');
+    }
   },
   skipIntro: function(){
     var secs = +Settings.introSkip || 90;
     this._introSkipped = true;
     try { this.vid.currentTime = Math.min((this.vid.duration || 1e9) - 5, (this.vid.currentTime || 0) + secs); } catch(e){}
-    this._updateIntroBtn();
-    SpatialNav.focusBySelector('#btn-pp-vod');
+    this._showIntroBar(false);
     this.showControls();
+  },
+  dismissIntro: function(){
+    this._introSkipped = true;
+    this._showIntroBar(false);
   },
 
   // ── Bevorzugte Ton-/Untertitelsprache (Einstellungen) ─────────

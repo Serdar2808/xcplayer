@@ -80,7 +80,12 @@ function chListSelect(){
   saveLastStream(s);
   Player.play(API.liveUrl(s),s,'live');
   // Einstellung: Liste bleibt offen (Player.play schließt sie) - gleich wieder öffnen
-  if(Settings.chListStay && !Settings.compactList) setTimeout(function(){ if(S.playerVisible && !S.chListOpen) Player.toggleChList(); }, 60);
+  // Handy mit kompakter Liste: die gehört zur Live-Bedienung (LiveUi) - die wieder öffnen
+  if(Settings.chListStay) setTimeout(function(){
+    if(!S.playerVisible || S.chListOpen) return;
+    if(Settings.compactList && document.documentElement.classList.contains('xc-phone') && window.LiveUi) LiveUi.showPhone();
+    else Player.toggleChList();
+  }, 60);
 }
 
 // ── KATEGORIEN-ANSICHT (GRÜN) in Senderliste ──────────────────────

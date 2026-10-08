@@ -424,17 +424,43 @@ var DUP_PREF_RE = {
   hd: /(^|[\s(])(hd|720p?)([\s)*+]|$)|(^|[^ᶠᵁ])ᴴᴰ/i,
   hevc: /hevc|h\.?265/i
 };
+// Reihenfolge der Qualitäten je Einstellung (auto = wie beim Anbieter)
+var DUP_ORDERS = {
+  uhd: ['uhd', 'fhd', 'hd', 'sd'], worst: ['sd', 'hd', 'fhd', 'uhd'],
+  fhd: ['fhd', 'uhd', 'hd', 'sd'], hd: ['hd', 'fhd', 'sd', 'uhd'], hevc: ['uhd', 'fhd', 'hd', 'sd']
+};
+function dupQuality(name) {
+  name = name || '';
+  if (DUP_PREF_RE.uhd.test(name)) return 'uhd';
+  if (DUP_PREF_RE.fhd.test(name)) return 'fhd';
+  if (DUP_PREF_RE.hd.test(name)) return 'hd';
+  return 'sd';
+}
+// Kleinere Zahl = bevorzugt
+function dupRank(name) {
+  var order = DUP_ORDERS[Settings.dupPref]; if (!order) return 0;
+  var r = order.indexOf(dupQuality(name));
+  if (Settings.dupPref === 'hevc' && !DUP_PREF_RE.hevc.test(name || '')) r += 10;
+  return r;
+}
+// Duplikate in der Reihenfolge der Einstellung (stabil - alte Browser sortieren nicht stabil)
+function sortByDupPref(list, getName) {
+  if (!DUP_ORDERS[Settings.dupPref]) return list;
+  return list.map(function(x, i){ return { x: x, i: i, r: dupRank(getName(x)) }; })
+    .sort(function(a, b){ return a.r - b.r || a.i - b.i; })
+    .map(function(o){ return o.x; });
+}
 function applyVariantGrouping(arr) {
   if (S.tab !== 'live' || !Settings.groupVariants) return arr;
   var seen = {};
   var res = [];
-  var re = DUP_PREF_RE[Settings.dupPref];
+  var pref = !!DUP_ORDERS[Settings.dupPref];
   for (var i=0; i<arr.length; i++) {
     var base = _baseName(arr[i].name);
     if (seen[base] === undefined) {
       seen[base] = res.length;
       res.push(arr[i]);
-    } else if (re && !re.test(res[seen[base]].name) && re.test(arr[i].name)) {
+    } else if (pref && dupRank(arr[i].name) < dupRank(res[seen[base]].name)) {
       res[seen[base]] = arr[i];          // bevorzugte Variante steht an der Stelle der ersten
     }
   }

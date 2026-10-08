@@ -321,6 +321,11 @@ var LiveUi = (function () {
     S.currentStreamIdx = i;
     saveLastStream(s);
     Player.play(API.liveUrl(s), s, 'live');     // zeigt die OSD-Leiste mit dem neuen Sender
+    // Einstellung "Senderliste nach der Wahl offen lassen": Kacheln gleich wieder zeigen
+    if (Settings.chListStay) setTimeout(function () {
+      if (!isLive() || st.open) return;
+      if (isPhone()) showPhone(); else showTiles();
+    }, 60);
   }
 
   function restartTimer() {

@@ -106,9 +106,17 @@ document.getElementById('ctrl-vod-container').innerHTML = `
       <div style="display:flex; gap:16px; justify-content:center;">
         <button class="pbtn" id="btn-audio" onclick="Player.toggleAudio()" data-focusable><span class="ico-w">&#x1F50A;</span> Audiospur</button>
         <button class="pbtn" id="btn-sub" onclick="Player.toggleSubtitles()" data-focusable><span class="ico-w">&#x1F4AC;</span> Untertitel</button>
-        <button class="pbtn hidden" id="btn-skip-intro" onclick="Player.skipIntro()" data-focusable><span class="ico-w">&#x00BB;</span> <span id="btn-skip-intro-lbl">Intro überspringen</span></button>
         <button class="pbtn" id="btn-aspect" onclick="Player.cycleAspect()" data-focusable><span class="ico-w">&#x1F4D0;</span> <span id="btn-aspect-lbl">Bild: Original</span></button>
       </div>
+    </div>
+  </div>
+  <div id="intro-bar">
+    <div class="binge-title">Intro</div>
+    <div class="binge-ep-name" id="intro-bar-lbl">+90 Sekunden überspringen</div>
+    <div class="binge-progress"><div class="binge-progress-fill" id="intro-prog-fill" style="width:100%"></div></div>
+    <div class="binge-btns">
+      <button class="binge-btn" id="intro-skip" data-focusable onclick="Player.skipIntro()">&#x00BB; Überspringen</button>
+      <button class="binge-btn" id="intro-hide" data-focusable onclick="Player.dismissIntro()">&#x2715; Ausblenden</button>
     </div>
   </div>
 `;

@@ -87,7 +87,7 @@ async function renderContinueScreen() {
              + '<div class="nf-card-img-ph" style="display:none">&#x1F3AC;</div>'
            : '<div class="nf-card-img-ph">&#x1F3AC;</div>';
          // Karte + Fortschrittsbalken (cyan) darunter
-         html += '<div class="cs-item"><div class="nf-card cs-card" data-focusable data-focus-class="nf-focused" data-onfocus data-k="'+k+'" data-row="'+r+'">'
+         html += '<div class="cs-item"><div class="nf-card cs-card" data-focusable data-focus-class="nf-focused" data-onfocus data-noscroll data-k="'+k+'" data-row="'+r+'">'
            + img
            + '<div class="nf-card-title" aria-hidden="true">'+esc(it.title)+'</div>'
            + (it.badge ? '<div class="cs-badge">'+esc(it.badge)+'</div>' : '')
@@ -230,6 +230,17 @@ function _csFocused(card){
       (phone
         ? '<div class="cs-hint">Nochmal antippen: fortsetzen <button class="cs-remove" onclick="continueRemove(' + k + ')">&#x2715; Entfernen</button></div>'
         : '<div class="cs-hint">OK: fortsetzen &nbsp;·&nbsp; <span class="cs-key-red"></span> ROT: aus Weiterschauen entfernen</div>');
+  }
+  // Senkrecht: immer die ganze Reihe (Überschrift bis Infozeile) zeigen - die erste ganz oben
+  var scr = $('continue-screen'), row = card.closest('.cs-row');
+  if(scr && row){
+    if(row === row.parentNode.firstElementChild){ scr.scrollTop = 0; return; }
+    var sr = scr.getBoundingClientRect(), rr = row.getBoundingClientRect();
+    var pad = parseInt(getComputedStyle(scr).paddingTop, 10) || 0;
+    var top = scr.scrollTop + rr.top - sr.top - pad;              // Reihe oben an den Rand
+    var bottom = scr.scrollTop + rr.bottom - sr.bottom + 40;      // Reihe unten ganz sichtbar
+    if(rr.top < sr.top + pad) scr.scrollTop = top;
+    else if(rr.bottom > sr.bottom - 40) scr.scrollTop = Math.min(top, bottom);
   }
 }
 

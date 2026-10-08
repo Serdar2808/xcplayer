@@ -378,6 +378,14 @@ window.addEventListener('keydown', function(e) {
       else {
       if(!S.sysMenuOpen && k!==KEYS.BACK && k!==KEYS.BACK2 && k!==KEYS.ESC && k!==KEYS.BKSP) Player.showControls();
       if(typeof ZapHistory !== 'undefined' && ZapHistory._osdOpen){ if(k===38){ e.preventDefault(); ZapHistory.moveUp(); return; } if(k===40){ e.preventDefault(); ZapHistory.moveDown(); return; } if(k===13){ e.preventDefault(); ZapHistory.select(); return; } if(k===48||k===96){ e.preventDefault(); ZapHistory.open(); return; } if(k===KEYS.BACK||k===KEYS.BACK2||k===KEYS.ESC){ e.preventDefault(); S._backConsumed = true; ZapHistory.hideOsd(); return; } }
+      // Kasten "Intro überspringen": links/rechts wechselt den Button, hoch/runter geht in die Bedienung
+      var ifoc = SpatialNav.focused;
+      if(ifoc && ifoc.closest && ifoc.closest('#intro-bar') && $('intro-bar').classList.contains('show')){
+        if(k===37||k===39){ e.preventDefault(); SpatialNav.focusBySelector(ifoc.id === 'intro-skip' ? '#intro-hide' : '#intro-skip'); return; }
+        if(k===13){ e.preventDefault(); if(ifoc.id === 'intro-hide') Player.dismissIntro(); else Player.skipIntro(); return; }
+        if(k===KEYS.BACK||k===KEYS.BACK2||k===KEYS.ESC){ e.preventDefault(); Player.dismissIntro(); return; }
+        if(k===38||k===40){ e.preventDefault(); SpatialNav.focusBySelector('#btn-pp-vod'); return; }
+      }
       if(typeof BingeMode !== 'undefined' && BingeMode._active){ if(k===37||k===39){ e.preventDefault(); var focused = SpatialNav.focused; if(!focused || focused.id==='binge-skip') SpatialNav.focusBySelector('#binge-stop'); else SpatialNav.focusBySelector('#binge-skip'); return; } if(k===13){ e.preventDefault(); var bf = SpatialNav.focused; if(bf && bf.id==='binge-stop') bingeStop(); else bingeSkipNow(); return; } if(k===KEYS.BACK||k===KEYS.BACK2){ e.preventDefault(); bingeStop(); return; } if(!SpatialNav.focused || (!SpatialNav.focused.closest('#binge-bar'))){ SpatialNav.focusBySelector('#binge-skip'); } }
       if(k===KEYS.PLAY||k===KEYS.PAUSE){ e.preventDefault(); Player.togglePP(); return; }
       if(k===412){ e.preventDefault(); if(S.playerType!=='live') progressiveSeek(-1); return; }

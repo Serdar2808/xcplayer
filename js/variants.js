@@ -29,6 +29,7 @@ function buildVariants(stream){
     if(_baseName(S.streams[i].name)===base)
       S.variants.push({stream:S.streams[i]});
   }
+  S.variants = sortByDupPref(S.variants, function(v){ return v.stream.name; });
   S.variantIdx=0;
   for(var j=0;j<S.variants.length;j++){
     if(S.variants[j].stream.stream_id===stream.stream_id){ S.variantIdx=j; break; }

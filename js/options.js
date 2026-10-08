@@ -40,7 +40,7 @@ var OPTION_UI = [
     { key: 'accent', type: 'cycle', label: 'Akzentfarbe', sub: 'Überschreibt die Farbe des Designs', opts: [['', 'Wie Design'], ['blue', 'Blau'], ['cyan', 'Cyan'], ['purple', 'Violett'], ['pink', 'Pink'], ['red', 'Rot'], ['orange', 'Orange'], ['gold', 'Gold'], ['green', 'Grün']] },
     { key: 'fontScale', type: 'cycle', label: 'Schriftgröße', opts: [['small', 'Klein'], ['normal', 'Normal'], ['large', 'Groß'], ['xlarge', 'Sehr groß']] },
     { key: 'focusStyle', type: 'cycle', label: 'Fokus-Markierung', sub: 'Wie die Auswahl hervorgehoben wird', opts: [['lines', 'Linien'], ['frame', 'Rahmen'], ['zoom', 'Nur Vergrößern']] },
-    { key: 'clock', type: 'cycle', label: 'Uhr', opts: [['datetime', 'Datum und Uhrzeit'], ['time', 'Nur Uhrzeit'], ['off', 'Aus']] },
+    { key: 'clock', type: 'cycle', label: 'Uhr', only: 'tv', opts: [['datetime', 'Datum und Uhrzeit'], ['time', 'Nur Uhrzeit'], ['off', 'Aus']] },
     { key: 'bgStyle', type: 'cycle', label: 'Hintergrund', opts: [['flat', 'Einfarbig'], ['gradient', 'Leichter Verlauf']] },
     { key: 'reduceMotion', type: 'toggle', label: 'Animationen reduzieren', sub: 'Weniger Übergänge und Lauftexte - schneller auf schwachen Geräten' }
   ]},
@@ -52,13 +52,16 @@ var OPTION_UI = [
     { key: 'zapCount', type: 'cycle', label: 'Letzte Sender (Taste 0)', opts: [[3, '3 Sender'], [5, '5 Sender'], [10, '10 Sender']] },
     { key: 'favFirst', type: 'toggle', label: 'Favoriten als erste Kategorie' },
     { key: 'epgBar', type: 'toggle', label: 'Fortschrittsbalken in der Senderliste' },
-    { key: 'dupPref', type: 'cycle', label: 'Bevorzugte Qualität bei Duplikaten', sub: 'Welche Variante bei zusammengefassten Sendern spielt', opts: [['auto', 'Erste in der Liste'], ['uhd', 'UHD / 4K'], ['fhd', 'FHD'], ['hd', 'HD'], ['hevc', 'HEVC']] }
+    { key: 'dupPref', type: 'cycle', label: 'Reihenfolge der Duplikate', sub: 'Die erste Variante spielt, die anderen folgen in der Duplikate-Liste', opts: [['auto', 'Wie beim Anbieter'], ['uhd', 'Beste zuerst: 4K, FHD, HD, SD'], ['worst', 'Schlechteste zuerst: SD, HD, FHD, 4K'], ['fhd', 'FHD, 4K, HD, SD'], ['hd', 'HD, FHD, SD, 4K'], ['hevc', 'HEVC zuerst, dann beste']] }
+  ]},
+  // into: Zeilen in eine vorhandene Karte aus index.html einhängen (hinter die Zeile mit diesem Element)
+  { cat: 'media', into: 'toggle-show-series', rows: [
+    { key: 'showContinue', type: 'toggle', label: 'Weiterschauen' }
   ]},
   { cat: 'media', title: 'Verhalten', rows: [
     { key: 'sortVod', type: 'cycle', label: 'Sortierung Filme', opts: [['default', 'Wie beim Anbieter'], ['new', 'Neueste zuerst'], ['az', 'A - Z'], ['za', 'Z - A'], ['rating', 'Bewertung']] },
     { key: 'sortSeries', type: 'cycle', label: 'Sortierung Serien', opts: [['default', 'Wie beim Anbieter'], ['new', 'Neueste zuerst'], ['az', 'A - Z'], ['za', 'Z - A'], ['rating', 'Bewertung']] },
     { key: 'newRow', type: 'toggle', label: 'Reihe "Neu hinzugekommen"', sub: 'Oben in der Netflix-Ansicht' },
-    { key: 'showContinue', type: 'toggle', label: 'Weiterschauen im Menü anzeigen' },
     { key: 'watchedPct', type: 'cycle', label: 'Als gesehen markieren ab', sub: 'Danach verschwindet der Eintrag aus Weiterschauen', opts: [[90, '90 %'], [95, '95 %'], [100, 'Erst am Ende']] }
   ]},
   { cat: 'player', title: 'Filme & Serien', rows: [
@@ -152,7 +155,7 @@ var Options = {
     OPTION_UI.forEach(function(card){
       if (!self._onlyOk(card.only)) return;
       var sec = $('set-cat-' + card.cat); if (!sec) return;
-      var html = '<div class="st-card st-gen"><div class="st-card-title">' + esc(card.title) + '</div><div class="ios-group st-rows">';
+      var html = '';
       card.rows.forEach(function(r){
         if (!self._onlyOk(r.only)) return;
         var click = r.type === 'toggle' ? "Options.toggle('" + r.key + "')"
@@ -164,8 +167,9 @@ var Options = {
             : '<div class="st-val" id="opt-' + r.key + '"></div><div class="ios-arrow">&#x203A;</div>')
           + '</div>';
       });
-      html += '</div></div>';
-      sec.insertAdjacentHTML('beforeend', html);
+      var anchor = card.into && $(card.into) && $(card.into).closest('.ios-row');
+      if (anchor) { anchor.insertAdjacentHTML('afterend', html); return; }
+      sec.insertAdjacentHTML('beforeend', '<div class="st-card st-gen"><div class="st-card-title">' + esc(card.title) + '</div><div class="ios-group st-rows">' + html + '</div></div>');
     });
     // Alter Schalter "mit Kanal 1 starten" wird durch "Beim App-Start" ersetzt
     var oldStart = $('toggle-start-first');
@@ -229,6 +233,7 @@ var Options = {
       var base = parseFloat(getComputedStyle(root).getPropertyValue('--fs-' + n));
       if (base) st.setProperty('--fs-' + n, Math.round(base * f) + 'px');
     });
+    this._scalePhoneFonts(f);
     root.classList.toggle('focus-frame', Settings.focusStyle === 'frame');
     root.classList.toggle('focus-zoom', Settings.focusStyle === 'zoom');
     root.classList.toggle('reduce-motion', !!Settings.reduceMotion);
@@ -251,6 +256,30 @@ var Options = {
     this.applySubStyle();
     this.updateKeyHints();
     if (this._rendered) this.updateUi();
+  },
+
+  // Handy: dessen Regeln (html.xc-phone ...) setzen feste Schriftgrößen in px -
+  // die skalieren wir direkt in den Stylesheets (Originalwert steht in --xc-fs0 an der Regel)
+  _scalePhoneFonts: function(f){
+    if (!document.documentElement.classList.contains('xc-phone')) return;
+    function walk(rules){
+      for (var i = 0; i < rules.length; i++) {
+        var r = rules[i];
+        if (r.cssRules && !r.selectorText) { walk(r.cssRules); continue; }
+        if (!r.style || !r.selectorText || r.selectorText.indexOf('xc-phone') < 0) continue;
+        var orig = parseFloat(r.style.getPropertyValue('--xc-fs0'));
+        if (!orig) {
+          var m = /^([\d.]+)px$/.exec(r.style.fontSize || '');
+          if (!m) continue;
+          orig = parseFloat(m[1]);
+          r.style.setProperty('--xc-fs0', String(orig));
+        }
+        r.style.setProperty('font-size', Math.round(orig * f) + 'px', r.style.getPropertyPriority('font-size'));
+      }
+    }
+    for (var s = 0; s < document.styleSheets.length; s++) {
+      try { walk(document.styleSheets[s].cssRules); } catch (e) {}
+    }
   },
 
   // Untertitel-Aussehen (Browser-Player über ::cue, iOS/VLC über die App)

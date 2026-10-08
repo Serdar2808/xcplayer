@@ -86,7 +86,7 @@ var SpatialNav = {
       var cBot   = container.scrollTop + container.clientHeight - pb;
       if(relTop < cTop) container.scrollTop = relTop - pt - 12;
       else if(relBot > cBot) container.scrollTop = relBot - container.clientHeight + pb + 12;
-    } else { el.scrollIntoView({block:'nearest', inline:'nearest'}); }
+    } else if(!el.hasAttribute('data-noscroll')) { el.scrollIntoView({block:'nearest', inline:'nearest'}); }   // data-noscroll: Element scrollt selbst (xcfocus)
     if(el.classList.contains('profile-card')||el.classList.contains('add-profile-btn')){ S.focusArea='profile_grid'; } 
     else if(el.classList.contains('sys-item')){ S.focusArea='sys-sidebar'; if(!S.sysMenuOpen && Settings.useSidebar) openSysSidebar(); } 
     else if(el.classList.contains('cat-item')){ S.focusArea='sidebar'; } 

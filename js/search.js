@@ -15,6 +15,8 @@ var NFSearch = {
     if(typeof NF !== 'undefined' && NF.stopTrailer) NF.stopTrailer();
     if(!S.prevFocusForSearch) S.prevFocusForSearch = S.focusArea;
     ov.classList.remove('hidden');
+    // Gesucht wird nur im aktuellen Bereich - das steht auch im Feld
+    inp.placeholder = S.tab === 'series' ? 'Serien durchsuchen…' : S.tab === 'vod' ? 'Filme durchsuchen…' : 'Filme und Serien suchen…';
     inp.value='';
     inp.classList.add('nfs-active');
     NFSearch.results=[];

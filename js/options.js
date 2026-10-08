@@ -10,7 +10,7 @@ var OPTION_DEFS = {
   // Live TV
   startChannel: 'last', osdTime: 6, chListStay: false, tileSize: 'm', zapCount: 5, favFirst: false, epgBar: true, dupPref: 'auto',
   // Filme & Serien
-  showContinue: true, newRow: true, watchedPct: 95,
+  showContinue: true, newRow: true, watchedPct: 95, gridLayout: 'default',
   // Wiedergabe
   bingeSecs: 8, introSkip: 0, seekStep: 10, resumeMode: 'auto', audioLang: '', subLang: '',
   subSize: 'm', subColor: 'white', subBg: 'shadow', aspectDefault: 'last', buffer: 'normal',

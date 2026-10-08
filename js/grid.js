@@ -5,17 +5,19 @@ function getGridMetrics(){
   var cw = sg.clientWidth - 48;
   var gap = 14;
   var w, h;
+  // Handy: größere Karten und Zeilen (die Ansicht wird dort stark verkleinert), Maße passend zur CSS
+  var ph = document.documentElement.classList.contains('xc-phone');
   if(sg.classList.contains('layout-list')){
-    w = cw; h = 78; gap = 4;
+    w = cw; h = ph ? 132 : 78; gap = ph ? 8 : 4;
     return S._gmCache={w:w,h:h,gap:gap,cols:1,tw:w+gap,th:h+gap};
   } else if(sg.classList.contains('layout-hero')){
-    w = 354; h = 212; gap = 14;
+    w = ph ? 520 : 354; h = ph ? 330 : 212; gap = ph ? 20 : 14;
   } else if(sg.classList.contains('layout-mini')){
-    w = 134; h = 216; gap = 10;
+    w = ph ? 230 : 134; h = ph ? 370 : 216; gap = ph ? 16 : 10;
   } else {
-    w = S.tab==='live' ? 360 : 184;
-    h = S.tab==='live' ? 82  : 285;
-    gap = 14;
+    w = S.tab==='live' ? 360 : (ph ? 300 : 184);
+    h = S.tab==='live' ? 82  : (ph ? 490 : 285);
+    gap = ph && S.tab!=='live' ? 20 : 14;
   }
   var cols = Math.max(1, Math.floor((cw+gap)/(w+gap)));
   return S._gmCache={w:w,h:h,gap:gap,cols:cols,tw:w+gap,th:h+gap};
@@ -486,12 +488,14 @@ async function switchTab(tab){
   var lb = $('layout-btn');
   if(lb){
     lb.style.display = (tab !== 'live' && !Settings.useNetflixStyle) ? 'flex' : 'none';
-    // Layout beim Tab-Wechsel zurücksetzen
-    _gridLayoutIdx = 0;
+    // Gespeicherte Darstellung (Karten/Liste/Groß/Mini) für Filme und Serien, Live immer Karten
+    var mode = tab !== 'live' && GRID_LAYOUTS.indexOf(Settings.gridLayout) >= 0 ? Settings.gridLayout : 'default';
+    _gridLayoutIdx = GRID_LAYOUTS.indexOf(mode);
     var sg = $('stream-grid');
     sg.classList.remove('layout-list','layout-hero','layout-mini');
+    if(mode !== 'default') sg.classList.add('layout-' + mode);
     var icon = {'default':'▦ Karten','list':'☰ Liste','hero':'▣ Groß','mini':'⠿ Mini'};
-    lb.textContent = icon[GRID_LAYOUTS[0]]; // Standardmäßig 'Karten'
+    lb.textContent = icon[mode];
   }
   _sortMenuOpen = false;
   if($('sort-menu')) $('sort-menu').classList.remove('open');

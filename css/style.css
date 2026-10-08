@@ -622,6 +622,8 @@ body.nf-active #navbar .nav-spacer-r { flex:1; }
 #nav-clock { font-size:var(--fs-sm) !important; }
 
 #content-area{flex:1;display:flex;overflow:hidden}
+/* Hülle der Kategorienleiste: volle Höhe, damit die Liste selbst scrollt (vorher so hoch wie ihr Inhalt - am Handy nicht wischbar) */
+#sidebar-container{display:flex;flex-shrink:0;min-height:0}
 #sidebar{width:var(--sw);display:flex;flex-direction:column;background:var(--bg-card);
   border-right:1px solid var(--border);flex-shrink:0}
 .sidebar-hdr{padding:20px 20px 12px;font-size:var(--fs-xs);font-weight:600;color:var(--lo);
@@ -1218,9 +1220,39 @@ html.theme-light .epg-item:hover, html.theme-light .epg-item.focused{background:
 /* Mini-Karten */
 #stream-grid.layout-mini .grid-item-wrap{width:134px!important;height:216px!important}
 #stream-grid.layout-mini .card-poster{height:216px!important;overflow:visible!important}
-#stream-grid.layout-mini .card-poster .poster-wrap{height:146px!important}
-#stream-grid.layout-mini .card-poster .pinfo{height:70px!important;padding:6px 8px!important;overflow:visible!important}
-#stream-grid.layout-mini .card-poster .ptitle{font-size:var(--fs-xs)!important;line-height:1.2!important}
+#stream-grid.layout-mini .card-poster .poster-wrap{height:140px!important}
+#stream-grid.layout-mini .card-poster .pinfo{height:76px!important;padding:6px 8px!important;overflow:hidden!important}
+#stream-grid.layout-mini .card-poster .ptitle{font-size:18px!important;line-height:1.15!important}
+#stream-grid.layout-mini .card-poster .pmeta{font-size:17px!important;margin-top:1px!important}
+/* Karten und Mini: Titel kleiner und zweizeilig - vorher waren nur ein paar Buchstaben zu sehen */
+#stream-grid:not(.layout-list):not(.layout-hero) .card-poster .ptitle{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;
+  -webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+#stream-grid:not(.layout-list):not(.layout-hero):not(.layout-mini) .card-poster .pinfo{height:94px;padding:8px 12px}
+#stream-grid:not(.layout-list):not(.layout-hero):not(.layout-mini) .card-poster .poster-wrap{height:calc(100% - 94px)}
+#stream-grid:not(.layout-list):not(.layout-hero):not(.layout-mini) .card-poster .ptitle{font-size:var(--fs-xs);line-height:1.15}
+#stream-grid:not(.layout-list):not(.layout-hero):not(.layout-mini) .card-poster .pmeta{font-size:19px;margin-top:3px;white-space:nowrap;overflow:hidden}
+/* Handy: alle Ansichten deutlich größer (Maße wie in getGridMetrics) */
+html.xc-phone #stream-grid:not(.layout-list):not(.layout-hero):not(.layout-mini) .card-poster .pinfo{height:150px;padding:14px 18px}
+html.xc-phone #stream-grid:not(.layout-list):not(.layout-hero):not(.layout-mini) .card-poster .poster-wrap{height:calc(100% - 150px)}
+html.xc-phone #stream-grid:not(.layout-list):not(.layout-hero):not(.layout-mini) .card-poster .ptitle{font-size:34px}
+html.xc-phone #stream-grid:not(.layout-list):not(.layout-hero):not(.layout-mini) .card-poster .pmeta{font-size:27px}
+html.xc-phone #stream-grid.layout-list .grid-item-wrap{height:132px!important}
+html.xc-phone #stream-grid.layout-list .card-poster{height:132px!important;padding:0 26px!important;gap:24px!important}
+html.xc-phone #stream-grid.layout-list .card-poster .poster-wrap{width:76px!important;min-width:76px!important;height:112px!important}
+html.xc-phone #stream-grid.layout-list .card-poster .ptitle{font-size:40px!important}
+html.xc-phone #stream-grid.layout-list .card-poster .pmeta{font-size:30px!important}
+html.xc-phone #stream-grid.layout-hero .grid-item-wrap{width:520px!important;height:330px!important}
+html.xc-phone #stream-grid.layout-hero .card-poster{height:330px!important}
+html.xc-phone #stream-grid.layout-hero .card-poster .poster-wrap{height:210px!important}
+html.xc-phone #stream-grid.layout-hero .card-poster .pinfo{height:120px!important;padding:14px 20px!important}
+html.xc-phone #stream-grid.layout-hero .card-poster .ptitle{font-size:38px!important}
+html.xc-phone #stream-grid.layout-hero .card-poster .pmeta{font-size:29px!important}
+html.xc-phone #stream-grid.layout-mini .grid-item-wrap{width:230px!important;height:370px!important}
+html.xc-phone #stream-grid.layout-mini .card-poster{height:370px!important}
+html.xc-phone #stream-grid.layout-mini .card-poster .poster-wrap{height:250px!important}
+html.xc-phone #stream-grid.layout-mini .card-poster .pinfo{height:120px!important;padding:10px 12px!important}
+html.xc-phone #stream-grid.layout-mini .card-poster .ptitle{font-size:28px!important}
+html.xc-phone #stream-grid.layout-mini .card-poster .pmeta{font-size:24px!important}
 /* Layout-Umschalter-Button */
 #layout-btn{height:52px;padding:0 16px;border-radius:12px;background:rgba(255,255,255,.07);border:1px solid var(--border);color:var(--mid);display:flex;align-items:center;justify-content:center;font-size:var(--fs-xs);gap:8px;cursor:pointer;white-space:nowrap;transition:background .15s;flex-shrink:0}
 #layout-btn:hover,#layout-btn.focused{background:rgba(var(--accent-rgb),.2);border-color:var(--accent);color:white}
@@ -1720,6 +1752,14 @@ body.nf-active #nf-search-bar { display:none !important; }
 #nf-search-overlay,
 #live-search-overlay { --hi:#f8fafc; --mid:#cbd5e1; --lo:#94a3b8; --bg-card:#141b2d; --bg2:#0d1220; color:var(--mid); }
 .nf-search-modal { width:90%; max-width:1100px; display:flex; flex-direction:column; gap:24px; }
+/* Zurück-Button links neben dem Suchfeld (nur Handy - am TV schließt die Zurück-Taste) */
+.nfs-row { display:flex; align-items:center; }
+.nfs-row input { flex:1; min-width:0; }
+.nfs-back { display:none; }
+html.xc-phone .nfs-back { display:flex; align-items:center; justify-content:center; flex-shrink:0; width:110px; height:110px; margin-right:24px;
+  border:none; border-radius:50%; background:rgba(255,255,255,.12); color:#fff; padding:0; cursor:pointer; }
+html.xc-phone .nfs-back svg { width:60px; height:60px; }
+html.xc-phone .nfs-back:active { background:var(--accent); }
 #search-input-nf,
 #search-input-live {
   width:100%;

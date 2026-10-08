@@ -319,6 +319,7 @@ function cycleGridLayout() {
   if (typeof GRID_LAYOUTS === 'undefined') return;
   _gridLayoutIdx = (_gridLayoutIdx + 1) % GRID_LAYOUTS.length;
   var mode = GRID_LAYOUTS[_gridLayoutIdx];
+  Settings.gridLayout = mode; Settings.save();          // bleibt beim nächsten Öffnen erhalten
   var sg = document.getElementById('stream-grid');
   if(sg) {
       sg.classList.remove('layout-list','layout-hero','layout-mini');

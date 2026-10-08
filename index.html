@@ -213,22 +213,18 @@ applyUniversalScale();
               <div class="ios-toggle sp-toggle" id="toggle-tile-marquee"><div class="sp-toggle-knob"></div></div>
             </div>
             <div class="ios-row st-only-compact" data-focusable onmouseover="setFocus(this)" onclick="toggleSetting('compactListEpg')">
-              <img class="st-thumb" data-thumb="kompakt_epg" alt="">
               <div class="ios-label">EPG in der Liste anzeigen</div>
               <div class="ios-toggle sp-toggle" id="toggle-compact-list-epg"><div class="sp-toggle-knob"></div></div>
             </div>
-            <div class="ios-row st-only-list" data-focusable onmouseover="setFocus(this)" onclick="toggleSetting('splitList')">
-              <img class="st-thumb" data-thumb="split" alt="">
+            <div class="ios-row st-only-normal" data-focusable onmouseover="setFocus(this)" onclick="toggleSetting('splitList')">
               <div class="ios-label">Kategorien neben den Sendern (zweispaltig)</div>
               <div class="ios-toggle sp-toggle" id="toggle-split-list"><div class="sp-toggle-knob"></div></div>
             </div>
             <div class="ios-row" data-focusable onmouseover="setFocus(this)" onclick="toggleSetting('showChNumbers')">
-              <img class="st-thumb" data-thumb="ch_numbers" alt="">
               <div class="ios-label">Kanalnummern anzeigen</div>
               <div class="ios-toggle sp-toggle" id="toggle-ch-numbers"><div class="sp-toggle-knob"></div></div>
             </div>
             <div class="ios-row" data-focusable onmouseover="setFocus(this)" onclick="toggleSetting('showChLogos')">
-              <img class="st-thumb" data-thumb="ch_logos" alt="">
               <div class="ios-label">Senderlogos anzeigen</div>
               <div class="ios-toggle sp-toggle" id="toggle-ch-logos"><div class="sp-toggle-knob"></div></div>
             </div>
@@ -241,8 +237,7 @@ applyUniversalScale();
             <button class="st-choice" data-group="osd" data-val="compact" data-focusable onclick="setChoice('osd','compact')"><span class="st-img" style="background-image:url(images/preview_kompakt_osd_on.jpg)"></span><span class="st-choice-name">Kompakt</span></button>
           </div>
           <div class="ios-group st-rows">
-            <div class="ios-row st-only-osdcompact" data-focusable onmouseover="setFocus(this)" onclick="toggleSetting('compactOsdHints')">
-              <img class="st-thumb" data-thumb="osd_hints" alt="">
+            <div class="ios-row st-only-tv" data-focusable onmouseover="setFocus(this)" onclick="toggleSetting('compactOsdHints')">
               <div class="ios-label">Tasten-Hinweise anzeigen</div>
               <div class="ios-toggle sp-toggle" id="toggle-compact-osd-hints"><div class="sp-toggle-knob"></div></div>
             </div>
@@ -252,7 +247,6 @@ applyUniversalScale();
           <div class="st-card-title">Weiteres</div>
           <div class="ios-group st-rows">
             <div class="ios-row" data-focusable onmouseover="setFocus(this)" onclick="toggleSetting('groupVariants')">
-              <img class="st-thumb" data-thumb="varianten" alt="">
               <div style="flex:1">
                 <div class="ios-label">Duplikate zusammenfassen</div>
                 <div class="st-sub">RTL HD, RTL FHD … erscheinen als ein Sender</div>

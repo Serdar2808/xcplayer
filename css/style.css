@@ -558,6 +558,11 @@ html.theme-light #navbar {
   line-height:1;
 }
 html.theme-light .nav-tab-item { color:rgba(0,0,0,.45); }
+/* Helles Theme: aktiver/fokussierter Tab dunkel statt weiß (Weiß auf hell war kaum zu sehen) */
+html.theme-light .nav-tab-item:hover, html.theme-light .nav-tab-item.active, html.theme-light .nav-tab-item.is-focused { color:var(--hi) !important; }
+html.theme-light .nav-tab-search .nav-tab-icon { color:var(--hi); }
+html.theme-light .nav-tab-item.nav-tab-exit { color:rgba(220,38,38,.85); }
+html.theme-light .nav-tab-item.nav-tab-exit.is-focused { color:#dc2626 !important; }
 
 .nav-tab-item:hover {
   color:#fff;
@@ -2195,6 +2200,7 @@ html.xc-phone .man-act{width:76px;height:68px;margin-left:8px;border-radius:12px
 html.xc-phone .man-act:active{background:var(--accent);color:#fff}
 html.xc-phone .man-hints,html.xc-phone .man-handle{display:none}
 html:not(.xc-phone) .st-only-phone{display:none!important}
+html.xc-phone .st-only-tv{display:none!important}
 
 /* ── WEITERE EINSTELLUNGEN (options.js) ─────────────────────── */
 .st-val{flex-shrink:0;margin-left:20px;padding:6px 16px;border-radius:20px;background:rgba(255,255,255,.07);
@@ -2251,8 +2257,12 @@ html.bg-gradient #main-screen, html.bg-gradient #settings-screen, html.bg-gradie
 html.no-epg-bar .clo-bar-wrap { display:none !important; }
 
 /* Kachelgröße */
-html.tiles-s .xc-tiles .xc-tile { zoom:.8; }
-html.tiles-l .xc-tiles .xc-tile { zoom:1.2; }
+/* Kachelgröße über feste Maße statt zoom - mit zoom stimmten die Positionen beim Scrollen nicht (Fokus wanderte nach links) */
+html.tiles-s .xc-tiles .xc-tile { width:240px; height:136px; padding:10px; }
+html.tiles-s .xc-tiles .xc-tile.has-cap img, html.tiles-s .xc-tiles .xc-tile.has-cap .xc-tile-cap { width:220px; max-width:220px; }
+html.tiles-s .xc-tiles .xc-tile > span:not(.xc-tile-cap) { font-size:28px; }
+html.tiles-l .xc-tiles .xc-tile { width:360px; height:204px; }
+html.tiles-l .xc-tiles .xc-tile.has-cap img, html.tiles-l .xc-tiles .xc-tile.has-cap .xc-tile-cap { width:332px; max-width:332px; }
 
 /* Android Bild-im-Bild: im kleinen Fenster nur das Video */
 html.xc-pip body > *:not(#player-screen), html.xc-pip #player-screen > *:not(#video-el) { visibility:hidden !important; }

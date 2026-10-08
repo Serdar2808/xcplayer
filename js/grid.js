@@ -502,15 +502,12 @@ async function switchTab(tab){
   if(tab === 'vod' || tab === 'series'){
     NF.leave();
     await loadCats();
-    await NF.enter();
     if (Settings.useNetflixStyle) {
-      NF.leave();
-      await loadCats();
       await NF.enter();
     } else {
-      NF.leave();
-      await loadCats();
+      // Klassische Ansicht: Fokus ins Raster (vorher blieb er auf "netflix" stehen - kein Fokus)
       await loadStreams(null);
+      if(!S._navTabHold) S.focusArea = 'grid';
       updateFocus();
     }
   } else {

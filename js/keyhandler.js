@@ -80,6 +80,8 @@ function handleBack(){
   // Playlist-Editor Verwalten: BACK während des Greifens legt die Zeile an
   // ihrer aktuellen Position ab, statt gleich den ganzen Editor zu verlassen.
   if(typeof manCancelGrab === 'function' && manCancelGrab()){ return; }
+  // Sortier-Menü (klassische Ansicht) zuerst schließen
+  if(typeof _sortMenuOpen !== 'undefined' && _sortMenuOpen){ toggleSortMenu(); SpatialNav.focusBySelector('#sort-btn'); return; }
   if($('confirm-modal')&&!$('confirm-modal').classList.contains('hidden')){ closeConfirm(null); return; }
   if($('pe-manual-modal')&&!$('pe-manual-modal').classList.contains('hidden')){ closePEManualModal(); return; }
   if(!$('wizard-screen').classList.contains('hidden')) {
@@ -405,7 +407,7 @@ window.addEventListener('keydown', function(e) {
       if(k===13){ e.preventDefault(); if(typeof _seek !== 'undefined' && _seek.active) { commitSeek(); return; } if(S.playerType==='catchup'){ if(SpatialNav.focused && SpatialNav.focused.closest('#player-topbar')){ SpatialNav.select(); return; } Player.togglePP(); Player.showControls(); return; } if(SpatialNav.focused && SpatialNav.focused.closest('#player-topbar, #ctrl-vod')){ SpatialNav.select(); return; } if(S.epgOpen){ SpatialNav.select(); return; } if(S.variantBarOpen){ switchVariant(S.variantIdx); return; } if(S.playerType==='live' && (Date.now() - (typeof _catchupJustStarted !== 'undefined' ? _catchupJustStarted : 0)) > 400){ if(Settings.okAction==='osd' && !S.chListOpen && $('live-osd').classList.contains('fade')){ Player.showControls(); return; } Player.toggleChList(); } else Player.togglePP(); return; }
       if(k===38){ e.preventDefault(); if(S.playerType!=='live'){ var foc = SpatialNav.focused; if(foc && (foc.id === 'btn-audio' || foc.id === 'btn-sub' || foc.id === 'btn-aspect' || foc.id === 'btn-skip-intro')) { SpatialNav.focusBySelector('#btn-pp-vod'); return; } if(foc && foc.id === 'btn-pp-vod') { var nextEp = document.getElementById('btn-next-ep'); var restart = document.getElementById('btn-restart-vod'); if(nextEp && !nextEp.classList.contains('hidden') && nextEp.offsetWidth > 0){ SpatialNav.focus(nextEp); return; } if(restart && !restart.classList.contains('hidden') && restart.offsetWidth > 0){ SpatialNav.focus(restart); return; } SpatialNav.focusBySelector('.p-back'); return; } SpatialNav.move('up'); return; } Player.nextCh(); return; }
       if(k===40){ e.preventDefault(); if(S.playerType!=='live'){ var foc2 = SpatialNav.focused; if(foc2 && foc2.closest('#ctrl-vod') && foc2.id !== 'btn-pp-vod') return; /* unterste Reihe: nicht weiter nach unten */ if(foc2 && foc2.closest('#player-topbar')) { SpatialNav.focusBySelector('#btn-pp-vod'); return; } if(foc2 && foc2.id === 'btn-pp-vod') { var btnAudio = document.getElementById('btn-audio'); var btnSub = document.getElementById('btn-sub'); if(btnAudio && !btnAudio.classList.contains('hidden') && btnAudio.offsetWidth > 0) { SpatialNav.focus(btnAudio); return; } if(btnSub && !btnSub.classList.contains('hidden') && btnSub.offsetWidth > 0) { SpatialNav.focus(btnSub); return; } if(SpatialNav.focusBySelector('#btn-aspect')) return; } SpatialNav.move('down'); return; } Player.prevCh(); return; }
-      if(k===37){ e.preventDefault(); if(S.playerType!=='live'){ var foc3 = SpatialNav.focused; if(foc3 && (foc3.closest('#player-topbar') || (foc3.closest('#ctrl-vod') && foc3.id !== 'btn-pp-vod'))){ SpatialNav.move('left'); return; } if(foc3 && foc3.id === 'btn-audio') { SpatialNav.focusBySelector('#btn-sub'); return; } if(foc3 && foc3.id === 'btn-sub') { return; } progressiveSeek(-1); return; } if(S.variantBarOpen){ S.variantIdx=Math.max(0,S.variantIdx-1); renderVariantChips(); resetVariantTimer(); } else openVariantBar(); return; }
+      if(k===37){ e.preventDefault(); if(S.playerType!=='live'){ var foc3 = SpatialNav.focused; if(foc3 && (foc3.closest('#player-topbar') || (foc3.closest('#ctrl-vod') && foc3.id !== 'btn-pp-vod'))){ SpatialNav.move('left'); return; } if(foc3 && foc3.id === 'btn-audio') { SpatialNav.focusBySelector('#btn-sub'); return; } if(foc3 && foc3.id === 'btn-sub') { return; } progressiveSeek(-1); return; } if(S.variantBarOpen){ S.variantIdx=Math.max(0,S.variantIdx-1); renderVariantChips(); resetVariantTimer(); } else if(Settings.keyLeft==='list') Player.toggleChList(); else openVariantBar(); return; }
       if(k===39){ e.preventDefault(); if(S.playerType!=='live'){ var foc4 = SpatialNav.focused; if(foc4 && (foc4.closest('#player-topbar') || (foc4.closest('#ctrl-vod') && foc4.id !== 'btn-pp-vod'))){ SpatialNav.move('right'); return; } if(foc4 && foc4.id === 'btn-sub') { var btnAudio2 = document.getElementById('btn-audio'); if(btnAudio2 && !btnAudio2.classList.contains('hidden') && btnAudio2.offsetWidth > 0) { SpatialNav.focus(btnAudio2); return; } return; } if(foc4 && foc4.id === 'btn-audio') { return; } progressiveSeek(1); return; } if(S.variantBarOpen){ S.variantIdx=Math.min(S.variants.length-1,S.variantIdx+1); renderVariantChips(); resetVariantTimer(); } else openVariantBar(); return; }
       if(k===KEYS.YELLOW||k===89){ e.preventDefault(); if(S.playerType==='live') Options.colorAction('Yellow'); return; }
       if(k===KEYS.GREEN||k===71){ e.preventDefault(); if(S.playerType==='live') Options.colorAction('Green'); else Player.toggleSubtitles(); return; }
@@ -419,7 +421,9 @@ window.addEventListener('keydown', function(e) {
   // Delegierung an KeyRouter für modulare Komponenten
   if (KeyRouter.dispatch(e, k, tag)) return;
 
-  if(S.focusArea==='grid' && !S.seriesDetailOpen){
+  // Fokus oben in der Suchleiste (Suche, Sortierung, Ansicht): deren eigene Zweige weiter unten
+  var inSearchBar = SpatialNav.focused && SpatialNav.focused.closest && SpatialNav.focused.closest('#search-bar');
+  if(S.focusArea==='grid' && !S.seriesDetailOpen && !inSearchBar){
     e.preventDefault();
     var total = S.filteredStreams.length; var cols = typeof getGridCols !== 'undefined' ? getGridCols() : 5; var cur = S.cursors.grid; var row = Math.floor(cur / cols); var col = cur % cols; var maxRow = Math.floor((total - 1) / cols);
     if(k===39){ if(cur + 1 < total){ S.cursors.grid = cur + 1; } ensureCursorInView(); renderVirtualGrid(); SpatialNav.focusBySelector('#gwrap-'+S.cursors.grid); return; }
@@ -434,7 +438,7 @@ window.addEventListener('keydown', function(e) {
     if(k===37){ e.preventDefault(); S.focusArea='sidebar'; setTimeout(function(){ SpatialNav.focusBySelector('.cat-item.active') || SpatialNav.focusBySelector('.cat-item'); },0); return; }
     if(k===39){ e.preventDefault(); var sw=$('sort-wrap'); var lb3=$('layout-btn'); if(sw && !sw.classList.contains('hidden')){ SpatialNav.focusBySelector('#sort-btn'); } else if(lb3 && lb3.style.display!=='none'){ SpatialNav.focus(lb3); } return; }
     if(k===38){ if(!Settings.useSidebar) navTabsEnter(); e.preventDefault(); return; }
-    if(k===13) return;
+    if(k===13){ e.preventDefault(); SpatialNav.focused.focus(); return; }   // OK: in die Suche (Tastatur öffnet sich)
   }
 
   if(SpatialNav.focused && SpatialNav.focused.id === 'sort-btn'){

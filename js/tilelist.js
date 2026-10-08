@@ -143,7 +143,18 @@ var LiveUi = (function () {
       'html.xc-tiles-on #live-osd{top:40px;bottom:auto}' +
       // Kompakte Liste mit Buttons (Smartphone): Zurück sitzt oben in der Liste, OSD rechts daneben
       'html.xc-liveui-compact #ch-list-overlay.compact #clo-topbar{padding-left:140px;min-height:128px;align-items:center}' +
-      'html.xc-liveui-compact #live-osd:not(.compact-osd),html.xc-phone.xc-liveui-compact #live-osd:not(.compact-osd){left:550px}';
+      'html.xc-liveui-compact #live-osd:not(.compact-osd),html.xc-phone.xc-liveui-compact #live-osd:not(.compact-osd){left:550px}' +
+      // Kanalnummer oben links in der Kachel (Einstellung "Kanalnummern anzeigen")
+      '.xc-tile-num{position:absolute;top:8px;left:12px;font-style:normal;font-size:22px;font-weight:700;line-height:1;color:rgba(255,255,255,.7);pointer-events:none}' +
+      // Helles Theme: Kachelleiste und Duplikate hell wie das Live-OSD
+      'html.theme-light .xc-strip{background:linear-gradient(rgba(var(--lpanel-rgb),0),rgba(var(--lpanel-rgb),.85) 16%,rgba(var(--lpanel-rgb),.95) 45%,rgba(var(--lpanel-rgb),.99))}' +
+      'html.theme-light .xc-variants{background:linear-gradient(rgba(var(--lpanel-rgb),.85),rgba(var(--lpanel-rgb),.99));box-shadow:0 20px 60px rgba(0,0,0,.15)}' +
+      'html.theme-light .xc-var-title,html.theme-light .xc-var.cur,html.theme-light .xc-cat.cur,html.theme-light .xc-var.foc,html.theme-light #xc-live-ui:not(.tv) .xc-var.cur{color:var(--hi)}' +
+      'html.theme-light .xc-var,html.theme-light .xc-cat{color:var(--mid)}' +
+      'html.theme-light .xc-tile{background:rgba(0,0,0,.06)}' +
+      'html.theme-light #xc-live-ui.tv .xc-tile.cur{background:rgba(0,0,0,.12)}' +
+      'html.theme-light .xc-tile span,html.theme-light .xc-tile-num{color:var(--hi)}' +
+      'html.theme-light .xc-tile.has-cap .xc-tile-cap{color:var(--mid)}';
     document.head.appendChild(css);
   }
   injectCss();
@@ -269,14 +280,15 @@ var LiveUi = (function () {
       if (s.stream_id === curId) curPos = i;
       // Mit Logo optional der Name klein darunter (Einstellung). Lädt das Logo
       // nicht, bleibt nur der Name - dann groß wie bei Sendern ohne Logo.
-      var cap = !!(s.stream_icon && Settings.tileNames);
+      var logo = Settings.showChLogos !== false ? s.stream_icon : '';   // "Senderlogos anzeigen" aus: nur der Name
+      var cap = !!(logo && Settings.tileNames);
       var onerr = cap ? 'this.parentNode.classList.remove(\'has-cap\');this.parentNode.removeChild(this)'
                       : 'this.outerHTML=\'<span>' + esc(s.name).replace(/'/g, '&#39;') + '</span>\'';
-      var inner = s.stream_icon
-        ? '<img src="' + esc(s.stream_icon) + '" loading="lazy" alt="" onerror="' + onerr + '">' +
+      var inner = logo
+        ? '<img src="' + esc(logo) + '" loading="lazy" alt="" onerror="' + onerr + '">' +
           (cap ? '<span class="xc-tile-cap"><span class="xc-cap-in">' + esc(s.name) + '</span></span>' : '')
         : '<span>' + esc(s.name) + '</span>';
-      html += '<button class="xc-tile xc-line' + (cap ? ' has-cap' : '') + (s.stream_id === curId ? ' cur' : '') + '" data-tile="' + i + '" aria-label="' + esc(s.name) + '">' + inner + '</button>';
+      html += '<button class="xc-tile xc-line' + (cap ? ' has-cap' : '') + (s.stream_id === curId ? ' cur' : '') + '" data-tile="' + i + '" aria-label="' + esc(s.name) + '">' + (Settings.showChNumbers !== false ? '<i class="xc-tile-num">' + (i + 1) + '</i>' : '') + inner + '</button>';
     }
     var tiles = ui.querySelector('.xc-tiles');
     tiles.innerHTML = html;
@@ -500,7 +512,8 @@ var LiveUi = (function () {
       showTiles();
     } else if (k === 37 || k === 39) {
       e.preventDefault(); e.stopImmediatePropagation();
-      showDups();
+      // Einstellung Bedienung: Links öffnet Duplikate oder Senderliste, Rechts die Duplikate
+      if (k === 37 && Settings.keyLeft === 'list') showTiles(); else showDups();
     }
   }
   function tilesKey(k) {

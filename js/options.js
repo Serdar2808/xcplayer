@@ -19,7 +19,7 @@ var OPTION_DEFS = {
   // Handy
   gestBright: true, gestVol: true, tapSeek: 10, pip: false,
   // Bedienung (TV)
-  keyRed: 'timeshift', keyGreen: 'subs', keyYellow: 'epg', keyBlue: 'search', okAction: 'list', exitMode: 'twice'
+  keyRed: 'timeshift', keyGreen: 'subs', keyYellow: 'epg', keyBlue: 'search', okAction: 'list', keyLeft: 'dups', keyRight: 'dups', exitMode: 'twice'
 };
 
 var LANG_OPTS = [['', 'Automatisch'], ['de', 'Deutsch'], ['en', 'Englisch'], ['tr', 'Türkisch'], ['fr', 'Französisch'],
@@ -103,6 +103,8 @@ var OPTION_UI = [
   ]},
   { cat: 'control', title: 'Fernbedienung', only: 'tv', rows: [
     { key: 'okAction', type: 'cycle', label: 'OK im Live-Bild', opts: [['list', 'Senderliste'], ['osd', 'Erst Senderinfo, dann Liste']] },
+    { key: 'keyLeft', type: 'cycle', label: 'Links im Live-Bild', opts: [['dups', 'Duplikate'], ['list', 'Senderliste']] },
+    { key: 'keyRight', type: 'cycle', label: 'Rechts im Live-Bild', opts: [['dups', 'Duplikate']] },
     { key: 'keyRed', type: 'cycle', label: 'Rote Taste', opts: COLOR_KEY_OPTS },
     { key: 'keyGreen', type: 'cycle', label: 'Grüne Taste', opts: COLOR_KEY_OPTS },
     { key: 'keyYellow', type: 'cycle', label: 'Gelbe Taste', opts: COLOR_KEY_OPTS },

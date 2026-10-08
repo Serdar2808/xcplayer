@@ -226,7 +226,8 @@ var Settings = {
     var osd=$('live-osd');
     if(osd){
       osd.classList.toggle('compact-osd', this.compactOsd);
-      osd.classList.toggle('hide-hints', this.compactOsd && !this.compactOsdHints);
+      // Tasten-Hinweise: Einstellung gilt für beide OSDs, am Handy nie (keine Fernbedienung)
+      osd.classList.toggle('hide-hints', !this.compactOsdHints || document.documentElement.classList.contains('xc-phone'));
     }
     // Einstellungen: Filme/Serien im Menü, Auswahl-Karten und Vorschaubilder
     var tsv=$('toggle-show-vod');

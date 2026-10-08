@@ -401,7 +401,7 @@ var Player = {
 
     $('live-osd').classList.toggle('hidden',!isLive);
     $('live-osd').classList.toggle('compact-osd', Settings.compactOsd);
-    $('live-osd').classList.toggle('hide-hints', !Settings.compactOsdHints);
+    $('live-osd').classList.toggle('hide-hints', !Settings.compactOsdHints || document.documentElement.classList.contains('xc-phone'));
     $('ctrl-vod').classList.toggle('hidden',isLive);
     $('vod-info-bar').innerHTML='';
 

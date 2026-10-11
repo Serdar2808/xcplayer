@@ -106,7 +106,7 @@ StateEvents.on('seriesDetailOpenChanged', function(isOpen) {
     if (ms) ms.classList.add('hidden');
   } else {
     if (sd) sd.classList.add('hidden');
-    if (ms) ms.classList.remove('hidden');
+    if (ms && S.screen === 'main') ms.classList.remove('hidden');   // aus Weiterschauen: dort bleiben
   }
 });
 

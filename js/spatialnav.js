@@ -82,20 +82,25 @@ var SpatialNav = {
       var relBot = relTop + el.offsetHeight + 12;
       var pt = parseInt(window.getComputedStyle(container).paddingTop) || 0;
       var pb = parseInt(window.getComputedStyle(container).paddingBottom) || 0;
-      var cTop   = container.scrollTop + pt;
-      var cBot   = container.scrollTop + container.clientHeight - pb;
-      if(container.id === 'st-content' && relTop < 300) container.scrollTop = 0;   // Einstellungen: Überschrift oben mitzeigen
-      else if(relTop < cTop) container.scrollTop = relTop - pt - 12;
-      else if(relBot > cBot) container.scrollTop = relBot - container.clientHeight + pb + 12;
+      var cur    = container._mAnim ? container._mTo : container.scrollTop;   // läuft gerade eine Bewegung: von ihrem Ziel aus rechnen
+      var cTop   = cur + pt;
+      var cBot   = cur + container.clientHeight - pb;
+      // Einstellungen und Folgen weich wie überall, die übrigen Listen springen (virtuell gerendert)
+      var soft   = container.id === 'st-content' || container.id === 'episode-list';
+      var to     = null;
+      if(container.id === 'st-content' && relTop < 300) to = 0;   // Einstellungen: Überschrift oben mitzeigen
+      else if(relTop < cTop) to = relTop - pt - 12;
+      else if(relBot > cBot) to = relBot - container.clientHeight + pb + 12;
+      if(to !== null) Motion.scroll(container, to, null, !soft);
     } else if(!el.hasAttribute('data-noscroll')) { el.scrollIntoView({block:'nearest', inline:'nearest'}); }   // data-noscroll: Element scrollt selbst (xcfocus)
     if(el.classList.contains('profile-card')||el.classList.contains('add-profile-btn')){ S.focusArea='profile_grid'; } 
     else if(el.classList.contains('sys-item')){ S.focusArea='sys-sidebar'; if(!S.sysMenuOpen && Settings.useSidebar) openSysSidebar(); } 
     else if(el.classList.contains('cat-item')){ S.focusArea='sidebar'; } 
     else if(el.classList.contains('grid-item-wrap')){ S.focusArea='grid'; S.cursors.grid=parseInt(el.getAttribute('data-idx')||0); } 
-    else if(el.classList.contains('sbtn')){ S.focusArea='series_season'; S.cursors.season=parseInt(el.getAttribute('data-idx')||0); } 
+    else if(el.classList.contains('stab')){ S.focusArea='series_season'; S.cursors.season=parseInt(el.getAttribute('data-idx')||0); } 
     else if(el.classList.contains('ep-item')){ S.focusArea='series_ep'; S.cursors.ep=parseInt(el.getAttribute('data-idx')||0); } 
     else if(el.closest('#search-bar')){ S.focusArea='topbar'; } 
-    else if(el.classList.contains('cs-card') || el.id === 'cs-empty-back'){ S.focusArea='continue'; } 
+    else if(el.classList.contains('cs-card') || el.classList.contains('cs-toseries') || el.id === 'cs-empty-back'){ S.focusArea='continue'; } 
     else if(el.closest('#settings-screen')){ S.focusArea='settings'; }
   },
   focusFirst: function() { var items = this.getFocusables(); if(items.length) this.focus(items[0]); },
@@ -143,4 +148,4 @@ var SpatialNav = {
 };
 function clearFocus(){ if(SpatialNav.focused){ var pc=SpatialNav.focused.getAttribute('data-focus-class')||'focused'; SpatialNav.focused.classList.remove(pc,'focused','card-focused','htile-focused'); SpatialNav.focused=null; } }
 function setFocus(el, cls){ SpatialNav.focus(el); }
-function updateFocus(){ if(S.focusArea==='profile_grid'){ SpatialNav.focusFirst(); } else if(S.focusArea==='sidebar'){ setTimeout(function(){ SpatialNav.focusBySelector('.cat-item.active') || SpatialNav.focusBySelector('#cat-1') || SpatialNav.focusBySelector('.cat-item'); }, 50); } else if(S.focusArea==='continue'){ setTimeout(function(){ SpatialNav.focusBySelector('.cs-card') || SpatialNav.focusFirst(); }, 50); } else if(S.focusArea==='grid'){ ensureCursorInView(); renderVirtualGrid(); setTimeout(function(){ SpatialNav.focusBySelector('#gwrap-'+S.cursors.grid) || SpatialNav.focusBySelector('.grid-item-wrap'); }, 50); } else if(S.focusArea==='series_season'){ setTimeout(function(){ SpatialNav.focusBySelector('.sbtn.active') || SpatialNav.focusBySelector('.sbtn'); }, 50); } else if(S.focusArea==='series_ep'){ setTimeout(function(){ SpatialNav.focusBySelector('#ep-'+S.cursors.ep) || SpatialNav.focusBySelector('.ep-item'); }, 50); } }
+function updateFocus(){ if(S.focusArea==='profile_grid'){ SpatialNav.focusFirst(); } else if(S.focusArea==='sidebar'){ setTimeout(function(){ SpatialNav.focusBySelector('.cat-item.active') || SpatialNav.focusBySelector('#cat-1') || SpatialNav.focusBySelector('.cat-item'); }, 50); } else if(S.focusArea==='continue'){ setTimeout(function(){ SpatialNav.focusBySelector('.cs-card') || SpatialNav.focusFirst(); }, 50); } else if(S.focusArea==='grid'){ ensureCursorInView(); renderVirtualGrid(); setTimeout(function(){ SpatialNav.focusBySelector('#gwrap-'+S.cursors.grid) || SpatialNav.focusBySelector('.grid-item-wrap'); }, 50); } else if(S.focusArea==='series_season'){ setTimeout(function(){ SpatialNav.focusBySelector('.stab.active') || SpatialNav.focusBySelector('.stab'); }, 50); } else if(S.focusArea==='series_ep'){ setTimeout(function(){ SpatialNav.focusBySelector('#ep-'+S.cursors.ep) || SpatialNav.focusBySelector('.ep-item'); }, 50); } }

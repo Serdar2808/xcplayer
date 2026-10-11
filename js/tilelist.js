@@ -111,7 +111,7 @@ var LiveUi = (function () {
       '.xc-cat::before{display:none}' +
       '.xc-cat.foc{background:rgba(var(--accent-rgb),.14);border-radius:10px}' +
       '.xc-tiles{padding-top:12px;padding-bottom:12px}.xc-tile{margin-right:20px}' +
-      '.xc-tile{flex-shrink:0;width:300px;height:170px;border-radius:16px;border:none;transition:transform .12s;' +
+      '.xc-tile{flex-shrink:0;width:300px;height:170px;border-radius:16px;border:none;transition:transform var(--dur) var(--ease),background-color var(--dur) var(--ease);' +
         'background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;padding:14px;cursor:pointer;overflow:hidden}' +
       '.xc-tile img{max-width:100%;max-height:100%;object-fit:contain;pointer-events:none}' +
       // Name klein unter dem Logo (Einstellung "Sendername unter dem Logo")
@@ -250,10 +250,10 @@ var LiveUi = (function () {
     for (var i = 0; i < opts.length; i++) if (opts[i].id !== null && String(opts[i].id) === cid) return i;
     return Math.max(0, Math.min(opts.length - 1, S.chListCatIdx || 0));
   }
-  function scrollIntoList(box, el, horizontal) {
+  function scrollIntoList(box, el, horizontal, instant) {
     if (!box || !el) return;
-    if (horizontal) box.scrollLeft = Math.max(0, el.offsetLeft - box.clientWidth / 2 + el.offsetWidth / 2);
-    else box.scrollTop = Math.max(0, el.offsetTop - box.clientHeight / 2 + el.offsetHeight / 2);
+    if (horizontal) Motion.scroll(box, null, el.offsetLeft - box.clientWidth / 2 + el.offsetWidth / 2, instant);
+    else Motion.scroll(box, el.offsetTop - box.clientHeight / 2 + el.offsetHeight / 2, null, instant);
   }
   function renderCats() {
     var opts = buildCatOpts(), html = '';
@@ -269,7 +269,7 @@ var LiveUi = (function () {
       cats[k].classList.toggle('foc', st.kind === 'tiles' && st.area === 'cats' && k === st.catIdx);
     }
     var c = cats[st.catIdx];
-    if (c) box.scrollLeft = Math.max(0, c.offsetLeft - 60);
+    if (c) Motion.scroll(box, null, c.offsetLeft - 60);
   }
   function renderTiles(catIdx, jumpToCurrent) {
     st.catIdx = catIdx;
@@ -294,7 +294,7 @@ var LiveUi = (function () {
     tiles.innerHTML = html;
     tiles.scrollLeft = 0;
     st.tileFoc = (jumpToCurrent && curPos >= 0) ? curPos : 0;
-    if (jumpToCurrent && curPos >= 0) scrollIntoList(tiles, tiles.children[curPos], true);
+    if (jumpToCurrent && curPos >= 0) scrollIntoList(tiles, tiles.children[curPos], true, true);
     markTiles();
     markCats();
     // Lauftext kostet auf TVs zu viel Leistung: dort (und auf Handys ohne die
@@ -522,14 +522,15 @@ var LiveUi = (function () {
       if (k === 37 || k === 39) {
         var ci = Math.max(0, Math.min(cats - 1, st.catIdx + (k === 39 ? 1 : -1)));
         if (ci !== st.catIdx) renderTiles(ci, true);
+        else Motion.bump(ui.querySelector('.xc-cats'), k === 39 ? 'r' : 'l');
         return true;
       }
       if (k === 40 || k === 13) { st.area = 'tiles'; markTiles(); markCats(); return true; }
       if (k === 38) return true;
       return false;
     }
-    if (k === 37) { if (st.tileFoc > 0) { st.tileFoc--; markTiles(); } return true; }
-    if (k === 39) { if (st.tileFoc < n - 1) { st.tileFoc++; markTiles(); } return true; }
+    if (k === 37) { if (st.tileFoc > 0) { st.tileFoc--; markTiles(); } else Motion.bump(ui.querySelector('.xc-tiles'), 'l'); return true; }
+    if (k === 39) { if (st.tileFoc < n - 1) { st.tileFoc++; markTiles(); } else Motion.bump(ui.querySelector('.xc-tiles'), 'r'); return true; }
     if (k === 38) { st.area = 'cats'; markTiles(); markCats(); return true; }
     if (k === 40) return true;
     if (k === 13) { playTile(st.tileFoc); return true; }
@@ -539,7 +540,9 @@ var LiveUi = (function () {
   function dupsKey(k) {
     var n = (S.variants || []).length;
     if (k === 38 || k === 40) {
-      st.dupFoc = Math.max(0, Math.min(n - 1, st.dupFoc + (k === 40 ? 1 : -1)));
+      var df = Math.max(0, Math.min(n - 1, st.dupFoc + (k === 40 ? 1 : -1)));
+      if (df === st.dupFoc) { Motion.bump(ui.querySelector('.xc-var-list'), k === 40 ? 'd' : 'u'); return true; }
+      st.dupFoc = df;
       renderVariants(true);
       return true;
     }

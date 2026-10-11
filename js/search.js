@@ -1,6 +1,20 @@
 // ═══════════════════════════════════════════════════════════════
 // NF SUCH-OVERLAY mit Pfeiltasten-Navigation
 // ═══════════════════════════════════════════════════════════════
+// Suchverlauf je Profil und Bereich (Filme/Serien), die letzten 10 Begriffe
+var SearchHistory = {
+  _key: function(){ var p = Profiles.getActive(); return 'xcp_search_hist_' + (p ? p.id : 'default'); },
+  _all: function(){ try { return JSON.parse(localStorage.getItem(this._key()) || '{}') || {}; } catch(e){ return {}; } },
+  list: function(){ return (this._all()[S.tab] || []).slice(0, 10); },
+  add: function(q){
+    q = String(q || '').trim(); if(q.length < 2) return;
+    var all = this._all(), l = (all[S.tab] || []).filter(function(x){ return x.toLowerCase() !== q.toLowerCase(); });
+    l.unshift(q); all[S.tab] = l.slice(0, 10);
+    try { localStorage.setItem(this._key(), JSON.stringify(all)); } catch(e){}
+  },
+  clear: function(){ var all = this._all(); delete all[S.tab]; try { localStorage.setItem(this._key(), JSON.stringify(all)); } catch(e){} }
+};
+
 var NFSearch = {
   results: [],
   focusedIdx: 0,
@@ -24,6 +38,8 @@ var NFSearch = {
     NFSearch.mode='input';
     NFSearch._renderResults('');
     S.focusArea='nf-search';
+    // sofort (noch in der Wisch-/Tipp-Geste): nur dann öffnen Handys die Tastatur
+    try { inp.focus(); } catch(e){}
     setTimeout(function(){ inp.focus(); }, 50);
   },
 
@@ -81,6 +97,20 @@ var NFSearch = {
     NFSearch._searchId++;
     var currentSearchId = NFSearch._searchId;
     if(!q || q.length<2){
+      // Leeres Feld: zuletzt gesuchte Begriffe dieses Bereichs
+      var hist = !q ? SearchHistory.list() : [];
+      if(hist.length){
+        NFSearch.results = hist.map(function(h){ return { _hist: h }; }).concat([{ _histClear: true }]);
+        var hh = '<div class="nfs-hist-lbl">Zuletzt gesucht</div>';
+        NFSearch.results.forEach(function(r, i){
+          hh += r._hist
+            ? '<div class="nfs-card nfs-hist" data-idx="'+i+'"><span class="nfs-hist-ico">&#x21BA;</span>'+esc(r._hist)+'</div>'
+            : '<div class="nfs-card nfs-hist nfs-hist-clear" data-idx="'+i+'">&#x2715; Verlauf löschen</div>';
+        });
+        box.innerHTML = hh;
+        box.onclick = function(e){ var c = e.target.closest('.nfs-card'); if(!c) return; NFSearch.focusedIdx = parseInt(c.dataset.idx); NFSearch.select(); };
+        return;
+      }
       box.innerHTML='<div style="grid-column:1/-1;text-align:center;color:var(--mid);padding:40px;">Mindestens 2 Zeichen eingeben</div>';
       NFSearch.results=[];
       return;
@@ -109,6 +139,7 @@ var NFSearch = {
       var s=hits[j], cover=s.stream_icon||s.cover||'';
       html+='<div class="nfs-card" data-idx="'+j+'">'
         +(cover?'<img loading="lazy" decoding="async" src="'+esc(cover)+'" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'"><div class="nfs-ph" style="display:none">🎬</div>':'<div class="nfs-ph">🎬</div>')
+        +'<div class="xc-pstate">'+mediaStateHtml(s, s.stream_id ? 'vod' : 'series')+'</div>'
         +'<div class="nfs-card-name">'+esc(s.name||s.title||'')+'</div></div>';
     }
     box.innerHTML=html;
@@ -133,6 +164,7 @@ var NFSearch = {
   toResults: function(){
     if(!NFSearch.results.length) return;
     var inp=$('search-input-nf');
+    if(inp && !NFSearch.results[0]._hist && !NFSearch.results[0]._histClear) SearchHistory.add(inp.value);
     if(inp){ inp.blur(); inp.classList.remove('nfs-active'); }
     NFSearch.mode='results';
     NFSearch.focusedIdx=0;
@@ -149,6 +181,7 @@ var NFSearch = {
 
   move: function(delta){
     var newIdx = NFSearch.focusedIdx + delta;
+    if(newIdx >= NFSearch.results.length) Motion.bump($('nf-search-results'), delta === 1 ? 'r' : 'd');
     if(newIdx < 0 || newIdx >= NFSearch.results.length) return;
     NFSearch.focusedIdx = newIdx;
     NFSearch._updateFocus();
@@ -162,13 +195,23 @@ var NFSearch = {
       card.classList.add('nfs-focused');
       // In View scrollen
       var cb = card.getBoundingClientRect(), bb = box.getBoundingClientRect();
-      if(cb.top < bb.top) box.scrollTop += (cb.top - bb.top) - 10;
-      else if(cb.bottom > bb.bottom) box.scrollTop += (cb.bottom - bb.bottom) + 10;
+      if(cb.top < bb.top) Motion.scroll(box, box.scrollTop + (cb.top - bb.top) - 10);
+      else if(cb.bottom > bb.bottom) Motion.scroll(box, box.scrollTop + (cb.bottom - bb.bottom) + 10);
     }
   },
 
   select: async function(){
     var s = NFSearch.results[NFSearch.focusedIdx]; if(!s) return;
+    var inp0 = $('search-input-nf');
+    if(s._histClear){ SearchHistory.clear(); NFSearch.toInput(); NFSearch._renderResults(''); return; }
+    if(s._hist){
+      // Begriff aus dem Verlauf: ins Feld übernehmen und suchen
+      if(inp0) inp0.value = s._hist;
+      NFSearch.toInput();
+      NFSearch._renderResults(s._hist.toLowerCase());
+      return;
+    }
+    if(inp0) SearchHistory.add(inp0.value);
     NFSearch.close(true);
     // Menü (Top-Leiste bzw. Seitenleiste) schließen statt dorthin zurückzukehren
     S.sysMenuOpen = false; S._navTabHold = false;
@@ -221,6 +264,7 @@ var LiveSearch = {
     LiveSearch.mode='input';
     LiveSearch._renderResults('');
     S.focusArea='live-search';
+    try { inp.focus(); } catch(e){}
     setTimeout(function(){ inp.focus(); }, 50);
   },
 
@@ -332,6 +376,7 @@ var LiveSearch = {
 
   move: function(delta){
     var n = LiveSearch.focusedIdx + delta;
+    if(n >= LiveSearch.results.length) Motion.bump($('live-search-results'), delta === 1 ? 'r' : 'd');
     if(n < 0 || n >= LiveSearch.results.length) return;
     LiveSearch.focusedIdx = n;
     LiveSearch._updateFocus();
@@ -344,8 +389,8 @@ var LiveSearch = {
     if(card){
       card.classList.add('nfs-focused');
       var cb = card.getBoundingClientRect(), bb = box.getBoundingClientRect();
-      if(cb.top < bb.top) box.scrollTop += (cb.top - bb.top) - 10;
-      else if(cb.bottom > bb.bottom) box.scrollTop += (cb.bottom - bb.bottom) + 10;
+      if(cb.top < bb.top) Motion.scroll(box, box.scrollTop + (cb.top - bb.top) - 10);
+      else if(cb.bottom > bb.bottom) Motion.scroll(box, box.scrollTop + (cb.bottom - bb.bottom) + 10);
     }
   },
 

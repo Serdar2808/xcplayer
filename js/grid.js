@@ -107,11 +107,12 @@ function renderVirtualGrid(){
 
     // Inhalts-Aktualisierung überspringen, wenn es derselbe Stream wie vorher ist
     var streamKey = s.stream_id || s.series_id || i;
-    if(el._lastIdx === streamKey && el._lastTab === S.tab){
+    if(el._lastIdx === streamKey && el._lastTab === S.tab && el._stVer === _mediaStateVer){
       continue; // Content unchanged, skip DOM update
     }
     el._lastIdx = streamKey;
     el._lastTab = S.tab;
+    el._stVer = _mediaStateVer;
 
     // DOM-Struktur nur einmalig pro Tab-Typ aufbauen
     if (el._domTab !== S.tab) {
@@ -129,10 +130,11 @@ function renderVirtualGrid(){
           + '<img class="poster-img" src="" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:none" onerror="this.style.display=\'none\'; this.nextElementSibling.style.display=\'flex\'; if(this.src) _failedImgs[this.src]=true;">'
           + '<div class="poster-ph" style="display:flex"><span class="phi">&#x1F3AC;</span></div>'
           + '<div class="fav-star" style="display:none">&#x2B50;</div>'
+          + '<div class="xc-pstate"></div>'
           + '</div>'
           + '<div class="pinfo"><div class="ptitle"></div><div class="pmeta"></div></div>'
           + '</div>';
-        el._ui = { img: el.querySelector('.poster-img'), ph: el.querySelector('.poster-ph'), title: el.querySelector('.ptitle'), meta: el.querySelector('.pmeta'), fav: el.querySelector('.fav-star') };
+        el._ui = { img: el.querySelector('.poster-img'), ph: el.querySelector('.poster-ph'), title: el.querySelector('.ptitle'), meta: el.querySelector('.pmeta'), fav: el.querySelector('.fav-star'), state: el.querySelector('.xc-pstate') };
       }
       el._domTab = S.tab;
       el._lastSrc = '';
@@ -140,6 +142,7 @@ function renderVirtualGrid(){
 
     // Nur noch Properties & Sichtbarkeiten aktualisieren
     el._ui.fav.style.display = isFav(s) ? 'block' : 'none';
+    if (el._ui.state) el._ui.state.innerHTML = mediaStateHtml(s, S.tab === 'series' ? 'series' : 'vod');
 
     if (S.tab === 'live') {
       var logoSrc = getStreamLogoWithEpgFallback(s) || '';
@@ -181,9 +184,12 @@ function renderVirtualGrid(){
 }
 function ensureCursorInView(){
   var m=getGridMetrics(),row=Math.floor(S.cursors.grid/m.cols);
-  var y=row*m.th,viewH=$('stream-grid').clientHeight-36,viewY=$('stream-grid').scrollTop;
-  if(y<viewY) $('stream-grid').scrollTop=y;
-  if(y+m.th>viewY+viewH) $('stream-grid').scrollTop=y+m.th-viewH;
+  var g=$('stream-grid'),y=row*m.th,viewH=g.clientHeight-36,viewY=g._mAnim?g._mTo:g.scrollTop,to=null;
+  if(y<viewY) to=y;
+  if(y+m.th>viewY+viewH) to=y+m.th-viewH;
+  if(to===null) return;
+  // eine Reihe: weich (wie überall); große Sprünge sofort, sonst fehlen unterwegs Karten
+  g._mTo=to; Motion.scroll(g, to, null, Math.abs(to-g.scrollTop) > m.th*1.5);
 }
 var _scrollRaf=null;
 $('stream-grid').addEventListener('scroll',function(){
@@ -235,11 +241,11 @@ $('category-list').addEventListener('mouseover',function(e){
   for(var i=0;i<all.length;i++) if(all[i]===item){ S.cursors.cat=i; S.focusArea='sidebar'; updateFocus(); break; }
 });
 $('season-tabs').addEventListener('click',function(e){
-  var b=e.target.closest('.sbtn'); if(!b) return;
+  var b=e.target.closest('.stab'); if(!b) return;
   var idx=parseInt(b.getAttribute('data-idx')); if(!isNaN(idx)){ S.cursors.season=idx; selectSeason(idx); }
 });
 $('season-tabs').addEventListener('mouseover',function(e){
-  var b=e.target.closest('.sbtn'); if(!b) return;
+  var b=e.target.closest('.stab'); if(!b) return;
   var idx=parseInt(b.getAttribute('data-idx'));
   if(!isNaN(idx)){ S.cursors.season=idx; S.focusArea='series_season'; updateFocus(); }
 });

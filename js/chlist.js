@@ -40,8 +40,7 @@ function _updateSplitCatFocus() {
 function chListCatSplitMove(dir) {
   var opts = buildCatOpts();
   var next = S.chListSplitCatCursor + dir;
-  if(next < 0) next = opts.length - 1;
-  if(next >= opts.length) next = 0;
+  if(next < 0 || next >= opts.length){ Motion.bump($('clo-split-cats') || $('ch-list-overlay'), dir < 0 ? 'u' : 'd'); return; }
   S.chListSplitCatCursor = next;
   S.chListCatIdx = next;
   chListCatChange(0); // Load streams
@@ -61,7 +60,7 @@ function chListCatSplitSelect() {
 function chListMove(dir){
   var max = S.filteredStreams.length-1;
   var newCursor = Math.max(0, Math.min(max, S.chListCursor+dir));
-  if(newCursor === S.chListCursor) return;
+  if(newCursor === S.chListCursor){ Motion.bump($('clo-list'), dir < 0 ? 'u' : 'd'); return; }
   S.chListCursor = newCursor;
 
   var oldOffset = S_CLO_OFFSET;
@@ -154,8 +153,7 @@ async function chListCatChange(dir){
   var opts=buildCatOpts();
   if(dir !== 0){
     var newIdx = S.chListCatIdx + dir;
-    if(newIdx < 0) newIdx = opts.length - 1;
-    if(newIdx >= opts.length) newIdx = 0;
+    if(newIdx < 0 || newIdx >= opts.length){ Motion.bump($('clo-group-name'), dir < 0 ? 'l' : 'r'); return; }
     S.chListCatIdx = newIdx;
   }
   var opt=opts[S.chListCatIdx];

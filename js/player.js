@@ -501,7 +501,9 @@ var Player = {
       if(startAt>0) this.vid.currentTime=startAt;
       this.vid.play().catch(function(){});
     }
-    this.showControls();
+    // Filme/Serien starten ohne Bedienleiste (erscheint beim ersten Tastendruck/Antippen)
+    if(type==='vod'||type==='series') this.hideControls();
+    else this.showControls();
   },
 
   _startOsdClock:function(){
@@ -900,11 +902,15 @@ var Player = {
       }
     }
     this.destroy();
+    var wasMedia = S.playerType==='vod' || S.playerType==='series';
     S.playerVisible=false; S.epgOpen=false; S.chListOpen=false;
     this.syncBackground();
     if(typeof _updateNavbarVisibility === 'function') _updateNavbarVisibility();
     
-    if(S.seriesDetailOpen) {
+    if(S.screen==='continue' && S.playerType==='series' && !S.seriesDetailOpen && S.currentSeriesStream) {
+      // Aus Weiterschauen: Zurück führt in die Folgenübersicht der Serie
+      openSeries(S.currentSeriesStream, { season: S.cursors.season, ep: S.currentEpIdx });
+    } else if(S.seriesDetailOpen) {
       $('series-detail').classList.remove('hidden');
       S.focusArea='series_ep';
       updateFocus();
@@ -919,11 +925,13 @@ var Player = {
       }
     } else if(S.screen==='continue') {
       S.focusArea='continue';
-      updateFocus();
+      renderContinueScreen();   // neuer Stand (Fortschritt, nächste Folge)
     } else {
       // Fallback für Live/Unbekannt — Systemmenü öffnen
       openSysSidebar();
     }
+    // Fortschritt/Gesehen auf den Postern dahinter aktualisieren
+    if(wasMedia && typeof refreshMediaStates === 'function') refreshMediaStates();
   },
   // ── SEITENVERHÄLTNIS (Filme/Serien) ───────────────────────────
   // Über Größe/Lage des Video-Elements statt object-fit: die Videoebene der
@@ -1056,20 +1064,35 @@ var Player = {
     this._autoDone = this._autoA && this._autoS;
   },
 
-  // Fortsetzen-Speicher für (fast) zu Ende gesehene Inhalte leeren
+  // Fortsetzen-Speicher für (fast) zu Ende gesehene Inhalte leeren und als gesehen merken
   _clearResume: function(){
     if(S.playerType==='live' || !S.currentStream) return;
     var rid = S.playerType==='series' ? (S.currentStream.episode_id||S.currentStream.series_id) : S.currentStream.stream_id;
     if(S.resume[rid]){ delete S.resume[rid]; saveResume(); }
-    // Bei Serien zusätzlich den Series-Eintrag entfernen, wenn es die letzte Episode war.
+    if(typeof Watched !== 'undefined' && rid) Watched.set((S.playerType==='series' ? 'e' : 'v') + rid, true);
     if(S.playerType==='series'){
       var cs2 = S.currentSeriesStream || {};
       var sid2 = String(cs2.series_id || S.currentStream.series_id || '');
-      var isLast = !(S.currentEpsArray && (S.currentEpIdx + 1) < S.currentEpsArray.length);
-      if(sid2 && isLast && S.resumeSeries && S.resumeSeries[sid2]){
+      if(!sid2) return;
+      // Nächste Folge (auch über die Staffelgrenze): Weiterschauen zeigt dann sie statt der fertigen
+      var si = S.cursors.season, ei = S.currentEpIdx + 1, seasons = S.seriesSeasonsArr || [], eps = S.currentEpsArray || [];
+      var next = eps[ei];
+      if(!next && si + 1 < seasons.length){ si++; ei = 0; next = ((S.seriesEpisodes || {})[seasons[si]] || [])[0]; }
+      S.resumeSeries = S.resumeSeries || {};
+      if(next){
+        var old = S.resumeSeries[sid2] || {};
+        S.resumeSeries[sid2] = {
+          series_id: sid2, episode_id: next.id || '', episode_num: next.episode_num || (ei+1),
+          season_num: seasons[si] || '', ep_idx: ei, season_idx: si,
+          name: old.name || cs2.name || '', cover: old.cover || cs2.cover || cs2.stream_icon || '',
+          ep_title: next.title || '', dur: (typeof ContinueDur !== 'undefined' && ContinueDur.get(next.id)) || (typeof _csParseDur === 'function' ? _csParseDur(next.info) : 0),
+          pos: 0, next: true, ts: Date.now()
+        };
+      } else {
         delete S.resumeSeries[sid2];
-        if(typeof saveResumeSeries === 'function') saveResumeSeries();
+        if(typeof Watched !== 'undefined') Watched.set('s' + sid2, true);   // letzte Folge der Serie gesehen
       }
+      if(typeof saveResumeSeries === 'function') saveResumeSeries();
     }
   },
   togglePP:function(){ this.vid.paused?this.vid.play().catch(function(){}):this.vid.pause(); },
@@ -1267,6 +1290,12 @@ var Player = {
     this._closeAudioPanel(true);
   },
 
+  hideControls:function(){
+    clearTimeout(S.controlsTimer);
+    $('player-topbar').classList.add('fade');
+    $('live-osd').classList.add('fade');
+    $('ctrl-vod').classList.add('fade');
+  },
   showControls:function(){
     $('player-topbar').classList.remove('fade');
     clearTimeout(S.controlsTimer);

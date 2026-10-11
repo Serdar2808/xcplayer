@@ -1,5 +1,6 @@
 // ── SERIES ────────────────────────────────────────────────────────
-async function openSeries(s){
+// at: {season, ep} - gleich bei dieser Staffel/Folge öffnen (aus Weiterschauen)
+async function openSeries(s, at){
   S.seriesDetailOpen=true; S.currentSeriesStream=s;
   $('episode-list').innerHTML='<div class="loading-c"><div class="spinner"></div></div>';
   try{
@@ -38,17 +39,24 @@ async function openSeries(s){
     S.seriesSeasonsArr=Object.keys(S.seriesEpisodes).sort(function(a,b){ return +a-+b; });
     var html='';
     for(var i=0;i<S.seriesSeasonsArr.length;i++)
-      html+='<button class="sbtn'+(i===0?' active':'')+'" data-focusable data-s="'+S.seriesSeasonsArr[i]+'" data-idx="'+i+'" id="ss-'+i+'">Staffel '+S.seriesSeasonsArr[i]+'</button>';
+      html+='<button class="stab'+(i===0?' active':'')+'" data-focusable data-s="'+S.seriesSeasonsArr[i]+'" data-idx="'+i+'" id="ss-'+i+'">Staffel '+S.seriesSeasonsArr[i]+'</button>';
     $('season-tabs').innerHTML=html;
-    S.cursors.season=0; S.focusArea='series_season';
-    if(S.seriesSeasonsArr.length>0) selectSeason(0);
+    var si=at&&at.season>0&&at.season<S.seriesSeasonsArr.length?at.season:0;
+    S.cursors.season=si; S.focusArea='series_season';
+    if(S.seriesSeasonsArr.length>0) selectSeason(si);
+    if(at&&at.ep>=0&&at.ep<S.currentEpsArray.length){
+      S.cursors.ep=at.ep; S.focusArea='series_ep';
+      var epEl=$('ep-'+at.ep), epL=$('episode-list');   // nur die Liste scrollen (scrollIntoView verschob die ganze Ansicht)
+      if(epEl&&epL) epL.scrollTop=Math.max(0, epEl.offsetTop-epL.clientHeight/2+epEl.offsetHeight/2);
+    }
     updateFocus();
   }catch(e){ Logger.warn('[openSeries] error:', e.message); $('episode-list').innerHTML='<div class="empty-s"><p>Fehler</p></div>'; }
 }
 function selectSeason(idx){
   S.cursors.season=idx;
-  document.querySelectorAll('.sbtn').forEach(function(b){ b.classList.remove('active'); });
+  document.querySelectorAll('.stab').forEach(function(b){ b.classList.remove('active'); });
   var ss=$('ss-'+idx); if(ss) ss.classList.add('active');
+  _seasonTabInView(idx);
   S.currentEpsArray=S.seriesEpisodes[S.seriesSeasonsArr[idx]]||[];
   S.currentEpIdx=0; S.cursors.ep=0;
   var html='<div class="ep-section-lbl">'+S.currentEpsArray.length+' Episoden</div>';
@@ -65,13 +73,20 @@ function selectSeason(idx){
       : '<div class="ep-thumb-ph">&#x1F4FA;</div>';
 
     html+='<div class="ep-item" data-focusable id="ep-'+i+'" data-idx="'+i+'">'
-      +'<div class="ep-thumb-wrap">'+imgHtml+'<div class="ep-play-overlay">&#9654;</div></div>'
+      +'<div class="ep-thumb-wrap">'+imgHtml+'<div class="ep-play-overlay">&#9654;</div><div class="xc-pstate">'+mediaStateHtml(ep, 'ep')+'</div></div>'
       +'<div class="ep-info-col">'
       +'<div class="ep-title-row"><div class="ep-title">'+epNum+'. '+esc(epTitle)+'</div><div class="ep-dur">'+esc(epDur)+'</div></div>'
       +(epPlot?'<div class="ep-plot">'+esc(epPlot)+'</div>':'')
       +'</div></div>';
   }
   $('episode-list').innerHTML=html;
+}
+// Reiterleiste waagerecht so scrollen, dass die Staffel ganz sichtbar ist
+function _seasonTabInView(idx){
+  var bar=$('season-tabs'), b=$('ss-'+idx); if(!bar||!b) return;
+  var l=b.offsetLeft, r=l+b.offsetWidth;
+  if(l<bar.scrollLeft+40) Motion.scroll(bar, null, l-40);
+  else if(r>bar.scrollLeft+bar.clientWidth-40) Motion.scroll(bar, null, r-bar.clientWidth+40);
 }
 function playEpisode(idx){
   var ep=S.currentEpsArray[idx]; if(!ep) return;
@@ -83,6 +98,7 @@ function playEpisode(idx){
 }
 function closeSeries(){
   S.seriesDetailOpen=false;
+  if(S.screen==='continue'){ renderContinueScreen(); return; }   // aus Weiterschauen geöffnet
   var ca=$('content-area');
   if(ca && ca.classList.contains('nf-mode')){
     S.focusArea='netflix';

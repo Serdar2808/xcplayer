@@ -35,6 +35,8 @@ function confirmDeleteProfile(id){
       localStorage.removeItem('xcp_favs_' + id);
       localStorage.removeItem('xcp_resume_' + id);
       localStorage.removeItem('xcp_resume_series_' + id);
+      localStorage.removeItem('xcp_watched_' + id);
+      localStorage.removeItem('xcp_search_hist_' + id);
       localStorage.removeItem('xcp_last_live_' + id);
       localStorage.removeItem('xcp_first_live_' + id);
       localStorage.removeItem('xcp_last_auth_' + id);

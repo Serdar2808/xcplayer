@@ -383,9 +383,11 @@ window.addEventListener('keydown', function(e) {
       var introOn = $('intro-bar').classList.contains('show');
       if(introOn && $('ctrl-vod').classList.contains('fade') && (!SpatialNav.focused || !SpatialNav.focused.closest('#intro-bar')) &&
          (k===37||k===38||k===39||k===40||k===13)){
-        e.preventDefault(); SpatialNav.focusBySelector('#intro-skip'); Player.showControls(); return;
+        e.preventDefault(); SpatialNav.focusBySelector('#intro-skip'); return;
       }
-      if(!S.sysMenuOpen && k!==KEYS.BACK && k!==KEYS.BACK2 && k!==KEYS.ESC && k!==KEYS.BKSP) Player.showControls();
+      // im Intro-Kasten bleibt er allein auf dem Bild - erst hoch/runter holt die Bedienung
+      var inIntro = introOn && SpatialNav.focused && SpatialNav.focused.closest && SpatialNav.focused.closest('#intro-bar');
+      if(!S.sysMenuOpen && !inIntro && k!==KEYS.BACK && k!==KEYS.BACK2 && k!==KEYS.ESC && k!==KEYS.BKSP) Player.showControls();
       if(typeof ZapHistory !== 'undefined' && ZapHistory._osdOpen){ if(k===38){ e.preventDefault(); ZapHistory.moveUp(); return; } if(k===40){ e.preventDefault(); ZapHistory.moveDown(); return; } if(k===13){ e.preventDefault(); ZapHistory.select(); return; } if(k===48||k===96){ e.preventDefault(); ZapHistory.open(); return; } if(k===KEYS.BACK||k===KEYS.BACK2||k===KEYS.ESC){ e.preventDefault(); S._backConsumed = true; ZapHistory.hideOsd(); return; } }
       // Kasten "Intro überspringen": links/rechts wechselt den Button, hoch/runter geht in die Bedienung
       var ifoc = SpatialNav.focused;
@@ -393,7 +395,7 @@ window.addEventListener('keydown', function(e) {
         if(k===37||k===39){ e.preventDefault(); SpatialNav.focusBySelector(ifoc.id === 'intro-skip' ? '#intro-hide' : '#intro-skip'); return; }
         if(k===13){ e.preventDefault(); if(ifoc.id === 'intro-hide') Player.dismissIntro(); else Player.skipIntro(); return; }
         if(k===KEYS.BACK||k===KEYS.BACK2||k===KEYS.ESC){ e.preventDefault(); S._backConsumed = true; Player.dismissIntro(); return; }
-        if(k===38||k===40){ e.preventDefault(); SpatialNav.focusBySelector('#btn-pp-vod'); return; }
+        if(k===38||k===40){ e.preventDefault(); Player.showControls(); SpatialNav.focusBySelector('#btn-pp-vod'); return; }
       }
       // aus der Bedienung nach oben in den Kasten (er steht über der Leiste)
       if(introOn && k===38 && SpatialNav.focused && SpatialNav.focused.id === 'btn-pp-vod'){ e.preventDefault(); SpatialNav.focusBySelector('#intro-skip'); return; }
@@ -426,9 +428,9 @@ window.addEventListener('keydown', function(e) {
   if(S.focusArea==='grid' && !S.seriesDetailOpen && !inSearchBar){
     e.preventDefault();
     var total = S.filteredStreams.length; var cols = typeof getGridCols !== 'undefined' ? getGridCols() : 5; var cur = S.cursors.grid; var row = Math.floor(cur / cols); var col = cur % cols; var maxRow = Math.floor((total - 1) / cols);
-    if(k===39){ if(cur + 1 < total){ S.cursors.grid = cur + 1; } ensureCursorInView(); renderVirtualGrid(); SpatialNav.focusBySelector('#gwrap-'+S.cursors.grid); return; }
+    if(k===39){ if(cur + 1 < total){ S.cursors.grid = cur + 1; } else Motion.bump($('grid-content'), 'r'); ensureCursorInView(); renderVirtualGrid(); SpatialNav.focusBySelector('#gwrap-'+S.cursors.grid); return; }
     if(k===37){ if(col > 0 && cur > 0){ S.cursors.grid = cur - 1; ensureCursorInView(); renderVirtualGrid(); SpatialNav.focusBySelector('#gwrap-'+S.cursors.grid); } else { S.focusArea='sidebar'; setTimeout(function(){ SpatialNav.focusBySelector('.cat-item.active') || SpatialNav.focusBySelector('.cat-item'); }, 50); } return; }
-    if(k===40){ var next = cur + cols; if(next < total){ S.cursors.grid = next; } else if(row < maxRow){ S.cursors.grid = total - 1; } ensureCursorInView(); renderVirtualGrid(); SpatialNav.focusBySelector('#gwrap-'+S.cursors.grid); return; }
+    if(k===40){ var next = cur + cols; if(next < total){ S.cursors.grid = next; } else if(row < maxRow){ S.cursors.grid = total - 1; } else Motion.bump($('grid-content'), 'd'); ensureCursorInView(); renderVirtualGrid(); SpatialNav.focusBySelector('#gwrap-'+S.cursors.grid); return; }
     if(k===38){ var prev = cur - cols; if(prev >= 0){ S.cursors.grid = prev; ensureCursorInView(); renderVirtualGrid(); SpatialNav.focusBySelector('#gwrap-'+S.cursors.grid); } else { var lb2=$('layout-btn'); var sw2=$('sort-wrap'); var hasLayout = lb2 && lb2.style.display !== 'none'; var sortVisible2 = sw2 && !sw2.classList.contains('hidden'); var halfCols = Math.floor(cols/2); if(hasLayout && col >= cols-1){ SpatialNav.focus(lb2); } else if(sortVisible2 && col >= halfCols){ SpatialNav.focusBySelector('#sort-btn'); } else { SpatialNav.focusBySelector('#search-input'); } } return; }
     if(k===13){ SpatialNav.select(); return; }
   }
@@ -463,22 +465,24 @@ window.addEventListener('keydown', function(e) {
 
   if(S.seriesDetailOpen){
     e.preventDefault();
+    // Staffeln als Reiter über den Folgen: links/rechts wechselt die Staffel, runter in die Folgen
+    var seasonGo = function(i){ S.cursors.season=i; selectSeason(i); SpatialNav.focusBySelector('#ss-'+i); _seasonTabInView(i); };
+    var seasonFocus = function(){ S.focusArea='series_season'; SpatialNav.focusBySelector('#ss-'+S.cursors.season); _seasonTabInView(S.cursors.season); };
     if(S.focusArea==='series_season'){
-      if(k===38){ if(S.cursors.season > 0){ S.cursors.season--; selectSeason(S.cursors.season); SpatialNav.focusBySelector('#ss-'+S.cursors.season); } else { if(!Settings.useSidebar) navTabsEnter(); } return; }
-      if(k===40){ if(S.cursors.season < S.seriesSeasonsArr.length - 1){ S.cursors.season++; selectSeason(S.cursors.season); SpatialNav.focusBySelector('#ss-'+S.cursors.season); } return; }
-      if(k===39 || k===13){ S.focusArea='series_ep'; SpatialNav.focusBySelector('#ep-0'); return; }
-      if(k===37){ SpatialNav.focusBySelector('.s-back'); return; }
+      if(k===37){ if(S.cursors.season > 0) seasonGo(S.cursors.season - 1); else SpatialNav.focusBySelector('.s-back'); return; }
+      if(k===39){ if(S.cursors.season < S.seriesSeasonsArr.length - 1) seasonGo(S.cursors.season + 1); else Motion.bump($('season-tabs'), 'r'); return; }
+      if(k===40 || k===13){ if(S.currentEpsArray.length){ S.focusArea='series_ep'; S.cursors.ep=0; SpatialNav.focusBySelector('#ep-0'); } return; }
+      if(k===38){ if(!Settings.useSidebar) navTabsEnter(); return; }
     }
     if(S.focusArea==='series_ep'){
-      if(k===40){ if(S.cursors.ep < S.currentEpsArray.length - 1){ S.cursors.ep++; SpatialNav.focusBySelector('#ep-'+S.cursors.ep); } return; }
-      if(k===38){ if(S.cursors.ep > 0){ S.cursors.ep--; SpatialNav.focusBySelector('#ep-'+S.cursors.ep); } else { if(!Settings.useSidebar) navTabsEnter(); } return; }
-      if(k===37){ S.focusArea='series_season'; SpatialNav.focusBySelector('#ss-'+S.cursors.season) || SpatialNav.focusBySelector('.sbtn.active'); return; }
+      if(k===40){ if(S.cursors.ep < S.currentEpsArray.length - 1){ S.cursors.ep++; SpatialNav.focusBySelector('#ep-'+S.cursors.ep); } else Motion.bump($('episode-list'), 'd'); return; }
+      if(k===38){ if(S.cursors.ep > 0){ S.cursors.ep--; SpatialNav.focusBySelector('#ep-'+S.cursors.ep); } else seasonFocus(); return; }
+      if(k===37){ SpatialNav.focusBySelector('.s-back'); return; }
       if(k===13){ playEpisode(S.cursors.ep); return; }
       return;
     }
     if(SpatialNav.focused && SpatialNav.focused.classList.contains('s-back')){
-        if(k===39){ S.focusArea='series_season'; var fSea = document.getElementById('ss-0'); if(fSea) SpatialNav.focus(fSea); else SpatialNav.focusBySelector('.sbtn.active') || SpatialNav.focusBySelector('.sbtn'); return; }
-        if(k===40){ S.focusArea='series_season'; SpatialNav.focusBySelector('.sbtn.active') || SpatialNav.focusBySelector('.sbtn'); return; }
+        if(k===39 || k===40){ seasonFocus(); return; }
         if(k===38){ if(!Settings.useSidebar) navTabsEnter(); return; }
     }
     return;
@@ -514,9 +518,11 @@ window.addEventListener('keydown', function(e) {
 
   e.preventDefault();
   if(k===38) { var prevFoc = SpatialNav.focused; SpatialNav.move('up'); if(prevFoc === SpatialNav.focused && (!S.playerVisible || S.screen === 'settings') && !Settings.useSidebar && !document.getElementById('navbar').classList.contains('hidden')){ navTabsEnter(); } }
-  else if(k===40) SpatialNav.move('down');
-  else if(k===37) SpatialNav.move('left');
-  else if(k===39) SpatialNav.move('right');
+  else if(k===40 || k===37 || k===39){
+    var prevF = SpatialNav.focused;
+    SpatialNav.move(k===40 ? 'down' : k===37 ? 'left' : 'right');
+    if(prevF && prevF === SpatialNav.focused && !S.playerVisible) Motion.bumpAt(prevF, k===40 ? 'd' : k===37 ? 'l' : 'r');   // Ende erreicht
+  }
   else if(k===13) SpatialNav.select();
 
 }, true);

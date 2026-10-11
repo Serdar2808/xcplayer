@@ -1,6 +1,48 @@
 // ── HILFSFUNKTIONEN ───────────────────────────────────────────────
 function $(id){ return document.getElementById(id); }
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+// ── BEWEGUNG: eine Dauer und Kurve für alle Übergänge ────────────
+// Scrollen per JS (statt scroll-behavior:smooth mit browsereigenem Tempo) und
+// am Listenende ein kurzes Federn statt Endlosschleife oder starrem Stopp
+var Motion = {
+  DUR: 250,
+  CSS: '.25s cubic-bezier(.33,1,.68,1)',          // gleiche Kurve wie _ease (easeOutCubic)
+  _ease: function(t){ return 1 - Math.pow(1 - t, 3); },
+  _off: function(){ return document.documentElement.classList.contains('reduce-motion'); },
+  // Weich scrollen; top/left null = unverändert
+  scroll: function(el, top, left, instant){
+    if(!el) return;
+    var st = el.scrollTop, sl = el.scrollLeft;
+    if(top == null) top = st; if(left == null) left = sl;
+    top = Math.max(0, Math.min(el.scrollHeight - el.clientHeight, Math.round(top)));
+    left = Math.max(0, Math.min(el.scrollWidth - el.clientWidth, Math.round(left)));
+    if(el._mAnim){ cancelAnimationFrame(el._mAnim); el._mAnim = null; }
+    el._mTo = top;
+    if(instant || this._off() || (Math.abs(top - st) < 1 && Math.abs(left - sl) < 1)){ el.scrollTop = top; el.scrollLeft = left; return; }
+    var t0 = null, d = this.DUR, ease = this._ease;
+    function step(ts){
+      if(t0 === null) t0 = ts;
+      var p = Math.min(1, (ts - t0) / d), e = ease(p);
+      el.scrollTop = st + (top - st) * e; el.scrollLeft = sl + (left - sl) * e;
+      el._mAnim = p < 1 ? requestAnimationFrame(step) : null;
+    }
+    el._mAnim = requestAnimationFrame(step);
+  },
+  // Am Ende einer Liste: Inhalt federt kurz gegen die Richtung (dir: l/r/u/d)
+  // Fokus kam nicht weiter (Ende einer Liste): den umgebenden Bereich federn lassen
+  bumpAt: function(el, dir){
+    if(!el || !el.closest) return;
+    this.bump(el.closest('#st-content, #st-rail, #episode-list, .cs-track, #continue-screen, .nf-search-results, #sys-sidebar, .modal-box, .pe-body') || el.parentNode, dir);
+  },
+  bump: function(el, dir){
+    if(!el || this._off()) return;
+    var c = 'xc-bump-' + dir;
+    if(el.classList.contains(c)) return;            // gedrückt gehalten: nicht neu anstoßen
+    el.classList.add(c);
+    clearTimeout(el._bumpT);
+    el._bumpT = setTimeout(function(){ el.classList.remove(c); }, 320);
+  }
+};
 function clean(h){ return (h||'').replace(/\/+$/,''); }
 
 function b64dec(s){

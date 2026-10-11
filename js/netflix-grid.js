@@ -267,7 +267,8 @@ var NF = {
     el.dataset.col = c;
     var cover = s.stream_icon || s.cover || '';
     var title = esc(s.name || s.title || '');
-    var titleHtml = '<div class="nf-card-title" aria-hidden="true">'+title+'</div>';
+    var titleHtml = '<div class="nf-card-title" aria-hidden="true">'+title+'</div>'
+      + '<div class="xc-pstate">'+mediaStateHtml(s, S.tab === 'series' ? 'series' : 'vod')+'</div>';
     if(cover){
       el.innerHTML = '<img class="nf-card-img" data-src="'+esc(cover)+'" decoding="async" alt="">'
         +'<div class="nf-card-img-ph nf-fb" style="display:none">🎬</div>'
@@ -443,7 +444,7 @@ var NF = {
     var inner = $('nf-inner-'+r); if(!inner) return;
     if(NF._phone()){ inner.style.transform = 'none'; return; }
     var tx = NF.PEEK_OFFSET - NF.PADDING_LEFT - c * (NF.CARD_W + NF.GAP);
-    inner.style.transition = animate ? 'transform .35s cubic-bezier(0.25,0.46,0.45,0.94)' : 'none';
+    inner.style.transition = animate ? 'transform ' + Motion.CSS : 'none';
     inner.style.transform = 'translate3d(' + tx + 'px, 0, 0)';
   },
 
@@ -547,11 +548,11 @@ var NF = {
   _scrollRowInView: function(r, jump) {
     if(NF._noScroll) return;                     // Handy: Reihe nach dem Wischen fokussiert, steht schon
     var el=$('nf-row-'+r),g=$('netflix-grid'); if(!el||!g) return;
-    g.scrollTo({ top: el.offsetTop, behavior: jump ? 'auto' : 'smooth' });
+    Motion.scroll(g, el.offsetTop, null, jump);
   },
 
   moveUp:   function(){ if(NF.rowIdx>0) NF._goRow(NF.rowIdx-1); },
-  moveDown: function(){ if(NF.rowIdx<NF.data.length-1) NF._goRow(NF.rowIdx+1); },
+  moveDown: function(){ if(NF.rowIdx<NF.data.length-1) NF._goRow(NF.rowIdx+1); else Motion.bump($('netflix-grid'), 'd'); },
   moveLeft: function(){
     if(NF.colIdx>0){
       NF.colIdx--;
@@ -567,7 +568,7 @@ var NF = {
       NF.colIdx++;
       NF._updateRowWindow(NF.rowIdx, NF.colIdx, true);
       NF._renderInfo(NF.rowIdx, NF.colIdx);
-    }
+    } else Motion.bump($('nf-track-'+NF.rowIdx), 'r');
   },
 
   openSidebar: function() {
@@ -615,8 +616,8 @@ var NF = {
 
   sbMove: function(dir) {
     var next = this.sbCursor + dir;
-    if (next < 0) next = this.data.length - 1;
-    if (next >= this.data.length) next = 0;
+    // kein Endlos-Kreis: am Ende stoppen und kurz federn
+    if (next < 0 || next >= this.data.length) { Motion.bump($('nf-sb-list'), dir < 0 ? 'u' : 'd'); return; }
     this.sbCursor = next;
     this.renderSidebar();
   },

@@ -240,6 +240,16 @@ var Player = {
     this.showControls();
   },
 
+  // Sender (oder sein Duplikat) mit Archiv für Timeshift - sonst null
+  timeshiftStream: function() {
+    var s = S.currentStream;
+    if (S.playerType !== 'live' || !s) return null;
+    var archiveDays = parseInt(s.tv_archive_duration || 0);
+    if (archiveDays > 0 || s.tv_archive == 1) return s;
+    var base = _baseName(s.name), all = S.streams || [];
+    for (var k = 0; k < all.length; k++) if (all[k].tv_archive == 1 && _baseName(all[k].name) === base) return all[k];
+    return null;
+  },
   startLiveTimeshift: function() {
     if (S.playerType !== 'live') return;
     var s = S.currentStream;
@@ -1315,6 +1325,11 @@ var Player = {
     this._closeAudioPanel(true);
   },
 
+  // Von Anfang an abspielen, egal was "Angefangene Titel" sagt
+  playFresh:function(fn){
+    this._resumeDecided = true; this._resumeFresh = true;
+    try { fn(); } finally { this._resumeDecided = false; this._resumeFresh = false; }
+  },
   hideControls:function(){
     clearTimeout(S.controlsTimer);
     $('player-topbar').classList.add('fade');

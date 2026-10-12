@@ -62,7 +62,8 @@ async function renderContinueScreen() {
   var resumeSeriesData = S.resumeSeries || {};
   var vodKeys = Object.keys(resumeData);
   var seriesKeys = Object.keys(resumeSeriesData);
-  if(vodKeys.length === 0 && seriesKeys.length === 0){
+  var laterList = Later.all();
+  if(vodKeys.length === 0 && seriesKeys.length === 0 && laterList.length === 0){
       $('cs-grid').innerHTML = '<div class="empty-s">Keine Filme oder Serien angefangen.</div>';
       if(!S._navTabHold) S.focusArea = 'continue';
       return;
@@ -122,6 +123,8 @@ async function renderContinueScreen() {
   }
   // Neueste zuerst (Serien haben ts; VOD hat 0 → landen hinten – das ist okay als Default)
   items.sort(function(a,b){ return (b.ts||0) - (a.ts||0); });
+  // Für später gemerkt (Optionen, OK lang drücken) - zuletzt gemerkt zuerst
+  laterList.forEach(function(x){ if(x.s) items.push({ kind:'later', lk:x.k, stream:x.s, pos:0, ts:x.ts }); });
 
   var grid = $('cs-grid');
   if(items.length === 0){
@@ -132,7 +135,8 @@ async function renderContinueScreen() {
      // Wie die Netflix-Ansicht: je eine Reihe für Serien und Filme
      var rows = [
        { title: 'Serien weiterschauen', items: items.filter(function(x){ return x.kind === 'series'; }) },
-       { title: 'Filme weiterschauen', items: items.filter(function(x){ return x.kind === 'vod'; }) }
+       { title: 'Filme weiterschauen', items: items.filter(function(x){ return x.kind === 'vod'; }) },
+       { title: 'Für später', items: items.filter(function(x){ return x.kind === 'later'; }) }
      ].filter(function(r){ return r.items.length; });
      var html = '';
      rows.forEach(function(row, r){
@@ -229,7 +233,7 @@ async function _csFillDurations(items){
   if(S.isM3U) return;
   for(var i = 0; i < items.length; i++){
     var it = items[i];
-    if(it.dur > 0) continue;
+    if(it.dur > 0 || it.kind === 'later') continue;
     var secs = 0;
     try {
       if(it.kind === 'vod'){
@@ -257,7 +261,15 @@ async function _csFillDurations(items){
 function _csDecorate(items){
   items.forEach(function(it){
     var dur, meta = [];
-    if(it.kind === 'vod'){
+    if(it.kind === 'later'){
+      var ls = it.stream;
+      it.thumb = ls.stream_icon || ls.cover || '';
+      it.title = ls.name || ls.title || (it.lk === 'series' ? 'Serie' : 'Film');
+      it.plot = ls.plot || '';
+      dur = 0;
+      meta.push('<span class="nf-info-meta-tag">' + (it.lk === 'series' ? 'Serie' : 'Film') + '</span>');
+      meta.push('Für später gemerkt');
+    } else if(it.kind === 'vod'){
       var s = it.stream;
       it.thumb = s.stream_icon || s.cover || '';
       it.title = s.name || s.title || 'Film';
@@ -297,8 +309,8 @@ function _csFocused(card){
     box.innerHTML = '<div class="nf-info-meta">' + it.meta + '</div>' +
       (it.plot ? '<div class="cs-plot">' + esc(it.plot) + '</div>' : '') +
       (phone
-        ? '<div class="cs-hint">Nochmal antippen: fortsetzen <button class="cs-remove" onclick="continueRemove(' + k + ')">&#x2715; Entfernen</button></div>'
-        : '<div class="cs-hint">OK: fortsetzen &nbsp;·&nbsp; <span class="cs-key-red"></span> ROT: aus Weiterschauen entfernen</div>');
+        ? '<div class="cs-hint">Nochmal antippen: ' + (it.kind === 'later' ? 'öffnen' : 'fortsetzen') + ' · lang: Optionen <button class="cs-remove" onclick="continueRemove(' + k + ')">&#x2715; Entfernen</button></div>'
+        : '<div class="cs-hint">OK: ' + (it.kind === 'later' ? 'öffnen' : 'fortsetzen') + ' &nbsp;·&nbsp; OK lang: Optionen &nbsp;·&nbsp; <span class="cs-key-red"></span> ROT: entfernen</div>');
   }
   // Senkrecht: immer die ganze Reihe (Überschrift bis Infozeile) zeigen - die erste ganz oben
   var scr = $('continue-screen'), row = card.closest('.cs-row');
@@ -358,9 +370,11 @@ function continueRemove(k){
   var items = $('cs-grid')._items || [], it = items[k];
   if(!it) return;
   var name = it.title + (it.badge ? ' (' + it.badge + ')' : '');
-  showConfirm('Aus Weiterschauen entfernen?', name, 'Entfernen', function(yes){
+  showConfirm(it.kind === 'later' ? 'Aus „Für später“ entfernen?' : 'Aus Weiterschauen entfernen?', name, 'Entfernen', function(yes){
     if(!yes) { setTimeout(function(){ SpatialNav.focusBySelector('.cs-card[data-k="' + k + '"]'); }, 50); return; }
-    if(it.kind === 'vod'){
+    if(it.kind === 'later'){
+      Later.remove(it.lk, it.stream);
+    } else if(it.kind === 'vod'){
       delete S.resume[String(it.stream.stream_id)];
       saveResume();
     } else {
@@ -420,6 +434,11 @@ function continuePlay(idx){
   var tiles=$('cs-grid')._items;
   if(!tiles||!tiles[idx]) return;
   var it=tiles[idx];
+  if(it.kind === 'later'){
+    if(it.lk === 'series') openSeries(it.stream);
+    else Player.play(API.vodUrl(it.stream), it.stream, 'vod');
+    return;
+  }
   if(it.kind === 'series'){
     showFullLoader('Lade Episode...', '');
     var s = it.stream;
@@ -432,3 +451,304 @@ function continuePlay(idx){
   var url=API.vodUrl(sv);
   Player.play(url,sv,'vod');
 }
+// ── FÜR SPÄTER (Merkliste je Profil) ───────────────────────────
+// Einträge: { k: 'vod' | 'series', id, s: Stream-Objekt, ts }
+var Later = {
+  _l: null, _k: null,
+  _load: function(){
+    var p = Profiles.getActive(), k = 'xcp_later_' + (p ? p.id : 'default');
+    if(this._l && this._k === k) return this._l;
+    this._k = k;
+    try { this._l = JSON.parse(localStorage.getItem(k) || '[]') || []; } catch(e){ this._l = []; }
+    return this._l;
+  },
+  _save: function(){ try { localStorage.setItem(this._k, JSON.stringify(this._l)); } catch(e){} },
+  _id: function(kind, s){ return String(kind === 'series' ? s.series_id : s.stream_id); },
+  all: function(){ return this._load().slice(); },
+  has: function(kind, s){ var id = this._id(kind, s); return this._load().some(function(x){ return x.k === kind && x.id === id; }); },
+  add: function(kind, s){
+    if(this.has(kind, s)) return;
+    var l = this._load(); l.unshift({ k: kind, id: this._id(kind, s), s: s, ts: Date.now() });
+    if(l.length > 200) l.length = 200;
+    this._save();
+  },
+  remove: function(kind, s){
+    var id = this._id(kind, s), l = this._load();
+    this._l = l.filter(function(x){ return !(x.k === kind && x.id === id); });
+    this._save();
+  }
+};
+
+// ── OPTIONEN (OK lang drücken bzw. lang antippen) ──────────────
+// Für Filme, Serien und Folgen: gesehen/zurücksetzen, von vorn, für später, Favorit
+var CtxMenu = {
+  _el: null, _items: [], _prev: null, _area: null,
+  isOpen: function(){ return !!(this._el && !this._el.classList.contains('hidden')); },
+
+  // Ziel aus dem aktuellen Fokus (Fernbedienung)
+  fromFocus: function(){
+    if(S.playerVisible || S.sysMenuOpen || S.screen === 'settings') return null;
+    if(!$('confirm-modal').classList.contains('hidden') || !$('profile-modal').classList.contains('hidden')) return null;
+    var tabKind = S.tab === 'series' ? 'series' : S.tab === 'vod' ? 'vod' : null, f = SpatialNav.focused;
+    if(S.focusArea === 'netflix' && tabKind && typeof NF !== 'undefined' && NF.data){
+      var row = NF.data[NF.rowIdx], s = row && row.streams[NF.colIdx];
+      return s ? { kind: tabKind, s: s } : null;
+    }
+    if(S.focusArea === 'grid' && tabKind && f && f.classList.contains('grid-item-wrap')){
+      var g = S.filteredStreams[S.cursors.grid]; return g ? { kind: tabKind, s: g } : null;
+    }
+    if(S.focusArea === 'series_ep' && S.seriesDetailOpen){
+      var ep = S.currentEpsArray[S.cursors.ep]; return ep ? { kind: 'ep', ep: ep, idx: S.cursors.ep, s: S.currentSeriesStream } : null;
+    }
+    if(S.focusArea === 'continue' && f && f.classList.contains('cs-card')) return this._fromCont(+f.getAttribute('data-k'));
+    if(S.focusArea === 'nf-search' && tabKind && typeof NFSearch !== 'undefined' && NFSearch.mode === 'results'){
+      var r = NFSearch.results[NFSearch.focusedIdx]; return r && !r._hist && !r._histClear ? { kind: tabKind, s: r } : null;
+    }
+    return null;
+  },
+  // Ziel aus dem angetippten Element (Touch)
+  fromEl: function(el){
+    if(S.playerVisible) return null;
+    var tabKind = S.tab === 'series' ? 'series' : S.tab === 'vod' ? 'vod' : null;
+    if(el.classList.contains('cs-card')) return this._fromCont(+el.getAttribute('data-k'));
+    if(el.classList.contains('ep-item')){ var ep = S.currentEpsArray[+el.dataset.idx]; return ep ? { kind: 'ep', ep: ep, idx: +el.dataset.idx, s: S.currentSeriesStream } : null; }
+    if(!tabKind) return null;
+    if(el.classList.contains('nf-card') && el.dataset.row !== undefined && typeof NF !== 'undefined' && NF.data){
+      var row = NF.data[+el.dataset.row], s = row && row.streams[+el.dataset.col]; return s ? { kind: tabKind, s: s } : null;
+    }
+    if(el.classList.contains('grid-item-wrap')){ var g = S.filteredStreams[+el.dataset.idx]; return g ? { kind: tabKind, s: g } : null; }
+    if(el.classList.contains('nfs-card') && !el.classList.contains('nfs-hist')){ var r = NFSearch.results[+el.dataset.idx]; return r && !r._hist && !r._histClear ? { kind: tabKind, s: r } : null; }
+    return null;
+  },
+  _fromCont: function(k){
+    var it = ($('cs-grid')._items || [])[k]; if(!it) return null;
+    if(it.kind === 'later') return { kind: it.lk, s: it.stream };
+    if(it.kind === 'vod') return { kind: 'vod', s: it.stream };
+    return { kind: 'series', s: it.stream || { series_id: it.rec.series_id, name: it.rec.name, cover: it.rec.cover } };
+  },
+
+  _isFav: function(kind, s){ var id = kind === 'series' ? s.series_id : s.stream_id; return !!(S.favs && S.favs[kind] && S.favs[kind].indexOf(id) !== -1); },
+  _toggleFav: function(kind, s){
+    var id = kind === 'series' ? s.series_id : s.stream_id, l = S.favs[kind], i = l.indexOf(id);
+    if(i === -1){ l.push(id); showToast('Zu Favoriten hinzugefügt', 1500); } else { l.splice(i, 1); showToast('Aus Favoriten entfernt', 1500); }
+    saveFavs();
+  },
+
+  open: function(t){
+    if(!t || !t.s) return;
+    var self = this, items = [], s = t.s;
+    var add = function(ico, label, fn){ items.push({ ico: ico, label: label, fn: fn }); };
+    var title = '', sub = '';
+    if(t.kind === 'vod'){
+      var id = String(s.stream_id), pos = S.resume[id] || 0, seen = Watched.has('v' + id);
+      title = s.name || 'Film'; sub = pos >= 20 ? 'Angefangen bei ' + fmtDur(pos) : (seen ? 'Gesehen' : 'Film');
+      add('&#x2713;', seen && !pos ? 'Als ungesehen markieren' : 'Als gesehen markieren', function(){ self._markVod(s, !(seen && !pos)); });
+      if(pos){
+        add('&#x21BA;', 'Fortschritt zurücksetzen', function(){ delete S.resume[id]; saveResume(); showToast('Fortschritt zurückgesetzt', 1500); });
+        add('&#x25B6;', 'Von Anfang an abspielen', function(){ Player.playFresh(function(){ Player.play(API.vodUrl(s), s, 'vod'); }); });
+      }
+    } else if(t.kind === 'series'){
+      title = s.name || 'Serie'; sub = 'Serie';
+      var rec = S.resumeSeries && S.resumeSeries[String(s.series_id)];
+      if(rec) sub = (rec.next ? 'Als Nächstes: ' : 'Angefangen: ') + 'Staffel ' + (rec.season_num || '?') + ' · Folge ' + (rec.episode_num || '?');
+      else if(Watched.has('s' + s.series_id)) sub = 'Gesehen';
+      add('&#x2713;', 'Ganze Serie als gesehen markieren', function(){ return self._markSeries(s, true); });
+      add('&#x21BA;', 'Serie zurücksetzen', function(){ return self._markSeries(s, false); });
+    } else {
+      var ep = t.ep, eid = String(ep.id), epos = S.resume[eid] || 0, eseen = Watched.has('e' + eid);
+      var sn = S.seriesSeasonsArr[S.cursors.season] || '?';
+      title = String(ep.title || '').replace(/^.*?S\d+\s*E\d+\s*[-–:]?\s*/i, '') || 'Folge';
+      sub = 'Staffel ' + sn + ' · Folge ' + (ep.episode_num || t.idx + 1);
+      add('&#x2713;', eseen && !epos ? 'Als ungesehen markieren' : 'Als gesehen markieren', function(){ return self._markUpTo(s, ep, eseen && !epos ? 'unmark' : 'one'); });
+      if(epos){
+        add('&#x21BA;', 'Fortschritt zurücksetzen', function(){
+          delete S.resume[eid]; saveResume();
+          var r = S.resumeSeries && S.resumeSeries[String(s.series_id)];
+          if(r && String(r.episode_id) === eid){ delete S.resumeSeries[String(s.series_id)]; saveResumeSeries(); }
+          showToast('Fortschritt zurückgesetzt', 1500);
+        });
+        add('&#x25B6;', 'Von Anfang an abspielen', function(){ Player.playFresh(function(){ playEpisode(t.idx); }); });
+      }
+      add('&#x2713;', 'Bis hier als gesehen markieren', function(){ return self._markUpTo(s, ep, 'upto'); });
+      add('&#x2713;', 'Ganze Staffel ' + sn + ' als gesehen markieren', function(){ return self._markUpTo(s, ep, 'season'); });
+    }
+    if(t.kind !== 'ep'){
+      var later = Later.has(t.kind, s);
+      add(later ? '&#x2715;' : '&#x2691;', later ? 'Aus „Für später“ entfernen' : 'Für später merken', function(){
+        if(later){ Later.remove(t.kind, s); showToast('Aus „Für später“ entfernt', 1500); }
+        else { Later.add(t.kind, s); showToast('Gemerkt - steht in Weiterschauen', 2000); }
+      });
+      var fav = this._isFav(t.kind, s);
+      add(fav ? '&#x2606;' : '&#x2605;', fav ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen', function(){ self._toggleFav(t.kind, s); });
+    }
+    this._render(title, sub, items);
+  },
+
+  _render: function(title, sub, items){
+    if(!this._el){
+      this._el = document.createElement('div');
+      this._el.id = 'xc-ctx'; this._el.className = 'hidden';
+      this._el.innerHTML = '<div class="xc-ctx-box"><div class="xc-ctx-title"></div><div class="xc-ctx-sub"></div><div class="xc-ctx-list"></div></div>';
+      var self = this;
+      this._el.addEventListener('click', function(e){
+        var b = e.target.closest && e.target.closest('.xc-ctx-item');
+        if(b) self.run(+b.getAttribute('data-i'));
+        else if(!(e.target.closest && e.target.closest('.xc-ctx-box'))) self.close();
+      });
+      document.body.appendChild(this._el);
+    }
+    this._items = items;
+    this._prev = SpatialNav.focused; this._area = S.focusArea;
+    this._el.querySelector('.xc-ctx-title').textContent = title;
+    this._el.querySelector('.xc-ctx-sub').textContent = sub;
+    this._el.querySelector('.xc-ctx-list').innerHTML = items.map(function(it, i){
+      return '<button class="xc-ctx-item" data-focusable data-i="' + i + '"><span class="xc-ctx-ico">' + it.ico + '</span>' + esc(it.label) + '</button>';
+    }).join('');
+    this._el.classList.remove('hidden');
+    SpatialNav.focus(this._el.querySelector('.xc-ctx-item'));
+  },
+  move: function(d){
+    var list = this._el.querySelectorAll('.xc-ctx-item'), i = Array.prototype.indexOf.call(list, SpatialNav.focused) + d;
+    if(i < 0 || i >= list.length){ Motion.bump(this._el.querySelector('.xc-ctx-box'), d < 0 ? 'u' : 'd'); return; }
+    SpatialNav.focus(list[i]);
+  },
+  close: function(){
+    if(!this.isOpen()) return;
+    this._el.classList.add('hidden');
+    S.focusArea = this._area;
+    if(this._prev && document.body.contains(this._prev)) SpatialNav.focus(this._prev); else clearFocus();
+    if(S.focusArea === 'netflix' && typeof NF !== 'undefined' && NF._updateFocusDOM) NF._updateFocusDOM();
+  },
+  run: async function(i){
+    var it = this._items[i]; if(!it) return;
+    this.close();
+    try { await it.fn(); } catch(e){ Logger.warn('[CtxMenu]', e && e.message); }
+    // Poster, Folgen und Weiterschauen neu beschriften
+    refreshMediaStates();
+    if(S.screen === 'continue' && !S.seriesDetailOpen && !S.playerVisible) renderContinueScreen();
+  },
+
+  _markVod: function(s, on){
+    var id = String(s.stream_id);
+    Watched.set('v' + id, on);
+    if(S.resume[id]){ delete S.resume[id]; saveResume(); }
+    showToast(on ? 'Als gesehen markiert' : 'Als ungesehen markiert', 1500);
+  },
+  // Alle Folgen der Serie in Reihenfolge
+  _eps: async function(sid){
+    var info = await _csSeriesInfo(sid), eps = (info && info.episodes) || {}, out = [];
+    Object.keys(eps).sort(function(a, b){ return +a - +b; }).forEach(function(sn, si){
+      (eps[sn] || []).forEach(function(e, ei){ out.push({ e: e, sn: sn, si: si, ei: ei }); });
+    });
+    return out;
+  },
+  _markSeries: async function(s, on){
+    var sid = String(s.series_id), list = await this._eps(sid);
+    list.forEach(function(x){ Watched.set('e' + x.e.id, on); delete S.resume[String(x.e.id)]; });
+    Watched.set('s' + sid, on);
+    if(S.resumeSeries && S.resumeSeries[sid]){ delete S.resumeSeries[sid]; saveResumeSeries(); }
+    saveResume();
+    showToast(on ? 'Serie als gesehen markiert' : 'Serie zurückgesetzt', 1500);
+  },
+  // mode: 'one' (nur diese Folge) | 'upto' (alle bis hier) | 'season' (ganze Staffel) | 'unmark'
+  _markUpTo: async function(s, ep, mode){
+    var sid = String(s.series_id), eid = String(ep.id);
+    if(mode === 'unmark'){ Watched.set('e' + eid, false); Watched.set('s' + sid, false); showToast('Als ungesehen markiert', 1500); return; }
+    var list = await this._eps(sid), at = -1;
+    for(var i = 0; i < list.length; i++) if(String(list[i].e.id) === eid){ at = i; break; }
+    if(at < 0) return;
+    var from = mode === 'upto' ? 0 : at, to = at;
+    if(mode === 'season'){
+      while(from > 0 && list[from - 1].sn === list[at].sn) from--;
+      while(to < list.length - 1 && list[to + 1].sn === list[at].sn) to++;
+    }
+    for(var j = from; j <= to; j++){ Watched.set('e' + list[j].e.id, true); delete S.resume[String(list[j].e.id)]; }
+    saveResume();
+    // Weiterschauen auf die Folge danach stellen - wenn die Markierung den Stand erreicht oder überholt
+    var rec = S.resumeSeries && S.resumeSeries[sid], recAt = -1;
+    if(rec) for(var r = 0; r < list.length; r++) if(String(list[r].e.id) === String(rec.episode_id)){ recAt = r; break; }
+    if(!rec || recAt <= to){
+      var last = list[to];
+      S.resumeSeries[sid] = { series_id: sid, episode_id: last.e.id, episode_num: last.e.episode_num || (last.ei + 1), season_num: last.sn,
+        ep_idx: last.ei, season_idx: last.si, name: (rec && rec.name) || s.name || '', cover: (rec && rec.cover) || s.cover || s.stream_icon || '',
+        dur: 1, pos: 1, ts: (rec && rec.ts) || Date.now() };
+      await _csAdvanceFinished(S.resumeSeries);   // rückt auf die nächste Folge vor bzw. markiert die Serie als gesehen
+    }
+    showToast(mode === 'one' ? 'Als gesehen markiert' : mode === 'season' ? 'Staffel als gesehen markiert' : 'Bis hier als gesehen markiert', 1500);
+  }
+};
+
+// Fernbedienung: OK kurz = wie bisher, OK gehalten = Optionen. Die kurze Aktion läuft
+// beim Loslassen; kommt keine keyup (manche Geräte), nach der Wartezeit ohne Wiederholung.
+var _lp = { down: false, fired: false, rep: false, timer: null, pass: false };
+function _lpShortOk(){
+  var ev = document.createEvent('Event'); ev.initEvent('keydown', true, true);
+  ev.keyCode = 13; ev.which = 13;
+  _lp.pass = true; try { window.dispatchEvent(ev); } finally { _lp.pass = false; }
+}
+window.addEventListener('keydown', function(e){
+  var k = e.keyCode;
+  if(CtxMenu.isOpen()){
+    e.preventDefault(); e.stopImmediatePropagation();
+    if(k === 38) CtxMenu.move(-1);
+    else if(k === 40) CtxMenu.move(1);
+    else if(k === 13 && !e.repeat && !_lp.down){ var f = SpatialNav.focused; if(f && f.classList.contains('xc-ctx-item')) CtxMenu.run(+f.getAttribute('data-i')); }
+    else if(k === KEYS.ESC || k === KEYS.BKSP || k === KEYS.BACK || k === KEYS.BACK2){ if(k === KEYS.BACK || k === KEYS.BACK2) S._backConsumed = true; CtxMenu.close(); }
+    return;
+  }
+  if(k !== 13 || _lp.pass) return;
+  if(_lp.down){ e.preventDefault(); e.stopImmediatePropagation(); _lp.rep = true; return; }   // Wiederholung beim Halten
+  var t = CtxMenu.fromFocus(); if(!t) return;
+  e.preventDefault(); e.stopImmediatePropagation();
+  _lp.down = true; _lp.fired = false; _lp.rep = !!e.repeat;
+  clearTimeout(_lp.timer);
+  _lp.timer = setTimeout(function(){
+    if(!_lp.down) return;
+    _lp.fired = true;
+    if(_lp.rep) CtxMenu.open(CtxMenu.fromFocus() || t);
+    else { _lp.down = false; _lpShortOk(); }   // keine Wiederholung und kein Loslassen: normales OK
+  }, 600);
+}, true);
+window.addEventListener('keyup', function(e){
+  if(e.keyCode !== 13) return;
+  if(CtxMenu.isOpen() && _lp.down){ _lp.down = false; e.preventDefault(); e.stopImmediatePropagation(); return; }   // Loslassen nach dem Öffnen
+  if(!_lp.down) return;
+  _lp.down = false; clearTimeout(_lp.timer);
+  e.preventDefault(); e.stopImmediatePropagation();
+  if(!_lp.fired) _lpShortOk();
+}, true);
+
+// Touch: lang antippen öffnet die Optionen (der folgende Klick wird geschluckt)
+(function(){
+  var lt = null, swallowUntil = 0;
+  var SEL = '.nf-card,.grid-item-wrap,.ep-item,.cs-card,.nfs-card';
+  document.addEventListener('touchstart', function(e){
+    lt = null;
+    if(e.touches.length !== 1 || CtxMenu.isOpen()) return;
+    var el = e.target.closest && e.target.closest(SEL); if(!el || !CtxMenu.fromEl(el)) return;
+    var t0 = e.touches[0], my = { x: t0.clientX, y: t0.clientY, fired: false };
+    my.timer = setTimeout(function(){
+      if(lt !== my) return;
+      my.fired = true; swallowUntil = Date.now() + 800;
+      try { if(navigator.vibrate) navigator.vibrate(15); } catch(err){}
+      CtxMenu.open(CtxMenu.fromEl(el));
+    }, 550);
+    lt = my;
+  }, { capture: true, passive: true });
+  document.addEventListener('touchmove', function(e){
+    if(!lt || lt.fired) return;
+    var t0 = e.touches[0];
+    if(Math.abs(t0.clientX - lt.x) > 12 || Math.abs(t0.clientY - lt.y) > 12){ clearTimeout(lt.timer); lt = null; }
+  }, { capture: true, passive: true });
+  document.addEventListener('touchend', function(e){
+    if(!lt) return;
+    clearTimeout(lt.timer);
+    if(lt.fired && e.cancelable) e.preventDefault();
+    lt = null;
+  }, { capture: true, passive: false });
+  document.addEventListener('touchcancel', function(){ if(lt){ clearTimeout(lt.timer); lt = null; } }, true);
+  document.addEventListener('click', function(e){
+    if(Date.now() < swallowUntil && !(e.target.closest && e.target.closest('#xc-ctx'))){ e.preventDefault(); e.stopImmediatePropagation(); swallowUntil = 0; }
+  }, true);
+  document.addEventListener('contextmenu', function(e){ if(e.target.closest && e.target.closest(SEL)) e.preventDefault(); }, true);
+})();

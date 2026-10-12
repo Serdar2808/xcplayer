@@ -14,6 +14,7 @@ var LiveUi = (function () {
   var ICON_NEXT = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M15.8 6H18v12h-2.2zM6 18l8.4-6L6 6z"/></svg>';
   var ICON_PLAY = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>';
   var ICON_PAUSE = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>';
+  var ICON_TS = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M13 3a9 9 0 00-9 9H1l3.9 3.9L9 12H6a7 7 0 112 4.9l-1.4 1.4A9 9 0 1013 3zm-1 5v5l4.3 2.5.7-1.2-3.5-2.1V8z"/></svg>';
   var ICON_BACK = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M20 11H7.8l5.6-5.6L12 4l-8 8 8 8 1.4-1.4L7.8 13H20z"/></svg>';
   var ICON_LIST = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M3 5h18v2.2H3zm0 5.9h18v2.2H3zm0 5.9h18V19H3z"/></svg>';
 
@@ -53,6 +54,9 @@ var LiveUi = (function () {
         'justify-content:center;cursor:pointer;outline:none;box-shadow:0 8px 30px rgba(0,0,0,.5);padding:0}' +
       '.xc-lb:active{transform:scale(.93)}' +
       '.xc-back{position:absolute;top:40px;left:40px;width:130px;height:130px}.xc-back svg{width:70px;height:70px}' +
+      // Timeshift (nur Sender mit Archiv) rechts mittig - am TV liegt es auf ROT
+      '.xc-ts{position:absolute;top:calc(50% - 60px);right:60px;height:120px;padding:0 44px 0 34px;border-radius:60px;gap:16px;font-size:42px;font-weight:600}.xc-ts svg{width:60px;height:60px}' +
+      '#xc-live-ui.tv .xc-ts{display:none !important}' +
       '#xc-live-ui.compact .xc-back{top:62px;left:62px;width:96px;height:96px}#xc-live-ui.compact .xc-back svg{width:54px;height:54px}' +
       '.xc-center{position:absolute;left:0;right:0;top:50%;display:flex;justify-content:center;align-items:center;transform:translateY(-50%)}' +
       '.xc-center .xc-lb{margin:0 75px}' +
@@ -166,6 +170,7 @@ var LiveUi = (function () {
     ui.id = 'xc-live-ui';
     ui.innerHTML =
       '<button class="xc-lb xc-back xc-hit" data-act="back" aria-label="Zurück">' + ICON_BACK + '</button>' +
+      '<button class="xc-lb xc-ts xc-hit" data-act="ts" aria-label="Timeshift" style="display:none">' + ICON_TS + 'Timeshift</button>' +
       '<div class="xc-center">' +
         '<button class="xc-lb xc-hit" data-act="prev" aria-label="Voriger Sender">' + ICON_PREV + '</button>' +
         '<button class="xc-lb xc-pp xc-hit" data-act="pp" aria-label="Play/Pause">' + ICON_PAUSE + '</button>' +
@@ -195,7 +200,8 @@ var LiveUi = (function () {
         return;
       }
       hide();
-      if (act === 'back') { handleBack(); return; }            // Live: öffnet das Menü
+      if (act === 'back') { handleBack(); return; }
+      if (act === 'ts') { Player.startLiveTimeshift(); return; }            // Live: öffnet das Menü
       if (act === 'list') { Player.toggleChList(); return; }
       if (act === 'prev') Player.prevCh(); else if (act === 'next') Player.nextCh();   // OSD zeigt den neuen Sender
     });
@@ -426,6 +432,7 @@ var LiveUi = (function () {
     var strip = kind === 'tiles' || (kind === 'phone' && st.list === 'tiles');
     ui.querySelector('.xc-strip').style.display = strip ? '' : 'none';
     ui.querySelector('.xc-listbtn').style.display = (kind === 'phone' && st.list === 'button') ? '' : 'none';
+    ui.querySelector('.xc-ts').style.display = (kind === 'phone' && Player.timeshiftStream()) ? '' : 'none';
     showOsd();
     ui.classList.add('show');
     renderVariants(kind === 'phone' || kind === 'dups');

@@ -77,6 +77,7 @@ KeyRouter.register('sidebar', function(e, k) {
 
 // ── TASTEN- & EINGABE-STEUERUNG ───────────────────────────────────
 function handleBack(){
+  if(typeof CtxMenu !== 'undefined' && CtxMenu.isOpen()){ CtxMenu.close(); return; }   // Optionen (z.B. Android-Zurück)
   // Playlist-Editor Verwalten: BACK während des Greifens legt die Zeile an
   // ihrer aktuellen Position ab, statt gleich den ganzen Editor zu verlassen.
   if(typeof manCancelGrab === 'function' && manCancelGrab()){ return; }
@@ -133,7 +134,12 @@ function handleBack(){
     closeSysSidebar(); return;
   }
   if(S.playerVisible){
-    if(S.playerType === 'live') { openSysSidebar(); return; } 
+    if(S.playerType === 'live') {
+      // erst die eingeblendete Senderinfo schließen, beim nächsten Zurück das Menü
+      var losd = $('live-osd'), ltop = $('player-topbar');
+      if((losd && !losd.classList.contains('fade') && !losd.classList.contains('hidden')) || (ltop && !ltop.classList.contains('fade'))){ Player.hideControls(); return; }
+      openSysSidebar(); return;
+    } 
     else { 
       var topbar = document.getElementById('player-topbar');
       var ctrlVod = document.getElementById('ctrl-vod');

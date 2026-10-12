@@ -98,3 +98,17 @@ function showFullLoader(msg, subMsg){ var fl = $('full-loader'); $('fl-msg').tex
 function hideFullLoader(){ $('full-loader').classList.remove('show'); }
 function _logoErr(el){ if(el.src) _failedImgs[el.src] = true; el.style.display='none'; var ph=el.nextElementSibling; if(ph) ph.style.display='flex'; }
 function _posterErr(el){ if(el.src) _failedImgs[el.src] = true; el.parentNode.innerHTML='<div class="poster-ph"><span class="phi">&#x1F3AC;</span></div>'; }
+
+// Gehaltene Pfeiltaste erkennen (e.repeat fehlt auf alten TV-Browsern): solange
+// keine keyup kam, ist jede weitere keydown derselben Taste eine Wiederholung.
+// Damit läuft der Fokus beim Halten bis zum Rand und bleibt dort stehen, statt
+// über die Kante ins Menü zu springen - dafür braucht es einen neuen Druck.
+var _keyHeld = {};
+window.addEventListener('keydown', function(e){
+  var k = e.keyCode, now = Date.now();
+  if(k < 37 || k > 40){ S._keyRepeat = false; return; }
+  S._keyRepeat = !!(e.repeat || (_keyHeld[k] && now - _keyHeld[k] < 700));
+  _keyHeld[k] = now;
+}, true);
+window.addEventListener('keyup', function(e){ delete _keyHeld[e.keyCode]; S._keyRepeat = false; }, true);
+window.addEventListener('blur', function(){ _keyHeld = {}; S._keyRepeat = false; });

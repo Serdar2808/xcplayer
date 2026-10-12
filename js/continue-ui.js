@@ -150,7 +150,7 @@ async function renderContinueScreen() {
            + (it.badge ? '<div class="cs-badge">'+esc(it.badge)+'</div>' : '')
            // Ohne bekannte Länge kein (leerer) Balken - sähe aus wie "nie gestartet"
            + '</div><div class="cs-prog' + (it.dur > 0 && !(it.rec && it.rec.next) ? '' : ' cs-prog-none') + '"><i style="width:'+it.pct+'%"></i></div>'
-           + (it.kind === 'series' ? '<button class="cs-toseries" data-focusable data-k="'+k+'" data-row="'+r+'">Zur Serie</button>' : '')
+           + (it.kind === 'series' ? '<button class="cs-toseries" data-focusable data-onfocus data-noscroll data-k="'+k+'" data-row="'+r+'">Zur Serie</button>' : '')
            + '</div>';
        });
        html += '</div></div><div class="cs-info" id="cs-info-'+r+'"></div></div>';
@@ -159,7 +159,12 @@ async function renderContinueScreen() {
      grid.innerHTML = html;
      grid.querySelectorAll('.cs-toseries').forEach(function(b){
        b.addEventListener('click', function(){ continueOpenSeries(parseInt(b.getAttribute('data-k'), 10)); });
-       b.addEventListener('xcfocus', function(){ var c = b.parentNode.querySelector('.cs-card'); if(c) _csFocused(c); });
+       // Poster bleibt groß, solange der Button darunter fokussiert ist
+       b.addEventListener('xcfocus', function(){
+         var c = b.parentNode.querySelector('.cs-card'); if(!c) return;
+         c.classList.add('nf-focused'); _csFocused(c);
+         b._xcblur = function(){ c.classList.remove('nf-focused'); b._xcblur = null; };
+       });
      });
      grid.querySelectorAll('.cs-card').forEach(function(card){
        card.addEventListener('xcfocus', function(){ _csFocused(card); });

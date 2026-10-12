@@ -6,7 +6,7 @@
 
 var OPTION_DEFS = {
   // Aussehen
-  accent: '', fontScale: 'normal', focusStyle: 'lines', reduceMotion: false, clock: 'datetime', bgStyle: 'flat',
+  accent: '', fontScale: 'normal', focusStyle: 'lines', reduceMotion: false, clock: 'datetime', bgStyle: 'flat', startScreen: 'live',
   // Live TV
   startChannel: 'last', osdTime: 6, chListStay: false, tileSize: 'm', zapCount: 5, favFirst: false, epgBar: true, dupPref: 'auto',
   // Filme & Serien
@@ -44,8 +44,11 @@ var OPTION_UI = [
     { key: 'bgStyle', type: 'cycle', label: 'Hintergrund', opts: [['flat', 'Einfarbig'], ['gradient', 'Leichter Verlauf']] },
     { key: 'reduceMotion', type: 'toggle', label: 'Animationen reduzieren', sub: 'Weniger Übergänge und Lauftexte - schneller auf schwachen Geräten' }
   ]},
+  { cat: 'ansicht', title: 'App-Start', rows: [
+    { key: 'startScreen', type: 'cycle', label: 'Beim App-Start öffnen', sub: 'Welcher Sender in Live TV läuft, steht unter Live TV', opts: [['live', 'Live TV'], ['vod', 'Filme'], ['series', 'Serien'], ['continue', 'Weiterschauen'], ['last', 'Zuletzt geöffneten Bereich']] }
+  ]},
   { cat: 'live', title: 'Verhalten', rows: [
-    { key: 'startChannel', type: 'cycle', label: 'Beim App-Start', opts: [['last', 'Letzter Sender'], ['first', 'Erster Sender der Liste'], ['fav', 'Erster Favorit']] },
+    { key: 'startChannel', type: 'cycle', label: 'Sender beim Start von Live TV', opts: [['last', 'Letzter Sender'], ['first', 'Erster Sender der Liste'], ['fav', 'Erster Favorit']] },
     { key: 'osdTime', type: 'cycle', label: 'Senderinfo anzeigen für', opts: [[3, '3 Sekunden'], [6, '6 Sekunden'], [10, '10 Sekunden'], [20, '20 Sekunden']] },
     { key: 'chListStay', type: 'toggle', label: 'Senderliste nach der Wahl offen lassen' },
     { key: 'zapCount', type: 'cycle', label: 'Letzte Sender (Taste 0)', opts: [[3, '3 Sender'], [5, '5 Sender'], [10, '10 Sender']] },
@@ -74,7 +77,7 @@ var OPTION_UI = [
   { cat: 'player', title: 'Filme & Serien', rows: [
     { key: 'resumeMode', type: 'cycle', label: 'Angefangene Titel', opts: [['auto', 'Automatisch fortsetzen'], ['ask', 'Jedes Mal fragen'], ['never', 'Immer von vorn']] },
     { key: 'bingeSecs', type: 'cycle', label: 'Nächste Folge automatisch', opts: [[0, 'Aus'], [5, 'Nach 5 Sekunden'], [8, 'Nach 8 Sekunden'], [10, 'Nach 10 Sekunden'], [15, 'Nach 15 Sekunden']] },
-    { key: 'introSkip', type: 'cycle', label: 'Button "Intro überspringen"', sub: 'In den ersten Minuten einer Folge', opts: [[0, 'Aus'], [60, '+60 Sekunden'], [90, '+90 Sekunden'], [120, '+120 Sekunden']] },
+    { key: 'introSkip', type: 'cycle', label: 'Button "Intro überspringen"', sub: 'Standarddauer - im Kasten je Serie mit hoch/runter änderbar', opts: [[0, 'Aus'], [60, '+60 Sekunden'], [90, '+90 Sekunden'], [120, '+120 Sekunden']] },
     { key: 'seekStep', type: 'cycle', label: 'Spulen pro Tastendruck', opts: [[10, '10 Sekunden'], [15, '15 Sekunden'], [30, '30 Sekunden']] },
     { key: 'aspectDefault', type: 'cycle', label: 'Bildformat beim Start', opts: [['last', 'Zuletzt gewählt'], ['orig', 'Original'], ['16:9', '16:9'], ['4:3', '4:3'], ['16:10', '16:10'], ['21:9', '21:9'], ['fill', 'Füllen'], ['stretch', 'Strecken']] },
     { key: 'buffer', type: 'cycle', label: 'Puffer', sub: 'Länger = weniger Ruckeln bei schwachem Internet, späterer Start', opts: [['short', 'Kurz'], ['normal', 'Normal'], ['long', 'Lang']] }

@@ -142,6 +142,25 @@ function loadLastStream(){
   }catch(e){ Logger.warn('[LastStream] load error:', e); return null; }
 }
 
+// ── APP-START: gewählten Bereich öffnen (Einstellungen > Aussehen) ───
+function _startAreaKey(){ var p = Profiles.getActive(); return 'xcp_last_area_' + (p ? p.id : 'default'); }
+function rememberStartArea(a){ try { localStorage.setItem(_startAreaKey(), a); } catch(e){} }
+function launchStartScreen(){
+  var a = Settings.startScreen || 'live';
+  if(a === 'last'){ try { a = localStorage.getItem(_startAreaKey()) || 'live'; } catch(e){ a = 'live'; } }
+  // nur Bereiche, die es gibt (M3U hat keine Filme/Serien) und die eingeblendet sind
+  if(S.isM3U || (a === 'vod' && Settings.showVod === false) || (a === 'series' && Settings.showSeries === false) ||
+     (a === 'continue' && Settings.showContinue === false) || ['vod', 'series', 'continue'].indexOf(a) < 0) a = 'live';
+  if(a === 'live') return launchLiveTv();
+  PlaylistRefresh.start();
+  if(typeof updateNavTabsActive === 'function') updateNavTabsActive(a);
+  if(a === 'continue'){
+    S.screen = 'continue';
+    if(typeof _updateNavbarVisibility === 'function') _updateNavbarVisibility();
+    renderContinueScreen();
+  } else launchTab(a);
+}
+
 // ── LIVE TV DIREKTSTART ───────────────────────────────────────────
 async function launchLiveTv(){
   S.screen='live'; S.tab='live'; S.liveDirect=true;

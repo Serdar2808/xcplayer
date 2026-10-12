@@ -112,10 +112,14 @@ document.getElementById('ctrl-vod-container').innerHTML = `
   </div>
   <div id="intro-bar">
     <div class="binge-title">Intro</div>
-    <div class="binge-ep-name" id="intro-bar-lbl">+90 Sekunden überspringen</div>
+    <div class="binge-ep-name" id="intro-bar-lbl">Dauer wählen</div>
     <div class="binge-progress"><div class="binge-progress-fill" id="intro-prog-fill" style="width:100%"></div></div>
     <div class="binge-btns">
-      <button class="binge-btn" id="intro-skip" data-focusable onclick="Player.skipIntro()">&#x00BB; Überspringen</button>
+      <div class="intro-pick">
+        <div class="ip-alt" id="intro-prev" onclick="Player.introStep(-1)"></div>
+        <button class="binge-btn" id="intro-skip" data-focusable onclick="Player.skipIntro()"></button>
+        <div class="ip-alt" id="intro-next" onclick="Player.introStep(1)"></div>
+      </div>
       <button class="binge-btn" id="intro-hide" data-focusable onclick="Player.dismissIntro()">&#x2715; Ausblenden</button>
     </div>
   </div>

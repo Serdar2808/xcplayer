@@ -349,8 +349,7 @@ window.addEventListener('keydown', function(e) {
       if(k===40){ SpatialNav.move('down'); if(isPE) _manAutoPreview(); return; }
       if(k===37){ SpatialNav.move('left'); if(isPE) _manAutoPreview(); return; }
       if(k===39){
-         var oldFocusedR = SpatialNav.focused; SpatialNav.move('right');
-         if(oldFocusedR === SpatialNav.focused && S.sysMenuOpen) { closeSysSidebar(); }
+         if(SpatialNav.move('right') === false && S.sysMenuOpen) { closeSysSidebar(); }
          if(isPE) _manAutoPreview();
          return;
       }
@@ -395,6 +394,8 @@ window.addEventListener('keydown', function(e) {
         if(k===37||k===39){ e.preventDefault(); SpatialNav.focusBySelector(ifoc.id === 'intro-skip' ? '#intro-hide' : '#intro-skip'); return; }
         if(k===13){ e.preventDefault(); if(ifoc.id === 'intro-hide') Player.dismissIntro(); else Player.skipIntro(); return; }
         if(k===KEYS.BACK||k===KEYS.BACK2||k===KEYS.ESC){ e.preventDefault(); S._backConsumed = true; Player.dismissIntro(); return; }
+        // auf der Rolle wählen hoch/runter die Dauer; von "Ausblenden" geht es in die Bedienung
+        if((k===38||k===40) && ifoc.id === 'intro-skip'){ e.preventDefault(); Player.introStep(k===38 ? -1 : 1); return; }
         if(k===38||k===40){ e.preventDefault(); Player.showControls(); SpatialNav.focusBySelector('#btn-pp-vod'); return; }
       }
       // aus der Bedienung nach oben in den Kasten (er steht über der Leiste)
@@ -481,9 +482,11 @@ window.addEventListener('keydown', function(e) {
       if(k===13){ playEpisode(S.cursors.ep); return; }
       return;
     }
-    if(SpatialNav.focused && SpatialNav.focused.classList.contains('s-back')){
+    // Zurück-Button: eigener Bereich - sonst spielte OK die zuletzt markierte Folge ab
+    if(S.focusArea==='series_back' || (SpatialNav.focused && SpatialNav.focused.classList.contains('s-back'))){
         if(k===39 || k===40){ seasonFocus(); return; }
         if(k===38){ if(!Settings.useSidebar) navTabsEnter(); return; }
+        if(k===13){ closeSeries(); return; }
     }
     return;
   }
@@ -496,14 +499,14 @@ window.addEventListener('keydown', function(e) {
     if(inContent && k===37){
       e.preventDefault();
       var stCat = S.settingsCatOpen;            // vor dem Bewegen merken: Fokus in der Leiste schaltet den Bereich um
-      SpatialNav.move('left');
+      if(SpatialNav.move('left') === 'busy') return;
       if(SpatialNav.focused === sf || (SpatialNav.focused && SpatialNav.focused.closest('#st-rail'))) SpatialNav.focusBySelector('#st-nav-' + stCat);
       return;
     }
     if((inRail || inContent) && (k===38 || k===40)){
       e.preventDefault();
       var stCat2 = S.settingsCatOpen;
-      SpatialNav.move(k===38 ? 'up' : 'down');
+      if(SpatialNav.move(k===38 ? 'up' : 'down') === 'busy') return;   // gedrosselt (Taste gehalten): nicht als Ende werten
       var nf = SpatialNav.focused, left = nf && nf.closest && (inRail ? !nf.closest('#st-rail') : !nf.closest('#st-content'));
       if(left || nf === sf){
         // kurz in der Leiste gelandet: das hat schon den Bereich umgeschaltet - zurück
@@ -517,11 +520,10 @@ window.addEventListener('keydown', function(e) {
   }
 
   e.preventDefault();
-  if(k===38) { var prevFoc = SpatialNav.focused; SpatialNav.move('up'); if(prevFoc === SpatialNav.focused && (!S.playerVisible || S.screen === 'settings') && !Settings.useSidebar && !document.getElementById('navbar').classList.contains('hidden')){ navTabsEnter(); } }
+  if(k===38) { if(SpatialNav.move('up') === false && (!S.playerVisible || S.screen === 'settings') && !Settings.useSidebar && !document.getElementById('navbar').classList.contains('hidden')){ navTabsEnter(); } }
   else if(k===40 || k===37 || k===39){
     var prevF = SpatialNav.focused;
-    SpatialNav.move(k===40 ? 'down' : k===37 ? 'left' : 'right');
-    if(prevF && prevF === SpatialNav.focused && !S.playerVisible) Motion.bumpAt(prevF, k===40 ? 'd' : k===37 ? 'l' : 'r');   // Ende erreicht
+    if(SpatialNav.move(k===40 ? 'down' : k===37 ? 'left' : 'right') === false && prevF && !S.playerVisible) Motion.bumpAt(prevF, k===40 ? 'd' : k===37 ? 'l' : 'r');   // Ende erreicht
   }
   else if(k===13) SpatialNav.select();
 

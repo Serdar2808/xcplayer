@@ -374,7 +374,7 @@ var Player = {
     this.destroy();
     S._bingeTriggered = false;
     S._watchedMarked = false;
-    this._autoDone = false; this._autoA = false; this._autoS = false; this._introSkipped = false;
+    this._autoDone = false; this._autoA = false; this._autoS = false; this._introSkipped = false; this._introSecs = 0;
     this._showIntroBar(false);
     S.currentStream=stream; S.playerType=type||S.tab;
     this.applyAspect();
@@ -989,12 +989,18 @@ var Player = {
   // ── Intro überspringen (Einstellung, Serien) ──────────────────
   // Kasten unten links wie "Nächste Episode": sichtbar vom Start der Folge bis
   // 30 s nach der eingestellten Intro-Länge, der Balken zeigt die verbleibende Zeit
+  // Die Dauer lässt sich im Kasten wählen (Rolle: hoch/runter, blass darüber/darunter
+  // die Nachbarwerte) und wird je Serie gemerkt - Intros sind verschieden lang.
+  _INTRO_VALS: [30, 45, 60, 75, 90, 105, 120, 150, 180],
+  _introMem: function(){ try { return JSON.parse(localStorage.getItem('xcp_intro_len') || '{}') || {}; } catch(e){ return {}; } },
+  _introSid: function(){ var cs = S.currentSeriesStream; return cs && cs.series_id ? 's' + cs.series_id : ''; },
   _updateIntroBtn: function(){
-    var secs = +Settings.introSkip, t = this.vid.currentTime || 0, end = secs + 30;
-    var show = S.playerType === 'series' && secs > 0 && !this._introSkipped && t > 2 && t < end &&
+    var on = +Settings.introSkip > 0;
+    if(on && !this._introSecs){ var mem = this._introMem()[this._introSid()]; this._introSecs = +mem || +Settings.introSkip; this._renderIntroPick(); }
+    var secs = this._introSecs, t = this.vid.currentTime || 0, end = secs + 30;
+    var show = S.playerType === 'series' && on && !this._introSkipped && t > 2 && t < end &&
                !(typeof BingeMode !== 'undefined' && BingeMode._active);
     if(show){
-      $('intro-bar-lbl').textContent = '+' + secs + ' Sekunden überspringen';
       $('intro-prog-fill').style.width = Math.max(0, Math.min(100, (end - t) / (end - 2) * 100)).toFixed(1) + '%';
     }
     this._showIntroBar(show);
@@ -1011,8 +1017,27 @@ var Player = {
       SpatialNav.focusBySelector('#btn-pp-vod');
     }
   },
+  _renderIntroPick: function(){
+    var v = this._INTRO_VALS, i = v.indexOf(this._introSecs), phone = document.documentElement.classList.contains('xc-phone');
+    $('intro-skip').innerHTML = '&#x00BB; +' + this._introSecs + ' s überspringen';
+    $('intro-prev').textContent = i > 0 ? '+' + v[i-1] + ' s' : '';
+    $('intro-next').textContent = i >= 0 && i < v.length - 1 ? '+' + v[i+1] + ' s' : '';
+    $('intro-bar-lbl').textContent = phone ? 'Dauer antippen' : '▲▼ Dauer  ·  OK überspringen';
+  },
+  introStep: function(d){
+    var v = this._INTRO_VALS, i = v.indexOf(this._introSecs);
+    if(i < 0){ i = 0; while(i < v.length - 1 && v[i] < this._introSecs) i++; }   // freier Wert aus älteren Einstellungen
+    else i += d;
+    if(i < 0 || i >= v.length){ Motion.bump($('intro-skip'), d < 0 ? 'u' : 'd'); return; }
+    this._introSecs = v[i];
+    this._renderIntroPick();
+    var b = $('intro-skip'); b.classList.remove('ip-roll-u', 'ip-roll-d'); void b.offsetWidth; b.classList.add(d < 0 ? 'ip-roll-u' : 'ip-roll-d');
+    var sid = this._introSid();
+    if(sid){ var m = this._introMem(); m[sid] = v[i]; var ks = Object.keys(m); if(ks.length > 500) delete m[ks[0]]; try { localStorage.setItem('xcp_intro_len', JSON.stringify(m)); } catch(e){} }
+    this._updateIntroBtn();
+  },
   skipIntro: function(){
-    var secs = +Settings.introSkip || 90;
+    var secs = this._introSecs || +Settings.introSkip || 90;
     this._introSkipped = true;
     try { this.vid.currentTime = Math.min((this.vid.duration || 1e9) - 5, (this.vid.currentTime || 0) + secs); } catch(e){}
     this._showIntroBar(false);

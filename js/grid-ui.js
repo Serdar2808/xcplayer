@@ -54,6 +54,7 @@ function navTabClick(action){
     if(typeof openSettings === 'function') openSettings();
     return;
   }
+  if(action === 'live' || action === 'vod' || action === 'series' || action === 'continue') rememberStartArea(action);
   if(action === 'continue'){
     if(S.screen === 'continue' && !S.playerVisible) {
         S.focusArea = 'continue';
@@ -164,6 +165,7 @@ function _navTabIsVisible(id){
 }
 
 function navTabsEnter(){
+  if(S._keyRepeat) return;   // gehaltene Taste: am Rand stehen bleiben
   if(typeof clearFocus === 'function') clearFocus(); 
   S.focusArea = 'nav-tabs';
   var targetId;
@@ -279,12 +281,13 @@ function closeSysSidebar() {
          else SpatialNav.focusBySelector('.ios-row') || SpatialNav.focusFirst(); 
        } 
      }, 50);
+  } else if (S.seriesDetailOpen) {
+     // vor Weiterschauen prüfen: die Folgenansicht kann darüber liegen
+     S.focusArea = 'series_season';
+     setTimeout(function(){ if(typeof SpatialNav !== 'undefined') { SpatialNav.focusBySelector('.stab.active') || SpatialNav.focusBySelector('#ep-' + S.cursors.ep) || SpatialNav.focusBySelector('.s-back'); } }, 50);
   } else if (S.screen === 'continue') {
      S.focusArea = 'continue';
      setTimeout(function(){ if(typeof SpatialNav !== 'undefined') { SpatialNav.focusBySelector('.cs-card') || SpatialNav.focusBySelector('#cs-empty-back'); } }, 50);
-  } else if (S.seriesDetailOpen) {
-     S.focusArea = 'series_ep';
-     setTimeout(function(){ if(typeof SpatialNav !== 'undefined') { SpatialNav.focusBySelector('#ep-' + S.cursors.ep) || SpatialNav.focusBySelector('.ep-item') || SpatialNav.focusBySelector('.stab.active'); } }, 50);
   } else if (S.playerVisible || (S.screen === 'live' && S.tab === 'live')) {
      S.focusArea = 'player';
      if(typeof Player !== 'undefined' && Player.showControls) Player.showControls();

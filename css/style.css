@@ -2332,6 +2332,16 @@ html.xc-pip body > *:not(#player-screen), html.xc-pip #player-screen > *:not(#vi
 #intro-bar .binge-progress-fill{transition:width .5s linear}
 #intro-bar .binge-btn{white-space:nowrap}
 #intro-skip,#intro-hide{background:rgba(255,255,255,.06);color:var(--mid);border:1px solid var(--border)}
+#intro-bar{width:560px}
+#intro-bar .binge-btns{align-items:center;gap:14px}
+#intro-hide{flex:1}
+.intro-pick{flex:1.7;display:flex;flex-direction:column;align-items:stretch;gap:4px}
+.intro-pick #intro-skip{flex:none;width:100%}
+.ip-alt{height:22px;line-height:22px;text-align:center;font-size:var(--fs-xs);color:var(--lo);opacity:.55;cursor:pointer}
+#intro-skip.ip-roll-u{animation:ip-roll-u var(--dur) var(--ease)}
+#intro-skip.ip-roll-d{animation:ip-roll-d var(--dur) var(--ease)}
+@keyframes ip-roll-u{from{transform:translateY(-14px);opacity:.4}to{transform:none;opacity:1}}
+@keyframes ip-roll-d{from{transform:translateY(14px);opacity:.4}to{transform:none;opacity:1}}
 html.theme-light #intro-bar{background:rgba(var(--lpanel-rgb),.96);border-color:var(--border);box-shadow:0 8px 32px rgba(0,0,0,.1)}
 
 /* Klassische Ansicht: Fokus so deutlich wie in der Netflix-Ansicht (schmale Karten -

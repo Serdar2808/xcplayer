@@ -123,7 +123,7 @@ async function activateProfile(id){
       S.rawCategories = { live: S.m3uCategories, vod: [], series: [] };
       S.rawStreams = { live: S.m3uStreams, vod: [], series: [] };
       if (S.wizardMode) return;     // Einrichtung läuft weiter (wie beim Laden unten)
-      launchLiveTv();
+      launchStartScreen();
       return;
     }
     showFullLoader('M3U wird geladen...', 'Verbinde mit Server');
@@ -138,7 +138,7 @@ async function activateProfile(id){
       S.rawStreams = { live: S.m3uStreams, vod: [], series: [] };
       hideFullLoader();
       if (S.wizardMode) return;
-      launchLiveTv();
+      launchStartScreen();
     }catch(e){
       hideFullLoader();
       showToast('M3U Fehler: '+(e.message||'Laden fehlgeschlagen'),3500);
@@ -165,5 +165,5 @@ async function activateProfile(id){
   
   hideFullLoader();
   if (S.wizardMode) { return; }
-  launchLiveTv();
+  launchStartScreen();
 }

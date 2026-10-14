@@ -121,10 +121,20 @@ var API = {
   getSeries:function(c){ return this.call(c&&c!=='fav'?'action=get_series&category_id='+c:'action=get_series'); },
   getSeriesInfo:function(id){ return this.call('action=get_series_info&series_id='+id); },
   getVodInfo:function(id){ return this.call('action=get_vod_info&vod_id='+id); },
+  // Endung nach den vom Anbieter erlaubten Formaten (manche liefern nur .ts oder nur .m3u8)
+  _ext:function(ext){
+    var p=this._p, a=null;
+    try { a = p && JSON.parse(localStorage.getItem('xcp_acct_' + p.id) || 'null'); } catch(e) {}
+    var f = a && a.fmts;
+    if(!f || !f.length) return ext;
+    if(ext === '.m3u8' && f.indexOf('m3u8') === -1 && f.indexOf('ts') !== -1) return '.ts';
+    if(ext === '.ts' && f.indexOf('ts') === -1 && f.indexOf('m3u8') !== -1) return '.m3u8';
+    return ext;
+  },
   liveUrl:function(s){
     if(S.isM3U&&s.url) return s.url;
     var p=this._p;
-    var ext = Settings.liveHls ? '.m3u8' : (Settings.nativePlayer ? '.ts' : '.m3u8');
+    var ext = this._ext(Settings.liveHls ? '.m3u8' : (Settings.nativePlayer ? '.ts' : '.m3u8'));
     return clean(p.host)+'/live/'+p.user+'/'+p.pass+'/'+s.stream_id+ext;
   },
   vodUrl:function(s){
@@ -137,7 +147,7 @@ var API = {
   },
   catchupUrl:function(s, startTs, durationMin){
     var p=this._p;
-    var ext = Settings.nativePlayer ? '.ts' : '.m3u8';
+    var ext = this._ext(Settings.nativePlayer ? '.ts' : '.m3u8');
     return clean(p.host)+'/timeshift/'+p.user+'/'+p.pass+'/'+durationMin+'/'+startTs+'/'+s.stream_id+ext;
   },
   streamUrl:function(s){ return S.tab==='live'?this.liveUrl(s):this.vodUrl(s); }

@@ -149,7 +149,8 @@ function saveAccountInfo(pid, u) {
   if(!pid || !u) return;
   try {
     localStorage.setItem('xcp_acct_' + pid, JSON.stringify({ exp: parseInt(u.exp_date, 10) || 0, max: parseInt(u.max_connections, 10) || 0,
-      act: parseInt(u.active_cons, 10) || 0, status: u.status || '', trial: u.is_trial === '1' || u.is_trial === 1, ts: Date.now() }));
+      act: parseInt(u.active_cons, 10) || 0, status: u.status || '', trial: u.is_trial === '1' || u.is_trial === 1,
+      fmts: Array.isArray(u.allowed_output_formats) ? u.allowed_output_formats.map(String) : null, ts: Date.now() }));
   } catch(e) {}
 }
 function _fmtDate(ms) {

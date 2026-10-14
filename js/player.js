@@ -441,7 +441,7 @@ var Player = {
 
     var self=this;
     // Zuerst natives HLS versuchen (webOS WebKit unterstützt es)
-    var isHlsUrl=url.indexOf('.m3u8')!==-1||url.indexOf('/live/')!==-1;
+    var isHlsUrl=(url.indexOf('.m3u8')!==-1||url.indexOf('/live/')!==-1)&&!/\.ts(\?|$)/.test(url);   // .ts (Anbieter ohne m3u8) spielt der Geräteplayer
 
     var bufF = { short:0.5, normal:1, long:2 }[Settings.buffer] || 1;
     if(isHlsUrl&&window.Hls&&Hls.isSupported()&&!Settings.nativePlayer&&!Settings.liveHls){

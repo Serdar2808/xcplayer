@@ -255,7 +255,12 @@ var PlaylistCheck = {
     var url = clean(p.host) + '/player_api.php?username=' + encodeURIComponent(p.user) + '&password=' + encodeURIComponent(p.pass);
     var r;
     try { r = await this._fetch(url, 15000); }
-    catch(e) { return { ok: false, msg: 'Der Server ist nicht erreichbar. Bitte die Server-Adresse und die Internetverbindung prüfen.' }; }
+    catch(e) {
+      // Viele Anbieter verschicken https-Links, der Port spricht aber nur http
+      if(!/^https:/i.test(p.host)) return { ok: false, msg: 'Der Server ist nicht erreichbar. Bitte die Server-Adresse und die Internetverbindung prüfen.' };
+      try { r = await this._fetch(url.replace(/^https:/i, 'http:'), 15000); p.host = p.host.replace(/^https:/i, 'http:'); }
+      catch(e2) { return { ok: false, msg: 'Der Server ist nicht erreichbar. Bitte die Server-Adresse und die Internetverbindung prüfen.' }; }
+    }
     if(r.status === 401 || r.status === 403) return { ok: false, msg: 'Benutzername oder Passwort ist falsch.' };
     if(!r.ok) return { ok: false, msg: 'Der Server meldet einen Fehler (' + r.status + '). Bitte später erneut versuchen.' };
     var d;
@@ -280,7 +285,11 @@ var PlaylistCheck = {
   _m3u: async function(p) {
     var r;
     try { r = await this._fetch(p.m3uUrl, 30000); }
-    catch(e) { return { ok: false, msg: 'Die Playlist ist nicht erreichbar. Bitte den Link und die Internetverbindung prüfen.' }; }
+    catch(e) {
+      if(!/^https:/i.test(p.m3uUrl)) return { ok: false, msg: 'Die Playlist ist nicht erreichbar. Bitte den Link und die Internetverbindung prüfen.' };
+      try { r = await this._fetch(p.m3uUrl.replace(/^https:/i, 'http:'), 30000); p.m3uUrl = p.m3uUrl.replace(/^https:/i, 'http:'); }
+      catch(e2) { return { ok: false, msg: 'Die Playlist ist nicht erreichbar. Bitte den Link und die Internetverbindung prüfen.' }; }
+    }
     if(r.status === 401 || r.status === 403) return { ok: false, msg: 'Zugriff verweigert – der Link ist falsch oder das Konto ist abgelaufen.' };
     if(r.status === 404) return { ok: false, msg: 'Unter diesem Link gibt es keine Playlist (Fehler 404).' };
     if(!r.ok) return { ok: false, msg: 'Der Server meldet einen Fehler (' + r.status + '). Bitte später erneut versuchen.' };

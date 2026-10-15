@@ -295,7 +295,7 @@ var Options = {
     }
   },
 
-  // Untertitel-Aussehen (Browser-Player über ::cue, iOS/VLC über die App)
+  // Untertitel-Aussehen (Browser-Player über ::cue, iOS/VLC bzw. Android/ExoPlayer über die App)
   applySubStyle: function(){
     var size = { s: 0.8, m: 1, l: 1.3, xl: 1.6 }[Settings.subSize] || 1;
     var color = Settings.subColor === 'yellow' ? '#ffe14d' : '#fff';
@@ -308,6 +308,8 @@ var Options = {
     try {
       if (window.webkit && webkit.messageHandlers && webkit.messageHandlers.xcp)
         webkit.messageHandlers.xcp.postMessage({ cmd: 'player', op: 'substyle', size: size, color: Settings.subColor === 'yellow' ? 0xFFE14D : 0xFFFFFF });
+      else if (window.AndroidBridge && AndroidBridge.player)
+        AndroidBridge.player(JSON.stringify({ op: 'substyle', size: size, color: Settings.subColor === 'yellow' ? 0xFFE14D : 0xFFFFFF, bg: Settings.subBg }));
     } catch (e) {}
   },
 

@@ -7,7 +7,9 @@
 //                     Live-OSD steht oben, Buttons gibt es auf der Fernbedienung.
 //   Smartphone        Tippen ins Bild: Zurück · Voriger/Play-Pause/Nächster ·
 //                     Duplikate rechts · unten die Kacheln - bzw. bei kompakter
-//                     Senderliste die Liste links, sonst ein Button "Senderliste".
+//                     Senderliste die Liste links. Normale Senderliste: Tippen
+//                     öffnet sie direkt, rechts daneben Timeshift/EPG/Duplikate.
+//                     Timeshift und EPG stehen sonst rechts mittig.
 var LiveUi = (function () {
   var UI_MS = 8000;
   var ICON_PREV = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M6 6h2.2v12H6zM9.6 12 18 18V6z"/></svg>';
@@ -16,10 +18,11 @@ var LiveUi = (function () {
   var ICON_PAUSE = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>';
   var ICON_TS = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M13 3a9 9 0 00-9 9H1l3.9 3.9L9 12H6a7 7 0 112 4.9l-1.4 1.4A9 9 0 1013 3zm-1 5v5l4.3 2.5.7-1.2-3.5-2.1V8z"/></svg>';
   var ICON_BACK = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M20 11H7.8l5.6-5.6L12 4l-8 8 8 8 1.4-1.4L7.8 13H20z"/></svg>';
-  var ICON_LIST = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M3 5h18v2.2H3zm0 5.9h18v2.2H3zm0 5.9h18V19H3z"/></svg>';
+  var ICON_EPG = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2zm0 16H5V9h14zM7 11h5v2H7zm0 4h8v2H7z"/></svg>';
+  var ICON_DUPS = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M16 1H4a2 2 0 00-2 2v14h2V3h12zm3 4H8a2 2 0 00-2 2v14a2 2 0 002 2h11a2 2 0 002-2V7a2 2 0 00-2-2zm0 16H8V7h11z"/></svg>';
 
   var ui = null, timer = null, watch = null, armedAt = 0;
-  // kind: 'phone' | 'tiles' (TV) | 'dups' (TV); list (Smartphone): 'tiles' | 'compact' | 'button'
+  // kind: 'phone' | 'tiles' (TV) | 'dups' (TV, Handy über den Duplikate-Button); list (Smartphone): 'tiles' | 'compact'
   var st = { open: false, kind: null, list: null, area: 'tiles', tileFoc: 0, dupFoc: 0, catIdx: 0, streams: [] };
 
   function isPhone() { return document.documentElement.classList.contains('xc-phone'); }
@@ -49,14 +52,18 @@ var LiveUi = (function () {
       '#xc-live-ui.show{opacity:1}' +
       '#xc-live-ui.show .xc-hit{pointer-events:auto}' +
       '#xc-live-ui.compact{z-index:1031}' +                       // über der kompakten Liste (Zurück-Button)
-      '#xc-live-ui.tv .xc-back,#xc-live-ui.tv .xc-center,#xc-live-ui.tv .xc-listbtn{display:none !important}' +
+      '#xc-live-ui.tv .xc-back,#xc-live-ui.tv .xc-center{display:none !important}' +
       '.xc-lb{border-radius:50%;border:none;background:rgba(0,0,0,.5);color:#fff;display:flex;align-items:center;' +
         'justify-content:center;cursor:pointer;outline:none;box-shadow:0 8px 30px rgba(0,0,0,.5);padding:0}' +
       '.xc-lb:active{transform:scale(.93)}' +
       '.xc-back{position:absolute;top:40px;left:40px;width:130px;height:130px}.xc-back svg{width:70px;height:70px}' +
-      // Timeshift (nur Sender mit Archiv) rechts mittig - am TV liegt es auf ROT
-      '.xc-ts{position:absolute;top:calc(50% - 60px);right:60px;height:120px;padding:0 44px 0 34px;border-radius:60px;gap:16px;font-size:42px;font-weight:600}.xc-ts svg{width:60px;height:60px}' +
-      '#xc-live-ui.tv .xc-ts{display:none !important}' +
+      // Timeshift (nur Sender mit Archiv) und EPG rechts mittig untereinander - am TV liegen sie auf den Farbtasten
+      '.xc-side{position:absolute;top:50%;right:60px;transform:translateY(-50%);display:flex;flex-direction:column;align-items:flex-end;gap:30px;pointer-events:none}' +
+      '.xc-side .xc-lb{height:120px;padding:0 44px 0 34px;border-radius:60px;gap:16px;font-size:42px;font-weight:600;font-family:inherit}.xc-side svg{width:60px;height:60px}' +
+      '#xc-live-ui.tv .xc-side{display:none !important}' +
+      // Normale Senderliste (Handy): dieselben Buttons rechts neben der Liste, nur solange sie offen ist
+      '#xc-list-side{left:calc(50% + 680px);right:auto;z-index:1031;display:none;align-items:flex-start;gap:26px}' +
+      '#xc-list-side.show{display:flex}#xc-list-side .xc-lb{pointer-events:auto;height:104px;padding:0 36px 0 28px;font-size:36px}#xc-list-side svg{width:50px;height:50px}' +
       '#xc-live-ui.compact .xc-back{top:62px;left:62px;width:96px;height:96px}#xc-live-ui.compact .xc-back svg{width:54px;height:54px}' +
       '.xc-center{position:absolute;left:0;right:0;top:50%;display:flex;justify-content:center;align-items:center;transform:translateY(-50%)}' +
       '.xc-center .xc-lb{margin:0 75px}' +
@@ -94,14 +101,6 @@ var LiveUi = (function () {
       '#xc-live-ui.mode-tiles:not(.vars-open) .xc-variants{display:none !important}' +
       '#xc-live-ui.mode-tiles .xc-var-title{cursor:pointer}' +
       '#xc-live-ui.mode-tiles .xc-var-title::after{content:" \\203A";color:var(--accent2)}' +
-      // Normale Senderliste: Duplikate waagerecht oben, rechts neben Zurück
-      '#xc-live-ui.mode-button .xc-variants{top:40px !important;bottom:auto !important;left:200px;right:40px;width:auto;' +
-        'flex-direction:row;align-items:center;padding:0 10px 0 0}' +
-      '#xc-live-ui.mode-button .xc-variants::before{top:auto;bottom:0;left:0;right:0;width:auto;height:2px;' +
-        'background:linear-gradient(90deg,transparent,var(--accent),var(--accent2),transparent)}' +
-      '#xc-live-ui.mode-button .xc-var-title{padding:0 26px 0 30px}' +
-      '#xc-live-ui.mode-button .xc-var-list{flex-direction:row;overflow-x:auto;overflow-y:hidden;flex:1;min-width:0}' +
-      '#xc-live-ui.mode-button .xc-var{min-height:110px;max-width:520px}' +
       // Kachel-Senderliste unten
       '.xc-strip{position:absolute;left:0;right:0;bottom:0;padding:24px 0 30px;' +
         // Unten so deckend wie das Live-OSD, nach oben transparenter, oben weicher Schatten
@@ -140,9 +139,6 @@ var LiveUi = (function () {
       '#xc-live-ui:not(.tv) .xc-tile.cur{background:rgba(var(--accent-rgb),.2);box-shadow:0 0 30px var(--glow)}' +
       '#xc-live-ui.tv .xc-tile.cur{background:rgba(255,255,255,.18)}' +
       '.xc-tile.foc{background:rgba(var(--accent-rgb),.22);box-shadow:0 0 30px var(--glow);transform:scale(1.06)}' +
-      '.xc-listbtn{position:absolute;left:50%;bottom:60px;transform:translateX(-50%);border:none;border-radius:60px;' +
-        'background:rgba(0,0,0,.55);color:#fff;font-size:40px;padding:26px 50px;display:flex;align-items:center}' +
-      '.xc-listbtn svg{width:52px;height:52px;margin-right:20px}' +
       // Live-OSD oben, solange Kacheln aktiv sind (unten liegt die Kachelleiste)
       'html.xc-tiles-on #live-osd{top:40px;bottom:auto}' +
       // Kompakte Liste mit Buttons (Smartphone): Zurück sitzt oben in der Liste, OSD rechts daneben
@@ -170,7 +166,7 @@ var LiveUi = (function () {
     ui.id = 'xc-live-ui';
     ui.innerHTML =
       '<button class="xc-lb xc-back xc-hit" data-act="back" aria-label="Zurück">' + ICON_BACK + '</button>' +
-      '<button class="xc-lb xc-ts xc-hit" data-act="ts" aria-label="Timeshift" style="display:none">' + ICON_TS + 'Timeshift</button>' +
+      '<div class="xc-side">' + sideButtons() + '</div>' +
       '<div class="xc-center">' +
         '<button class="xc-lb xc-hit" data-act="prev" aria-label="Voriger Sender">' + ICON_PREV + '</button>' +
         '<button class="xc-lb xc-pp xc-hit" data-act="pp" aria-label="Play/Pause">' + ICON_PAUSE + '</button>' +
@@ -178,8 +174,7 @@ var LiveUi = (function () {
       '</div>' +
       '<div class="xc-variants xc-hit xc-panel" style="display:none"><button class="xc-var-title" data-act="vars-close">Duplikate</button><div class="xc-var-list"></div></div>' +
       '<button class="xc-var-handle xc-hit" data-act="vars" aria-label="Duplikate"><b>&#x2039;</b><span>Duplikate</span></button>' +
-      '<div class="xc-strip xc-hit xc-panel" style="display:none"><div class="xc-cats"></div><div class="xc-tiles"></div></div>' +
-      '<button class="xc-listbtn xc-hit" data-act="list" style="display:none">' + ICON_LIST + ' Senderliste</button>';
+      '<div class="xc-strip xc-hit xc-panel" style="display:none"><div class="xc-cats"></div><div class="xc-tiles"></div></div>';
 
     ui.addEventListener('click', function (e) {
       var el = e.target.closest && e.target.closest('[data-act],[data-var],[data-cat],[data-tile]');
@@ -202,7 +197,7 @@ var LiveUi = (function () {
       hide();
       if (act === 'back') { handleBack(); return; }
       if (act === 'ts') { Player.startLiveTimeshift(); return; }            // Live: öffnet das Menü
-      if (act === 'list') { Player.toggleChList(); return; }
+      if (act === 'epg') { Player.toggleEpg(); return; }
       if (act === 'prev') Player.prevCh(); else if (act === 'next') Player.nextCh();   // OSD zeigt den neuen Sender
     });
     // Jede Berührung der Bedienelemente (z.B. Wischen in der Kachelreihe) hält sie offen
@@ -212,6 +207,49 @@ var LiveUi = (function () {
     ($('player-screen') || document.body).appendChild(ui);
     return ui;
   }
+
+  function sideButtons(dups) {
+    return '<button class="xc-lb xc-ts xc-hit" data-act="ts" aria-label="Timeshift" style="display:none">' + ICON_TS + 'Timeshift</button>' +
+           '<button class="xc-lb xc-epg xc-hit" data-act="epg" aria-label="EPG">' + ICON_EPG + 'EPG</button>' +
+           (dups ? '<button class="xc-lb xc-dups xc-hit" data-act="dups" aria-label="Duplikate" style="display:none">' + ICON_DUPS + 'Duplikate</button>' : '');
+  }
+
+  // Normale Senderliste am Handy: Buttons rechts neben der Liste (Timeshift nur bei
+  // Archiv, Duplikate nur wenn vorhanden) - beziehen sich auf den laufenden Sender
+  var side = null;
+  function listSideWanted() {
+    return isPhone() && isLive() && S.chListOpen && !Settings.compactList && !tilesOn() && !S.epgOpen &&
+           !(typeof EpgGrid !== 'undefined' && EpgGrid.open);
+  }
+  function updateListSide() {
+    var want = listSideWanted();
+    if (!want && !side) return;
+    if (!side) {
+      injectCss();
+      side = document.createElement('div');
+      side.id = 'xc-list-side';
+      side.className = 'xc-side';
+      side.innerHTML = sideButtons(true);
+      side.addEventListener('click', function (e) {
+        var el = e.target.closest && e.target.closest('[data-act]');
+        if (!el) return;
+        e.preventDefault(); e.stopPropagation();
+        var act = el.getAttribute('data-act');
+        if (S.chListOpen) Player.toggleChList();
+        side.classList.remove('show');
+        if (act === 'ts') Player.startLiveTimeshift();
+        else if (act === 'epg') Player.toggleEpg();
+        else if (act === 'dups') showDups();
+      });
+      ($('player-screen') || document.body).appendChild(side);
+    }
+    if (side.classList.contains('show') !== want) side.classList.toggle('show', want);
+    if (want) {
+      side.querySelector('.xc-ts').style.display = Player.timeshiftStream() ? '' : 'none';
+      side.querySelector('.xc-dups').style.display = (S.variants && S.variants.length >= 2) ? '' : 'none';
+    }
+  }
+  setInterval(function () { if (typeof S !== 'undefined' && typeof Player !== 'undefined') updateListSide(); }, 250);
 
   function updatePlayPause() {
     var b = ui && ui.querySelector('.xc-pp');
@@ -368,7 +406,6 @@ var LiveUi = (function () {
   // oben (unten liegt die Kachelleiste), sonst wie gewohnt unten.
   //   Kacheln   OSD oben · Kacheln unten · Duplikate zugeklappt rechts (Griff)
   //   kompakt   Liste links · OSD unten · Duplikate rechts senkrecht
-  //   normal    Zurück + Duplikate waagerecht oben · Button "Senderliste" über dem OSD
   function layout() {
     var uiH = ui.offsetHeight, gap = 24;
     var r = ui.getBoundingClientRect(), scale = (uiH && r.height) ? r.height / uiH : 1;
@@ -377,23 +414,13 @@ var LiveUi = (function () {
       var o = osd.getBoundingClientRect(), oTop = (o.top - r.top) / scale, oBottom = (o.bottom - r.top) / scale;
       if (oTop < uiH / 2) top = Math.max(top, oBottom); else bottom = Math.min(bottom, oTop);
     }
-    var strip = ui.querySelector('.xc-strip'), lb = ui.querySelector('.xc-listbtn');
+    var strip = ui.querySelector('.xc-strip');
     if (strip.style.display !== 'none') bottom = Math.min(bottom, strip.offsetTop + 20);   // oberer Verlauf darf überlappen
-    if (lb.style.display !== 'none') {                                                    // Button direkt über dem OSD
-      lb.style.bottom = (uiH - bottom + gap) + 'px';
-      bottom = bottom - gap - lb.offsetHeight;
-    }
     var box = ui.querySelector('.xc-variants'), boxShown = box.style.display !== 'none';
     var cTop = top;
-    if (st.list === 'button') {
-      // Duplikate waagerecht oben (Position aus der CSS) - Mitte darunter
-      box.style.top = ''; box.style.bottom = '';
-      cTop = Math.max(cTop, boxShown ? 40 + box.offsetHeight : 40 + 130);
-    } else {
-      box.style.top = (top + gap) + 'px';
-      box.style.bottom = (uiH - bottom + gap) + 'px';
-      if (st.kind === 'phone' && st.list !== 'compact') cTop = Math.max(cTop, 40 + 130);   // unter dem Zurück-Button
-    }
+    box.style.top = (top + gap) + 'px';
+    box.style.bottom = (uiH - bottom + gap) + 'px';
+    if (st.kind === 'phone' && st.list !== 'compact') cTop = Math.max(cTop, 40 + 130);   // unter dem Zurück-Button
     var h = ui.querySelector('.xc-var-handle');
     h.style.top = ((top + bottom) / 2) + 'px';
     var c = ui.querySelector('.xc-center');
@@ -424,14 +451,13 @@ var LiveUi = (function () {
     st.open = true; st.kind = kind;
     ui.classList.toggle('tv', kind !== 'phone');
     ui.classList.toggle('compact', st.list === 'compact');
-    ['tiles', 'compact', 'button'].forEach(function (m) {
+    ['tiles', 'compact'].forEach(function (m) {
       ui.classList.toggle('mode-' + m, kind === 'phone' && st.list === m);
     });
     ui.classList.remove('vars-open');           // Duplikate bei Kacheln jedes Mal zugeklappt
     document.documentElement.classList.toggle('xc-liveui-compact', st.list === 'compact');
     var strip = kind === 'tiles' || (kind === 'phone' && st.list === 'tiles');
     ui.querySelector('.xc-strip').style.display = strip ? '' : 'none';
-    ui.querySelector('.xc-listbtn').style.display = (kind === 'phone' && st.list === 'button') ? '' : 'none';
     ui.querySelector('.xc-ts').style.display = (kind === 'phone' && Player.timeshiftStream()) ? '' : 'none';
     showOsd();
     ui.classList.add('show');
@@ -451,7 +477,8 @@ var LiveUi = (function () {
 
   function showPhone() {
     if (blocked()) return;
-    st.list = tilesOn() ? 'tiles' : (Settings.compactList ? 'compact' : 'button');
+    if (!tilesOn() && !Settings.compactList) { Player.toggleChList(); return; }   // normale Senderliste: sofort öffnen
+    st.list = tilesOn() ? 'tiles' : 'compact';
     if (st.list === 'compact' && !S.chListOpen) {
       Player.toggleChList();
       if (typeof _resetAutoClose === 'function') _resetAutoClose();

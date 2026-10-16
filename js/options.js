@@ -12,7 +12,7 @@ var OPTION_DEFS = {
   // Filme & Serien
   showContinue: true, newRow: true, watchedPct: 95, gridLayout: 'default',
   // Wiedergabe
-  bingeSecs: 8, introSkip: 0, seekStep: 10, resumeMode: 'auto', audioLang: '', subLang: '',
+  bingeSecs: 8, introSkip: 60, seekStep: 10, resumeMode: 'auto', audioLang: '', subLang: '',
   subSize: 'm', subColor: 'white', subBg: 'shadow', aspectDefault: 'last', buffer: 'normal',
   // Playlist & Daten
   plRefresh: 'manual', epgRefresh: 24,

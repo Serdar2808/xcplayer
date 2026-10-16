@@ -399,13 +399,8 @@ var LiveSearch = {
     LiveSearch.close();
     // Sender umschalten
     if(typeof Player !== 'undefined' && typeof API !== 'undefined'){
-      // Index in S.streams finden, falls vorhanden
-      if(S.streams && S.streams.length){
-        for(var i=0;i<S.streams.length;i++){
-          if(S.streams[i].stream_id === s.stream_id){ S.currentStreamIdx = i; break; }
-        }
-      }
       Player.play(API.liveUrl(s), s, 'live');
+      Player.syncZapList();   // hoch/runter zappt danach in der Liste dieses Senders
     }
   },
 

@@ -383,6 +383,7 @@ var EpgGrid = {
     this.close();
     saveLastStream(s);
     Player.play(API.liveUrl(s), s, 'live');
+    Player.syncZapList();
   }
 };
 

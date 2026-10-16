@@ -57,6 +57,7 @@ var ZapHistory = {
     saveLastStream(prev);
     this._goBackInProgress = true;
     Player.play(API.liveUrl(prev), prev, 'live');
+    Player.syncZapList();   // hoch/runter zappt danach in der Liste dieses Senders
     this._goBackInProgress = false;
     var self = this;
     setTimeout(function(){ self.showOsd(); }, 200);
@@ -104,6 +105,7 @@ var ZapHistory = {
     this._list.unshift(s);
     saveLastStream(s);
     Player.play(API.liveUrl(s), s, 'live');
+    Player.syncZapList();
   },
 
   _render: function(){

@@ -63,6 +63,8 @@ var Settings = {
         // Weitere Einstellungen (options.js); früherer Schalter "mit Kanal 1 starten"
         for (var ok in OPTION_DEFS) if (d[ok] !== undefined) this[ok] = d[ok];
         if (d.startChannel === undefined && d.startFirstChannel) this.startChannel = 'first';
+        // 0.2.9: 'Intro überspringen' ist jetzt standardmäßig an (60 s) - einmalig auch für bisher gespeichertes 'Aus'
+        if (!d.introMig && !+this.introSkip) this.introSkip = 60;
       }
     }catch(e){ Logger.warn('[Settings] load error:', e); }
     // Kachel-Senderliste: Standard auf Smartphones an (außer die kompakte Liste
@@ -137,6 +139,7 @@ var Settings = {
       epgShift:this.epgShift
     };
     for (var ok in OPTION_DEFS) data[ok] = this[ok];
+    data.introMig = true;
     try{ localStorage.setItem('xcp_settings',JSON.stringify(data)); }catch(e){ Logger.warn('[Settings] save error:', e); }
     
     var p = Profiles.getActive();

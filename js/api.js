@@ -145,6 +145,19 @@ var API = {
     var p=this._p;
     return clean(p.host)+'/series/'+p.user+'/'+p.pass+'/'+ep.id+'.'+(ep.container_extension||'mp4');
   },
+  // Startzeit für Timeshift-Adressen (JJJJ-MM-TT:HH-MM) in der Ortszeit des Servers;
+  // ohne bekannte Zeitzone wie bisher in der des Geräts
+  catchupStart:function(ms){
+    var p=this._p, a=null, pad=function(n){ return (n<10?'0':'')+n; };
+    try { a = p && JSON.parse(localStorage.getItem('xcp_acct_' + p.id) || 'null'); } catch(e) {}
+    var tzo = a && typeof a.tzo === 'number' ? a.tzo : null;
+    if(tzo === null){
+      var l = new Date(ms);
+      return l.getFullYear()+'-'+pad(l.getMonth()+1)+'-'+pad(l.getDate())+':'+pad(l.getHours())+'-'+pad(l.getMinutes());
+    }
+    var d = new Date(ms + tzo * 60000);
+    return d.getUTCFullYear()+'-'+pad(d.getUTCMonth()+1)+'-'+pad(d.getUTCDate())+':'+pad(d.getUTCHours())+'-'+pad(d.getUTCMinutes());
+  },
   catchupUrl:function(s, startTs, durationMin){
     var p=this._p;
     var ext = this._ext(Settings.nativePlayer ? '.ts' : '.m3u8');

@@ -1,5 +1,12 @@
 // ── PROGRESSIVES SPULEN ──────────────────────────────────────────
 var _seek = { active: false, target: 0, holdStart: 0, timer: null };
+// Timeshift/Catchup: weiteste abrufbare Stelle in s ab Sendungsbeginn - bei einer
+// laufenden Sendung "jetzt" minus etwas Abstand (der Server liefert die Zukunft nicht)
+function _catchupMaxSec(s){
+  var total = (s.cu_durationMin || 0) * 60;
+  var live = Math.floor((Date.now() - s.cu_startMs) / 1000) - 90;
+  return Math.max(0, Math.min(total - 30, live));
+}
 
 // fixedStep: feste Schrittweite (Doppeltipp am Handy) statt der Tasten-Logik
 function progressiveSeek(dir, fixedStep){
@@ -7,7 +14,7 @@ function progressiveSeek(dir, fixedStep){
   var now = Date.now();
   var isCatchup = S.playerType === 'catchup' && S.currentStream;
   var curTime = isCatchup ? (S.currentStream.cu_offsetSec + (Player.vid.currentTime||0)) : (Player.vid.currentTime||0);
-  var dur = isCatchup ? (S.currentStream.cu_durationMin * 60) : (Player.vid.duration||0);
+  var dur = isCatchup ? _catchupMaxSec(S.currentStream) : (Player.vid.duration||0);
 
   if(!dur) return;
 
@@ -43,7 +50,11 @@ function commitSeek(){
   
   var isCatchup = S.playerType === 'catchup' && S.currentStream;
   if (isCatchup) {
-     S.currentStream.cu_offsetSec = _seek.target;
+     // Adresse nur minutengenau: in Spulrichtung auf die nächste volle Minute, sonst lädt ein
+     // kurzer Sprung dieselbe Stelle neu
+     var cs = S.currentStream, from = cs.cu_offsetSec + Math.floor(Player.vid.currentTime || 0);
+     var abs = cs.cu_startMs / 1000 + _seek.target, minAbs = _seek.target >= from ? Math.ceil(abs / 60) * 60 : Math.floor(abs / 60) * 60;
+     cs.cu_offsetSec = Math.max(0, Math.min(_catchupMaxSec(cs), minAbs - cs.cu_startMs / 1000));
      showToast('Lade Stream...', 1000);
      Player.play(null, S.currentStream, 'catchup');
   } else {
@@ -172,8 +183,7 @@ var Player = {
         Player.close(); // Film fertig → zurück
       } else if (S.playerType==='catchup' && S.currentStream) {
          var realSec = S.currentStream.cu_offsetSec + Math.floor(Player.vid.currentTime || 0);
-         var totalSec = S.currentStream.cu_durationMin * 60;
-         if (realSec < totalSec - 30) {
+         if (realSec < _catchupMaxSec(S.currentStream) - 30) {
              S.currentStream.cu_offsetSec = realSec;
              Player.play(null, S.currentStream, 'catchup'); // Auto-Resume nach 3 Min LG-Bug
          } else {
@@ -219,8 +229,8 @@ var Player = {
       
       if (S.playerType==='catchup' && S.currentStream) {
          var realSec = S.currentStream.cu_offsetSec + Math.floor(Player.vid.currentTime || 0);
-         var totalSec = S.currentStream.cu_durationMin * 60;
-         if (realSec < totalSec - 30) {
+         if (realSec < _catchupMaxSec(S.currentStream) - 30 && S.currentStream._cuRetryAt !== realSec) {
+             S.currentStream._cuRetryAt = realSec;     // nur ein Neuversuch je Stelle, sonst endlos bei abgelehnten Adressen
              S.currentStream.cu_offsetSec = realSec;
              setTimeout(function(){ Player.play(null, S.currentStream, 'catchup'); }, 1500);
          }
@@ -297,8 +307,10 @@ var Player = {
     }
 
     if (!curProg) {
-      showToast('Keine EPG-Daten für aktuelles Programm gefunden', 2000);
-      return;
+      // Kein EPG: Fenster der letzten 3 Stunden (bzw. des Archivs), Start kurz vor jetzt -
+      // zurückspulen geht dann wie gewohnt
+      var winMin = Math.min(180, (archiveDays > 0 ? archiveDays * 24 * 60 : 180));
+      curProg = { start: new Date(Math.floor(Date.now() / 60000 - winMin) * 60000), stop: new Date(Math.ceil(Date.now() / 60000) * 60000), title: 'Timeshift', noEpg: true };
     }
 
     var startMs = curProg.start.getTime();
@@ -312,7 +324,7 @@ var Player = {
     cuStream.cu_original_id = targetStream.stream_id;
     cuStream.cu_startMs = startMs;
     cuStream.cu_durationMin = durationMin;
-    cuStream.cu_offsetSec = Math.max(0, elapsedSec - 5);
+    cuStream.cu_offsetSec = curProg.noEpg ? Math.max(0, elapsedSec - 300) : Math.max(0, elapsedSec - 5);
 
     _catchupJustStarted = Date.now();
     if(S.epgOpen) this.toggleEpg();
@@ -375,11 +387,12 @@ var Player = {
       }
     }
     if (type === 'catchup' && !url) {
-       var newStartMs = stream.cu_startMs + (stream.cu_offsetSec * 1000);
+       // Die Adresse kennt nur volle Minuten: Position darauf setzen, damit Anzeige und Bild übereinstimmen
+       stream.cu_offsetSec = Math.max(0, Math.min(_catchupMaxSec(stream), stream.cu_offsetSec || 0));
+       var newStartMs = Math.floor((stream.cu_startMs + stream.cu_offsetSec * 1000) / 60000) * 60000;
+       stream.cu_offsetSec = Math.max(0, Math.round((newStartMs - stream.cu_startMs) / 1000));
        var newDurMin = Math.max(1, stream.cu_durationMin - Math.floor(stream.cu_offsetSec / 60));
-       var d = new Date(newStartMs);
-       var startStr = d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) + ':' + pad(d.getHours()) + '-' + pad(d.getMinutes());
-       url = API.catchupUrl({stream_id: stream.cu_original_id}, startStr, newDurMin);
+       url = API.catchupUrl({stream_id: stream.cu_original_id}, API.catchupStart(newStartMs), newDurMin);
     }
     this.destroy();
     S._bingeTriggered = false;
@@ -753,33 +766,46 @@ var Player = {
       if (Settings.splitList) renderChListSplitCats();
     } else {
       // Ohne Auswahl geschlossen — filteredStreams auf Kontext des aktuellen Streams zurücksetzen
-      if(S.currentStream && S.streams && S.streams.length > 0) {
-        var targetCatId = S.currentStream.category_id;
-        var opts = buildCatOpts();
-        var foundIdx = 0;
-        if(targetCatId) {
-          for(var r=0; r<opts.length; r++) {
-            if(String(opts[r].id) === String(targetCatId)) { foundIdx = r; break; }
-          }
-        }
-        S.chListCatIdx = foundIdx;
-        var restoreArr = S.streams;
-        var opt = opts[foundIdx];
-        if(opt && opt.id === 'fav') {
-          restoreArr = restoreArr.filter(function(s){ return S.favs.live.indexOf(s.stream_id)!==-1; });
-        } else if(opt && opt.id !== null) {
-          restoreArr = restoreArr.filter(function(s){ return String(s.category_id) === String(opt.id); });
-        }
-        S.filteredStreams = applyVariantGrouping(restoreArr);
-        // currentStreamIdx neu berechnen
-        S.currentStreamIdx = 0;
-        var baseCur = _baseName(S.currentStream.name);
-        for(var ri=0; ri<S.filteredStreams.length; ri++){
-          if(S.filteredStreams[ri].stream_id === S.currentStream.stream_id){ S.currentStreamIdx=ri; break; }
-          if(Settings.groupVariants && _baseName(S.filteredStreams[ri].name)===baseCur){ S.currentStreamIdx=ri; break; }
+      this.syncZapList(true);
+      this.showControls();
+    }
+  },
+
+  // Zapp-Liste (filteredStreams + currentStreamIdx) zum laufenden Sender passend machen,
+  // z.B. nach Wahl aus "Letzte Sender": sonst zappt hoch/runter in der alten Kategorie
+  // weiter. force=false: steht der Sender in der aktuellen Liste, bleibt diese (z.B. Favoriten).
+  syncZapList:function(force){
+    if(!S.currentStream || S.playerType!=='live') return;
+    if(!force && S.filteredStreams){
+      for(var k=0; k<S.filteredStreams.length; k++){
+        if(S.filteredStreams[k].stream_id === S.currentStream.stream_id){ S.currentStreamIdx=k; return; }
+      }
+    }
+    if(S.streams && S.streams.length > 0) {
+      var targetCatId = S.currentStream.category_id;
+      var opts = buildCatOpts();
+      var foundIdx = 0;
+      if(targetCatId) {
+        for(var r=0; r<opts.length; r++) {
+          if(String(opts[r].id) === String(targetCatId)) { foundIdx = r; break; }
         }
       }
-      this.showControls();
+      S.chListCatIdx = foundIdx;
+      var restoreArr = S.streams;
+      var opt = opts[foundIdx];
+      if(opt && opt.id === 'fav') {
+        restoreArr = restoreArr.filter(function(s){ return S.favs.live.indexOf(s.stream_id)!==-1; });
+      } else if(opt && opt.id !== null) {
+        restoreArr = restoreArr.filter(function(s){ return String(s.category_id) === String(opt.id); });
+      }
+      S.filteredStreams = applyVariantGrouping(restoreArr);
+      // currentStreamIdx neu berechnen
+      S.currentStreamIdx = 0;
+      var baseCur = _baseName(S.currentStream.name);
+      for(var ri=0; ri<S.filteredStreams.length; ri++){
+        if(S.filteredStreams[ri].stream_id === S.currentStream.stream_id){ S.currentStreamIdx=ri; break; }
+        if(Settings.groupVariants && _baseName(S.filteredStreams[ri].name)===baseCur){ S.currentStreamIdx=ri; break; }
+      }
     }
   },
 
@@ -1032,7 +1058,7 @@ var Player = {
     $('intro-skip').innerHTML = '&#x00BB; +' + this._introSecs + ' s überspringen';
     $('intro-prev').textContent = i > 0 ? '+' + v[i-1] + ' s' : '';
     $('intro-next').textContent = i >= 0 && i < v.length - 1 ? '+' + v[i+1] + ' s' : '';
-    $('intro-bar-lbl').textContent = phone ? 'Dauer antippen' : '▲▼ Dauer  ·  OK überspringen';
+    $('intro-bar-lbl').textContent = phone ? 'Dauer: wischen oder antippen' : '▲▼ Dauer  ·  OK überspringen';
   },
   introStep: function(d){
     var v = this._INTRO_VALS, i = v.indexOf(this._introSecs);
@@ -1363,7 +1389,7 @@ function seekClick(e){
   var t=$('seek-track'),rect=t.getBoundingClientRect();
   var pct=Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width));
   if (S.playerType === 'catchup' && S.currentStream) {
-     S.currentStream.cu_offsetSec = Math.floor(pct * S.currentStream.cu_durationMin * 60);
+     S.currentStream.cu_offsetSec = Math.min(_catchupMaxSec(S.currentStream), Math.floor(pct * S.currentStream.cu_durationMin * 60));
      showToast('Lade Stream...', 1000);
      Player.play(null, S.currentStream, 'catchup');
      Player.showControls();

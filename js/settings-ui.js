@@ -145,13 +145,27 @@ function settingsPreviewImage(key) {
 function _accountInfo(pid) {
   try { return JSON.parse(localStorage.getItem('xcp_acct_' + pid) || 'null'); } catch(e) { return null; }
 }
-function saveAccountInfo(pid, u) {
+function saveAccountInfo(pid, u, si) {
   if(!pid || !u) return;
   try {
+    var old = _accountInfo(pid) || {}, tzo = _serverTzOffset(si);
     localStorage.setItem('xcp_acct_' + pid, JSON.stringify({ exp: parseInt(u.exp_date, 10) || 0, max: parseInt(u.max_connections, 10) || 0,
       act: parseInt(u.active_cons, 10) || 0, status: u.status || '', trial: u.is_trial === '1' || u.is_trial === 1,
-      fmts: Array.isArray(u.allowed_output_formats) ? u.allowed_output_formats.map(String) : null, ts: Date.now() }));
+      fmts: Array.isArray(u.allowed_output_formats) ? u.allowed_output_formats.map(String) : null,
+      tzo: tzo !== null ? tzo : (old.tzo !== undefined ? old.tzo : null), ts: Date.now() }));
   } catch(e) {}
+}
+// UTC-Versatz der Serveruhr in Minuten aus server_info (time_now = Ortszeit des
+// Servers, timestamp_now = UTC). Timeshift-Adressen erwarten die Startzeit in
+// dieser Ortszeit - steht der Server in einer anderen Zeitzone als das Gerät
+// (z.B. Türkei), lag die Startzeit sonst um Stunden daneben.
+function _serverTzOffset(si) {
+  if(!si || !si.time_now || !si.timestamp_now) return null;
+  var m = String(si.time_now).match(/^(\d{4})-(\d\d)-(\d\d)[ T](\d\d):(\d\d)(?::(\d\d))?/);
+  if(!m) return null;
+  var asUtc = Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0)) / 1000;
+  var off = Math.round((asUtc - parseInt(si.timestamp_now, 10)) / 900) * 15;   // auf Viertelstunden runden
+  return Math.abs(off) <= 14 * 60 ? off : null;
 }
 function _fmtDate(ms) {
   var d = new Date(ms), p = function(n){ return (n < 10 ? '0' : '') + n; };

@@ -9,7 +9,8 @@
 //                     Duplikate rechts · unten die Kacheln - bzw. bei kompakter
 //                     Senderliste die Liste links. Normale Senderliste: Tippen
 //                     öffnet sie direkt, rechts daneben Timeshift/EPG/Duplikate.
-//                     Timeshift und EPG stehen sonst rechts mittig.
+//                     Timeshift und EPG: bei Kacheln links mittig, bei kompakter
+//                     Liste oben rechts über den Duplikaten.
 var LiveUi = (function () {
   var UI_MS = 8000;
   var ICON_PREV = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M6 6h2.2v12H6zM9.6 12 18 18V6z"/></svg>';
@@ -61,6 +62,9 @@ var LiveUi = (function () {
       '.xc-side{position:absolute;top:50%;right:60px;transform:translateY(-50%);display:flex;flex-direction:column;align-items:flex-end;gap:30px;pointer-events:none}' +
       '.xc-side .xc-lb{height:120px;padding:0 44px 0 34px;border-radius:60px;gap:16px;font-size:42px;font-weight:600;font-family:inherit}.xc-side svg{width:60px;height:60px}' +
       '#xc-live-ui.tv .xc-side{display:none !important}' +
+      // Kacheln: links (rechts sitzt der Duplikate-Griff); kompakte Liste: oben rechts nebeneinander, Duplikate darunter
+      '#xc-live-ui.mode-tiles .xc-side{left:60px;right:auto;align-items:flex-start}' +
+      '#xc-live-ui.mode-compact .xc-side{top:40px;right:40px;transform:none;flex-direction:row;gap:24px}' +
       // Normale Senderliste (Handy): dieselben Buttons rechts neben der Liste, nur solange sie offen ist
       '#xc-list-side{left:calc(50% + 680px);right:auto;z-index:1031;display:none;align-items:flex-start;gap:26px}' +
       '#xc-list-side.show{display:flex}#xc-list-side .xc-lb{pointer-events:auto;height:104px;padding:0 36px 0 28px;font-size:36px}#xc-list-side svg{width:50px;height:50px}' +
@@ -249,7 +253,9 @@ var LiveUi = (function () {
       side.querySelector('.xc-dups').style.display = (S.variants && S.variants.length >= 2) ? '' : 'none';
     }
   }
-  setInterval(function () { if (typeof S !== 'undefined' && typeof Player !== 'undefined') updateListSide(); }, 250);
+  ['chListOpenChanged', 'epgOpenChanged', 'epgGridOpenChanged', 'playerVisibleChanged', 'streamStarted'].forEach(function (ev) {
+    StateEvents.on(ev, function () { if (typeof Player !== 'undefined') updateListSide(); });
+  });
 
   function updatePlayPause() {
     var b = ui && ui.querySelector('.xc-pp');
@@ -313,7 +319,7 @@ var LiveUi = (function () {
       cats[k].classList.toggle('foc', st.kind === 'tiles' && st.area === 'cats' && k === st.catIdx);
     }
     var c = cats[st.catIdx];
-    if (c) Motion.scroll(box, null, c.offsetLeft - 60);
+    if (c) scrollIntoList(box, c, true);
   }
   function renderTiles(catIdx, jumpToCurrent) {
     st.catIdx = catIdx;
@@ -417,7 +423,11 @@ var LiveUi = (function () {
     var strip = ui.querySelector('.xc-strip');
     if (strip.style.display !== 'none') bottom = Math.min(bottom, strip.offsetTop + 20);   // oberer Verlauf darf überlappen
     var box = ui.querySelector('.xc-variants'), boxShown = box.style.display !== 'none';
-    var cTop = top;
+    var cTop = top, side = ui.querySelector('.xc-side');
+    if (st.list === 'compact') {
+      side.style.top = '';
+      if (side.offsetHeight) top = Math.max(top, side.offsetTop + side.offsetHeight);   // Duplikate unter Timeshift/EPG
+    } else side.style.top = ((top + bottom) / 2) + 'px';
     box.style.top = (top + gap) + 'px';
     box.style.bottom = (uiH - bottom + gap) + 'px';
     if (st.kind === 'phone' && st.list !== 'compact') cTop = Math.max(cTop, 40 + 130);   // unter dem Zurück-Button
@@ -553,10 +563,9 @@ var LiveUi = (function () {
   function tilesKey(k) {
     var n = st.streams.length, cats = buildCatOpts().length;
     if (st.area === 'cats') {
-      if (k === 37 || k === 39) {
-        var ci = Math.max(0, Math.min(cats - 1, st.catIdx + (k === 39 ? 1 : -1)));
-        if (ci !== st.catIdx) renderTiles(ci, true);
-        else Motion.bump(ui.querySelector('.xc-cats'), k === 39 ? 'r' : 'l');
+      if (k === 37 || k === 39) {                 // Endlos: nach der letzten wieder die erste
+        var ci = (st.catIdx + (k === 39 ? 1 : -1) + cats) % cats;
+        if (cats > 1) renderTiles(ci, true);
         return true;
       }
       if (k === 40 || k === 13) { st.area = 'tiles'; markTiles(); markCats(); return true; }
@@ -595,11 +604,12 @@ var LiveUi = (function () {
     var origBack = handleBack;
     window.handleBack = function () {
       if (st.open) {
-        // Kompakte Liste mit Buttons (Handy): schließen und wie Zurück im Live-Bild
-        // gleich das Top-Menü öffnen; sonst nur die Bedienung ausblenden
-        var compact = st.list === 'compact';
+        // Handy, Senderliste (Kacheln, kompakte Liste): schließen und wie Zurück im
+        // Live-Bild gleich das Top-Menü öffnen; TV und Duplikate: nur ausblenden
+        var dups = st.kind === 'dups';
         hide();
-        if (!compact) return;
+        if (dups || !isPhone()) return;
+        if (typeof Player !== 'undefined') Player.hideControls();   // sonst schließt das erste Zurück nur die Senderinfo
       }
       return origBack.apply(this, arguments);
     };

@@ -152,7 +152,8 @@ function saveAccountInfo(pid, u, si) {
     localStorage.setItem('xcp_acct_' + pid, JSON.stringify({ exp: parseInt(u.exp_date, 10) || 0, max: parseInt(u.max_connections, 10) || 0,
       act: parseInt(u.active_cons, 10) || 0, status: u.status || '', trial: u.is_trial === '1' || u.is_trial === 1,
       fmts: Array.isArray(u.allowed_output_formats) ? u.allowed_output_formats.map(String) : null,
-      tzo: tzo !== null ? tzo : (old.tzo !== undefined ? old.tzo : null), ts: Date.now() }));
+      // Ohne server_info bleibt der alte Wert (undefined = noch nie abgefragt, s. activateProfile)
+      tzo: tzo !== null ? tzo : (si ? null : old.tzo), ts: Date.now() }));
   } catch(e) {}
 }
 // UTC-Versatz der Serveruhr in Minuten aus server_info (time_now = Ortszeit des

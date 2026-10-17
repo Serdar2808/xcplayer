@@ -40,6 +40,7 @@ var CONFIG = {
   OSD_INTERVAL:         15000,
   BITRATE_INTERVAL:     3000,
   RESUME_SAVE_INTERVAL: 5,         // Alle N Sekunden speichern
+  VOD_REOPEN_MS: 60000,            // Filme/Serien: länger pausiert -> beim Fortsetzen neu öffnen
   SEARCH_DEBOUNCE_MS:   250,
   WHEEL_IDLE_MS:        5000,
   EXIT_CONFIRM_MS:      2200,

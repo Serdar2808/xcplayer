@@ -120,6 +120,7 @@ var Player = {
          return;
       }
       if(!Player.vid.duration) return;
+      if(Player.vid.currentTime > 0) Player._vodPos = Player.vid.currentTime;   // für das Neu-Öffnen nach Abbruch
       Player._updateProgressUI(Player.vid.currentTime, Player.vid.duration);
       Player._updateIntroBtn();
       
@@ -191,6 +192,8 @@ var Player = {
          }
       }
     });
+    this.vid.addEventListener('pause',function(){ Player._pausedAt = Date.now(); });
+    this.vid.addEventListener('playing',function(){ Player._pausedAt = 0; });
     this.vid.addEventListener('error',function(e){ 
       // Verbesserte Fehlermeldungen
       var elapsed = Date.now() - (_streamLoadStart||Date.now());
@@ -201,7 +204,9 @@ var Player = {
           Player._retriedLive = true;
           setTimeout(function(){
               if(S.currentStream && S.playerVisible && S.playerType === 'live') {
-                  Player.play(API.liveUrl(S.currentStream), S.currentStream, 'live');
+                  // Offene Senderliste/EPG stehen lassen - der Neuversuch passiert im Hintergrund
+                  Player._keepPanels = true;
+                  try { Player.play(API.liveUrl(S.currentStream), S.currentStream, 'live'); } finally { Player._keepPanels = false; }
               }
           }, 1500);
           return; // Fehler-Toast für den ersten Versuch stummschalten
@@ -224,6 +229,14 @@ var Player = {
           else if(status === 0) errDetail = 'Timeout nach ' + Math.round(elapsed/1000) + 's';
           else errDetail = 'HTTP ' + status;
         }
+      }
+      // Filme/Serien: Anbieter trennen die Verbindung nach längerer Pause - einmal je
+      // Stelle still an der letzten Position neu öffnen statt den Fehler zu zeigen
+      if((S.playerType==='vod'||S.playerType==='series') && Player._vodPos > 0 && Player._vodRetryAt !== Math.floor(Player._vodPos)){
+          Player._vodRetryAt = Math.floor(Player._vodPos);
+          Logger.info('[Player] VOD-Fehler, öffne neu bei ' + Player._vodPos + 's');
+          setTimeout(function(){ if(S.playerVisible) Player._reopenAt(Player._vodPos); }, 1000);
+          return;
       }
       showStreamError(errMsg, errDetail);
       
@@ -355,7 +368,7 @@ var Player = {
   play:function(url,stream,type){
     // Einstellung "Angefangene Titel": fragen bzw. immer von vorn
     this._startFresh = !!(this._resumeDecided && this._resumeFresh);
-    if(type !== 'live' && type !== 'catchup' && Settings.resumeMode !== 'auto' && !this._resumeDecided){
+    if(type !== 'live' && type !== 'catchup' && Settings.resumeMode !== 'auto' && !this._resumeDecided && !this._forceStartAt){
       var rid0 = type==='series' ? (stream.episode_id||stream.series_id) : stream.stream_id;
       var pos0 = S.resume[rid0];
       if(pos0 > 0){
@@ -371,11 +384,11 @@ var Player = {
         }
       }
     }
-    if(type !== 'live' && Settings.aspectDefault && Settings.aspectDefault !== 'last') this._aspect = Settings.aspectDefault;
+    if(type !== 'live' && Settings.aspectDefault && Settings.aspectDefault !== 'last' && !this._forceStartAt) this._aspect = Settings.aspectDefault;
     _streamLoadStart = Date.now();
     if (this._lastPlayedId !== (stream.stream_id || stream.series_id)) {
        this._retriedLive = false; 
-       this._lastPlayedId = stream.stream_id || stream.series_id;
+       this._lastPlayedId = stream.stream_id || stream.series_id; this._vodRetryAt = -1;
     }
     S._bingeCancelled = false;
     
@@ -406,15 +419,17 @@ var Player = {
     this._bitrate = 0; // Bitrate für neuen Stream zurücksetzen
     S.playerVisible=true;
     S._mediaErrorRetries = 0; // Fehler-Counter zurücksetzen
-    S.epgOpen=false;
-    if(!S._keepChList) S.chListOpen=false;   // "Senderliste offen lassen": Liste bleibt beim Umschalten stehen
+    if(!this._keepPanels) S.epgOpen=false;
+    if(!S._keepChList && !this._keepPanels) S.chListOpen=false;   // "Senderliste offen lassen": Liste bleibt beim Umschalten stehen
     if(typeof _updateNavbarVisibility === 'function') _updateNavbarVisibility();
     this._closeSubPanel(); this._activeSubIdx=-1; $('sub-indicator').classList.add('hidden');
     this._closeAudioPanel();
     _seek.count=0; _seek.lastT=0;
     
-    clearFocus(); // Fokus vom VOD/Catchup-Menü entfernen, damit im Live-TV "OK" wieder richtig funktioniert
-    S.focusArea = 'player';
+    if(!this._keepPanels){
+      clearFocus(); // Fokus vom VOD/Catchup-Menü entfernen, damit im Live-TV "OK" wieder richtig funktioniert
+      S.focusArea = 'player';
+    }
 
     var name=stream.name||stream.title||'', isLive=type==='live';
     $('p-vod-topname').textContent=isLive?'':name;
@@ -436,7 +451,7 @@ var Player = {
       $('osd-show-title').innerHTML=''; $('osd-epg-time').textContent='';
       $('osd-prog-fill').style.width='0%'; $('osd-elapsed').textContent='';
       $('osd-remaining').textContent=''; $('osd-duration').textContent='';
-      $('osd-next-row').innerHTML=''; $('osd-ends').textContent='';
+      $('osd-next-row').innerHTML='';
       $('osd-badges').innerHTML='<span class="badge badge-buf">Buffering</span>';
       this.loadEpg(stream);
       this._startOsdClock();
@@ -450,7 +465,10 @@ var Player = {
     if(!isLive){
       var rid=type==='series'?(stream.episode_id||stream.series_id):stream.stream_id;
       if(S.resume[rid] && !this._startFresh) startAt=S.resume[rid];
+      if(this._forceStartAt) startAt=this._forceStartAt;
     }
+    this._forceStartAt=0; this._vodPos=startAt; this._pausedAt=0;
+    this._src={ url:url, stream:stream, type:type };
 
     var self=this;
     // Zuerst natives HLS versuchen (webOS WebKit unterstützt es)
@@ -527,6 +545,7 @@ var Player = {
     // Filme/Serien starten ohne Bedienleiste (erscheint beim ersten Tastendruck/Antippen)
     if(type==='vod'||type==='series') this.hideControls();
     else this.showControls();
+    StateEvents.emit('streamStarted', stream);
   },
 
   _startOsdClock:function(){
@@ -555,7 +574,6 @@ var Player = {
           $('osd-elapsed').textContent=fmtDur(elapsed)+' verstr.';
           $('osd-remaining').textContent=fmtDur(Math.max(0,sp-now))+' verbl.';
           $('osd-duration').textContent=fmtDur(total);
-          $('osd-ends').textContent=fmtTime(st)+' \u2013 '+fmtTime(sp);
         }
       }
     },CONFIG.OSD_INTERVAL);
@@ -598,7 +616,6 @@ var Player = {
       $('osd-elapsed').textContent=fmtDur(elapsed/1000)+' verstr.';
       $('osd-remaining').textContent=fmtDur(Math.max(0,(cur.stop.getTime()-Date.now())/1000))+' verbl.';
       $('osd-duration').textContent=fmtDur(total/1000);
-      $('osd-ends').textContent=fmtTimeMs(cur.start)+' \u2013 '+fmtTimeMs(cur.stop);
     }
     if(nxt){
       $('osd-next-row').innerHTML='&#9654; Danach: <strong>'+esc(nxt.title)+'</strong> '+fmtTimeMs(nxt.start)+'–'+fmtTimeMs(nxt.stop);
@@ -624,7 +641,6 @@ var Player = {
         $('osd-elapsed').textContent=fmtDur(elapsed)+' verstr.';
         $('osd-remaining').textContent=fmtDur(Math.max(0,csp-now))+' verbl.';
         $('osd-duration').textContent=fmtDur(total);
-        $('osd-ends').textContent=fmtTime(cst)+' \u2013 '+fmtTime(csp);
       }
     }
     if(nxt){
@@ -1156,7 +1172,21 @@ var Player = {
       if(typeof saveResumeSeries === 'function') saveResumeSeries();
     }
   },
-  togglePP:function(){ this.vid.paused?this.vid.play().catch(function(){}):this.vid.pause(); },
+  togglePP:function(){
+    // Nach langer Pause hat der Anbieter die Verbindung meist getrennt - gleich neu öffnen
+    if(this.vid.paused && this._pausedAt && Date.now() - this._pausedAt > CONFIG.VOD_REOPEN_MS &&
+       (S.playerType==='vod'||S.playerType==='series') && this._reopenAt(this.vid.currentTime || this._vodPos)) return;
+    this.vid.paused?this.vid.play().catch(function(){}):this.vid.pause();
+  },
+
+  // Film/Folge an Position pos (s) neu öffnen - ohne Weiterschauen-Frage
+  _reopenAt:function(pos){
+    var src=this._src;
+    if(!src || !src.url || (src.type!=='vod'&&src.type!=='series') || S.currentStream!==src.stream) return false;
+    this._forceStartAt=Math.max(1, Math.floor(pos||0));
+    this.play(src.url, src.stream, src.type);
+    return true;
+  },
 
   // ── SUBTITLES ──────────────────────────────────────────────
   _activeSubIdx: -1,   // -1 = off

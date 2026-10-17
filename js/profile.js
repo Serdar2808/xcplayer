@@ -155,7 +155,9 @@ async function activateProfile(id){
   try {
     var now = Date.now();
     var lastAuth = parseInt(localStorage.getItem('xcp_last_auth_' + p.id) || '0');
-    if (now - lastAuth > 60000) { // 60 Sekunden Cooldown
+    // Zeitzone des Servers (Timeshift) noch nie abgefragt: einmalig auch innerhalb der Sperrzeit
+    var acct = typeof _accountInfo === 'function' ? _accountInfo(p.id) : null;
+    if (now - lastAuth > 60000 || !acct || acct.tzo === undefined) { // 60 Sekunden Cooldown
       var d = await API.auth();
       if(d && d.user_info && d.user_info.auth === 0) showToast('Achtung: XC Zugang abgelaufen oder ungültig!', 5000);
       else if(d && d.user_info && typeof saveAccountInfo === 'function') saveAccountInfo(p.id, d.user_info, d.server_info);   // für Einstellungen > Konto, Zeitzone für Timeshift

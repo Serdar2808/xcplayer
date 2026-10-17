@@ -102,7 +102,7 @@ html.theme-light .clo-cat-row.clo-focused { background: rgba(107,114,128,0.15); 
 html.theme-light #epg-panel { background: linear-gradient(rgba(var(--lpanel-rgb),0.85),rgba(var(--lpanel-rgb),0.99)); }
 html.theme-light #live-osd { background: linear-gradient(rgba(var(--lpanel-rgb),0.85),rgba(var(--lpanel-rgb),0.99)); box-shadow: 0 10px 40px rgba(0,0,0,0.1); }
 html.theme-light #osd-show-title, html.theme-light #osd-clock, html.theme-light .osd-clock-big { color: var(--hi); }
-html.theme-light #osd-ch-name, html.theme-light .osd-epg-time, html.theme-light .osd-time-row, html.theme-light .osd-ends { color: var(--mid); }
+html.theme-light #osd-ch-name, html.theme-light .osd-epg-time, html.theme-light .osd-time-row { color: var(--mid); }
 html.theme-light .osd-sep { color: var(--lo); }
 html.theme-light .osd-next-row { color: var(--mid); }
 html.theme-light .osd-next-row strong { color: var(--hi); }
@@ -959,7 +959,6 @@ html.theme-light .epg-item:hover, html.theme-light .epg-item.focused{background:
   display:flex;flex-direction:column;align-items:flex-end;justify-content:space-between}
 .osd-clock-big{font-family:'Sora',sans-serif;font-size:48px;font-weight:700;
   color:white;font-variant-numeric:tabular-nums;line-height:1}
-.osd-ends{font-size:var(--fs-sm);color:rgba(255,255,255,.6);margin-top:5px}
 .osd-badges{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;margin-top:14px}
 .badge{padding:4px 10px;border-radius:6px;font-size:var(--fs-xs);font-weight:700;
   letter-spacing:.4px;text-transform:uppercase}

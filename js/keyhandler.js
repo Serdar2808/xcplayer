@@ -116,6 +116,8 @@ function handleBack(){
     if(Player._subPanelOpen){ Player._closeSubPanel(true); return; }
     if(Player._audioPanelOpen){ Player._closeAudioPanel(true); return; }
     if(S.variantBarOpen){ closeVariantBar(); return; }
+    // Handy: Senderliste (auch Kategorie-Ansicht) schließen und gleich das Menü öffnen - ein Zurück statt zwei
+    if(S.chListOpen && S.playerType === 'live' && document.documentElement.classList.contains('xc-phone')){ Player.toggleChList(); Player.hideControls(); openSysSidebar(); return; }
     if(S.chListCatView){ chListCatViewClose(); return; }
     if(S.chListOpen){ Player.toggleChList(); return; }
     if(S.epgOpen){ Player.toggleEpg(); return; }

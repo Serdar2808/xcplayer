@@ -73,7 +73,6 @@ document.getElementById('live-osd-container').innerHTML = `
       <div class="osd-right-col">
         <div>
           <div class="osd-clock-big" id="osd-clock"></div>
-          <div class="osd-ends" id="osd-ends"></div>
         </div>
         <div class="osd-badges" id="osd-badges"></div>
       </div>

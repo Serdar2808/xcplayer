@@ -137,8 +137,10 @@ function handleBack(){
   }
   if(S.playerVisible){
     if(S.playerType === 'live') {
-      // erst die eingeblendete Senderinfo schließen, beim nächsten Zurück das Menü
+      // TV: erst die eingeblendete Senderinfo schließen, beim nächsten Zurück das Menü.
+      // Handy: gleich das Menü (ein Zurück statt zwei)
       var losd = $('live-osd'), ltop = $('player-topbar');
+      if(document.documentElement.classList.contains('xc-phone')){ Player.hideControls(); openSysSidebar(); return; }
       if((losd && !losd.classList.contains('fade') && !losd.classList.contains('hidden')) || (ltop && !ltop.classList.contains('fade'))){ Player.hideControls(); return; }
       openSysSidebar(); return;
     } 

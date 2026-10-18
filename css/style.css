@@ -184,7 +184,7 @@ html.theme-light .badge-ar { background: rgba(139,92,246,.15); color: #7c3aed; b
 html.theme-light .badge-buf { background: rgba(239,68,68,.15); color: #dc2626; border-color: rgba(239,68,68,.2); }
 html.theme-light .badge-br { background: rgba(var(--accent2-rgb),.15); color: #0891b2; border-color: rgba(var(--accent2-rgb),.2); }
 html{width:1920px}
-html,body{height:1080px;overflow:hidden;background:var(--bg);
+html,body{height:var(--app-h,1080px);overflow:hidden;background:var(--bg);
   color:var(--hi);font-family:'DM Sans',sans-serif;font-size:var(--fs-md);
   -webkit-font-smoothing:antialiased}
 /* body ist die (skalierte) App-Fläche und darf auf breiten Displays breiter als 1920 sein; html bleibt
@@ -192,7 +192,7 @@ html,body{height:1080px;overflow:hidden;background:var(--bg);
 body{width:var(--app-w,1920px)}
 ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:3px}
 .hidden{display:none!important}
-.screen{position:fixed;top:0;left:0;width:var(--app-w,1920px);height:1080px}
+.screen{position:fixed;top:0;left:0;width:var(--app-w,1920px);height:var(--app-h,1080px)}
 
 /* ── WIZARD ERKENNUNGS-KARTE ────────────────────────────── */
 .wiz-detect-card{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:14px;transition:border-color var(--dur) var(--ease);cursor:pointer}
@@ -221,7 +221,7 @@ body{width:var(--app-w,1920px)}
 
 /* ── WIZARD BILDSCHIRM ──────────────────────────────────── */
 #wizard-screen { background: radial-gradient(ellipse 80% 60% at 50% 50%, rgba(var(--accent-rgb),0.15), transparent 70%), var(--bg); display: flex; align-items: center; justify-content: center; z-index: 2200; }
-.wiz-box { width: 1200px; background: rgba(var(--card-rgb),0.85); backdrop-filter: blur(16px); border: 1px solid var(--border); border-radius: 26px; padding: 50px 60px; box-shadow: 0 40px 100px rgba(0,0,0,.8); text-align: center; max-height: 972px; overflow: hidden; display: flex; flex-direction: column; }
+.wiz-box { width: 1200px; background: rgba(var(--card-rgb),0.85); border: 1px solid var(--border); border-radius: 26px; padding: 50px 60px; box-shadow: 0 40px 100px rgba(0,0,0,.8); text-align: center; max-height: 972px; overflow: hidden; display: flex; flex-direction: column; }
 .wiz-step { display: none; flex-direction: column; align-items: center; }
 .wiz-step.active { display: flex; }
 .wiz-title { font-family: 'Sora', sans-serif; font-size: var(--fs-2xl); font-weight: 700; color: var(--hi); margin-bottom: 16px; }
@@ -456,7 +456,7 @@ html.theme-light .ios-row:hover { background: rgba(0,0,0,0.05); }
 /* Split-Pane Detail-Ansicht */
 .set-detail-header { display: flex; align-items: center; gap: 24px; padding: 10px 60px 30px; }
 #set-title { font-family: 'Sora', sans-serif; font-size: var(--fs-xl); font-weight: 700; color: var(--hi); margin: 0; }
-.set-detail-split { display: flex; gap: 50px; padding: 0 60px 60px; height: calc(1080px - 180px); }
+.set-detail-split { display: flex; gap: 50px; padding: 0 60px 60px; height: calc(var(--app-h,1080px) - 180px); }
 .set-detail-left { flex: 0 0 55%; overflow-y: auto; padding-right: 10px; }
 .set-detail-left::-webkit-scrollbar { width: 0; }
 .set-detail-right { flex: 1; display: flex; align-items: flex-start; justify-content: center; position: sticky; top: 0; }
@@ -704,8 +704,8 @@ body.nf-active #navbar .nav-spacer-r { flex:1; }
 
 /* ── PLAYER ─────────────────────────────────────────────── */
 #player-screen{position:fixed;top:0;left:0;background:#000;z-index:1000;
-  width:var(--app-w,1920px);height:1080px;overflow:hidden}
-#video-el{position:absolute;top:0;left:0;width:var(--app-w,1920px);height:1080px;
+  width:var(--app-w,1920px);height:var(--app-h,1080px);overflow:hidden}
+#video-el{position:absolute;top:0;left:0;width:var(--app-w,1920px);height:var(--app-h,1080px);
   display:block;background:#000;object-fit:fill;z-index:1;
   transform:translateZ(0);-webkit-transform:translateZ(0);will-change:transform}
 #buf-overlay{display:none!important}
@@ -1862,7 +1862,7 @@ html.theme-light .htile-focused.vod, html.theme-light .htile-focused.series {
   position: fixed;
   inset: 0;
   width: var(--app-w,1920px);
-  height: 1080px;
+  height: var(--app-h,1080px);
   background: #07090f;
   z-index: 99999;
   opacity: 1;
@@ -1995,7 +1995,7 @@ body.focus-in-topbar .continue-tile.htile-focused::after {
 .wiz-status.err{color:#fca5a5}
 .wiz-status.warn{color:var(--yellow)}
 .wiz-spin{width:28px;height:28px;flex-shrink:0;margin-right:16px;border-radius:50%;border:3px solid rgba(255,255,255,.18);
-  border-top-color:var(--accent2);animation:spin 1s linear infinite}
+  border-top-color:var(--accent2);animation:spin 1s linear infinite;will-change:transform}
 .wiz-status.err .wiz-spin{display:none}
 .wiz-phone-only{display:none}
 html.xc-phone .wiz-phone-only{display:inline-block}

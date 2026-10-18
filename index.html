@@ -13,21 +13,25 @@
 // Universal Scaling: Stellt sicher, dass das 1920x1080 Layout auf jedem TV
 // (z.B. ältere TVs mit 1280x720 Browser-Viewport) korrekt skaliert wird.
 // Breitere Displays als 16:9 (Smartphones, ~20:9) bekommen statt eines
-// schwarzen Balkens eine breitere Layout-Fläche: Höhe bleibt 1080, die Breite
-// (APP_W, CSS-Variable --app-w) wächst mit. Auf 16:9-TVs bleibt APP_W = 1920.
-var APP_W = 1920;
+// schwarzen Balkens eine breitere Layout-Fläche (APP_W, CSS-Variable --app-w),
+// höhere (aufgeklappte Fold-Handys, Tablets) eine höhere (APP_H, --app-h).
+// Auf 16:9-TVs bleibt es bei 1920x1080. Handys setzen eine Mindestbreite
+// (APP_MIN_W), damit ihre größeren Leisten auch auf fast quadratischen Displays passen.
+var APP_W = 1920, APP_H = 1080, APP_MIN_W = 1920;
 function applyUniversalScale() {
   var w = window.innerWidth;
   var h = window.innerHeight;
-  if (w > 0 && (w !== 1920 || h !== 1080)) {
-    var scale = Math.min(w / 1920, h / 1080);
-    var appW = Math.round(w / scale);
+  if (w > 0 && h > 0 && (w !== 1920 || h !== 1080 || APP_W !== 1920 || APP_H !== 1080 || APP_MIN_W !== 1920)) {
+    var scale = Math.min(w / APP_MIN_W, h / 1080);
+    var appW = Math.round(w / scale), appH = Math.round(h / scale);
     APP_W = appW - 1920 > 2 ? appW : 1920;
+    APP_H = appH - 1080 > 2 ? appH : 1080;
     document.documentElement.style.setProperty('--app-w', APP_W + 'px');
+    document.documentElement.style.setProperty('--app-h', APP_H + 'px');
     document.body.style.transform = 'scale(' + scale + ')';
     document.body.style.transformOrigin = 'top left';
     document.body.style.width = APP_W + 'px';
-    document.body.style.height = '1080px';
+    document.body.style.height = APP_H + 'px';
   }
 }
 window.addEventListener('resize', applyUniversalScale);
@@ -665,7 +669,7 @@ applyUniversalScale();
 </div>
 
 <!-- BENUTZERDEFINIERTES BESTÄTIGUNGS-MODAL -->
-<div id="confirm-modal" class="hidden" style="position:fixed;top:0;left:0;right:0;bottom:0;width:1920px;height:1080px;background:rgba(0,0,0,.85);z-index:9000;display:flex;align-items:center;justify-content:center">
+<div id="confirm-modal" class="hidden" style="position:fixed;top:0;left:0;right:0;bottom:0;width:var(--app-w,1920px);height:var(--app-h,1080px);background:rgba(0,0,0,.85);z-index:9000;display:flex;align-items:center;justify-content:center">
   <div style="width:520px;background:rgba(var(--card-rgb),0.85);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:22px;padding:40px;box-shadow:0 40px 80px rgba(0,0,0,.7)">
     <div id="confirm-title" style="font-family:'Sora',sans-serif;font-size:var(--fs-xl);font-weight:700;color:var(--hi);margin-bottom:14px"></div>
     <div id="confirm-msg" style="font-size:var(--fs-md);color:var(--mid);margin-bottom:30px;line-height:1.5"></div>

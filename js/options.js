@@ -122,6 +122,17 @@ var OPTION_UI = [
   ]}
 ];
 
+// Helle Akzentfarbe (z. B. Gold): weiße Schrift darauf ist kaum lesbar -> html.accent-bright
+// (dunkle Schrift auf Akzentflächen, siehe style.css). Gilt für Design- und eigene Akzentfarben.
+function _updateAccentContrast() {
+  var root = document.documentElement;
+  var rgb = (getComputedStyle(root).getPropertyValue('--accent-rgb') || '').split(',').map(parseFloat);
+  if (rgb.length !== 3 || isNaN(rgb[0])) return;
+  var lin = rgb.map(function(v){ v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+  var lum = 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2];
+  root.classList.toggle('accent-bright', 1.05 / (lum + 0.05) < 2.3);   // Kontrast zu Weiß
+}
+
 var Options = {
   _rendered: false,
 
@@ -238,6 +249,7 @@ var Options = {
     var a = ACCENTS[Settings.accent];
     if (a) { st.setProperty('--accent', a[0]); st.setProperty('--accent-rgb', a[1]); st.setProperty('--glow', 'rgba(' + a[1] + ',.38)'); }
     else { st.removeProperty('--accent'); st.removeProperty('--accent-rgb'); st.removeProperty('--glow'); }
+    _updateAccentContrast();
     // Schriftgröße: Grundwerte (auch die der Handy-Ansicht) skalieren
     var f = { small: 0.9, normal: 1, large: 1.12, xlarge: 1.25 }[Settings.fontScale] || 1;
     ['xs', 'sm', 'md', 'lg', 'xl', '2xl', '3xl'].forEach(function(n){

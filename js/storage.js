@@ -203,6 +203,7 @@ var Settings = {
     if(tlt) tlt.classList.toggle('on',this.lightTheme);
     var root = document.documentElement, th = this.theme;
     THEMES.forEach(function(t){ root.classList.toggle('theme-' + t, t === th && t !== 'dark'); });
+    if(typeof _updateAccentContrast === 'function') _updateAccentContrast();
     document.body.classList.toggle('use-sidebar', this.useSidebar);
     var tus=$('toggle-use-sidebar');
     if(tus) tus.classList.toggle('on',this.useSidebar);

@@ -64,6 +64,14 @@ function commitSeek(){
 }
 
 // ── PLAYER ────────────────────────────────────────────────────────
+// Laufende Sendung in der EPG-Liste mittig zeigen - nur die Liste scrollen
+// (scrollIntoView verschob auch die ganze App-Fläche)
+function _centerEpgNow(box){
+  var el = box.querySelector('.now'); if(!el) return;
+  var b = box.getBoundingClientRect(), r = el.getBoundingClientRect(), k = box.offsetHeight / (b.height || 1);
+  box.scrollTop += ((r.top - b.top) - (b.height - r.height) / 2) * k;
+}
+
 var Player = {
   hls:null, vid:null, _osdTimer:null, _brTimer:null, _clockTimer:null, _bitrate:0,
   _lastPlayedId: null, _retriedLive: false, _suspended: false, _resumeStream: null, _resumeType: null,
@@ -230,13 +238,21 @@ var Player = {
           else errDetail = 'HTTP ' + status;
         }
       }
-      // Filme/Serien: Anbieter trennen die Verbindung nach längerer Pause - einmal je
-      // Stelle still an der letzten Position neu öffnen statt den Fehler zu zeigen
-      if((S.playerType==='vod'||S.playerType==='series') && Player._vodPos > 0 && Player._vodRetryAt !== Math.floor(Player._vodPos)){
-          Player._vodRetryAt = Math.floor(Player._vodPos);
-          Logger.info('[Player] VOD-Fehler, öffne neu bei ' + Player._vodPos + 's');
-          setTimeout(function(){ if(S.playerVisible) Player._reopenAt(Player._vodPos); }, 1000);
-          return;
+      // Filme/Serien: Anbieter trennen die Verbindung nach längerer Pause - an der
+      // letzten Position neu öffnen statt den Fehler zu zeigen. Bis zu drei Versuche je
+      // Stelle mit wachsendem Abstand: bei nur einer erlaubten Verbindung gilt die alte
+      // beim Anbieter oft noch einige Sekunden als belegt
+      if((S.playerType==='vod'||S.playerType==='series') && Player._vodPos > 0){
+          var at = Math.floor(Player._vodPos);
+          if(Player._vodRetryAt !== at){ Player._vodRetryAt = at; Player._vodRetries = 0; }
+          if(Player._vodRetries < 3){
+              var wait = [1000, 4000, 10000][Player._vodRetries++];
+              Logger.info('[Player] VOD-Fehler, öffne neu bei ' + Player._vodPos + 's (Versuch ' + Player._vodRetries + ')');
+              $('buf-overlay').classList.remove('hidden');
+              $('buf-info').textContent = 'Verbindung wird wiederhergestellt …';
+              setTimeout(function(){ if(S.playerVisible) Player._reopenAt(Player._vodPos); }, wait);
+              return;
+          }
       }
       showStreamError(errMsg, errDetail);
       
@@ -691,7 +707,7 @@ var Player = {
             +(p.description?'<div class="epg-desc">'+esc(p.description)+'</div>':'')+'</div>';
         }
         body.innerHTML=html;
-        var nowEl = body.querySelector('.now'); if(nowEl) nowEl.scrollIntoView({block:'center'});
+        _centerEpgNow(body);
         return;
       }
     }
@@ -716,7 +732,7 @@ var Player = {
         +(desc?'<div class="epg-desc">'+esc(desc)+'</div>':'')+'</div>';
     }
     body.innerHTML=html;
-    var nowEl2=body.querySelector('.now'); if(nowEl2) nowEl2.scrollIntoView({block:'center'});
+    _centerEpgNow(body);
   },
 
   toggleEpg:function(){

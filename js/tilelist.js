@@ -53,7 +53,7 @@ var LiveUi = (function () {
       '#xc-live-ui.show{opacity:1}' +
       '#xc-live-ui.show .xc-hit{pointer-events:auto}' +
       '#xc-live-ui.compact{z-index:1031}' +                       // über der kompakten Liste (Zurück-Button)
-      '#xc-live-ui.tv .xc-back,#xc-live-ui.tv .xc-center{display:none !important}' +
+      '#xc-live-ui.tv .xc-back,#xc-live-ui .xc-center{display:none !important}' +
       '.xc-lb{border-radius:50%;border:none;background:rgba(0,0,0,.5);color:#fff;display:flex;align-items:center;' +
         'justify-content:center;cursor:pointer;outline:none;box-shadow:0 8px 30px rgba(0,0,0,.5);padding:0}' +
       '.xc-lb:active{transform:scale(.93)}' +

@@ -112,3 +112,12 @@ window.addEventListener('keydown', function(e){
 }, true);
 window.addEventListener('keyup', function(e){ delete _keyHeld[e.keyCode]; S._keyRepeat = false; }, true);
 window.addEventListener('blur', function(){ _keyHeld = {}; S._keyRepeat = false; });
+
+// Die App-Fläche (html/body) darf nie scrollen: scrollIntoView verschiebt trotz
+// overflow:hidden auch body mit, danach war die Menüleiste oben abgeschnitten
+document.addEventListener('scroll', function(e){
+  var t = e.target, b = document.body, h = document.documentElement;
+  if(t !== document && t !== b && t !== h) return;
+  if(b.scrollTop || b.scrollLeft){ b.scrollTop = 0; b.scrollLeft = 0; }
+  if(h.scrollTop || h.scrollLeft){ h.scrollTop = 0; h.scrollLeft = 0; }
+}, true);

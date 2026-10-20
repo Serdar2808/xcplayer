@@ -26,7 +26,6 @@ var NFSearch = {
   open: function(){
     var ov=$('nf-search-overlay'), inp=$('search-input-nf');
     if(!ov||!inp) return;
-    if(typeof NF !== 'undefined' && NF.stopTrailer) NF.stopTrailer();
     if(!S.prevFocusForSearch) S.prevFocusForSearch = S.focusArea;
     ov.classList.remove('hidden');
     // Gesucht wird nur im aktuellen Bereich - das steht auch im Feld
@@ -254,7 +253,6 @@ var LiveSearch = {
   open: function(){
     var ov=$('live-search-overlay'), inp=$('search-input-live');
     if(!ov||!inp) return;
-    if(typeof NF !== 'undefined' && NF.stopTrailer) NF.stopTrailer();
     if(!S.prevFocusForSearch) S.prevFocusForSearch = S.focusArea;
     ov.classList.remove('hidden');
     inp.value='';

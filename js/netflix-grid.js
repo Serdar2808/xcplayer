@@ -17,104 +17,6 @@ var NF = {
   _rowObs:null, _imgObs:null, _hydrated:{}, _rowPos:{},
   _rowState:{},
   
-  _trailerTimer: null,
-  _trailerReqId: 0,
-  _tmdbApiKey: (typeof CONFIG !== 'undefined' && CONFIG.TMDB_API_KEY) ? CONFIG.TMDB_API_KEY : 'dca81f50afe01b235bb830c877611ee4',
-
-  _ytPlayer: null,
-  _ytPlayerReady: false,
-  _ytPlayerInit: false,
-
-  _initYtPlayer: function() {
-    if (this._ytPlayerInit) return;
-    this._ytPlayerInit = true;
-    
-    // Ein einziger, globaler Container für den Trailer (verhindert Decoder-Crashes)
-    var container = document.createElement('div');
-    container.id = 'nf-yt-container';
-    container.style.cssText = 'position:fixed; z-index:50; pointer-events:none; opacity:0; border-radius:14px; overflow:hidden; transition: opacity 0.4s ease; background:#000;';
-    document.body.appendChild(container);
-
-    var playerDiv = document.createElement('div');
-    playerDiv.id = 'nf-yt-player';
-    container.appendChild(playerDiv);
-
-    if (typeof YT === 'undefined' || typeof YT.Player === 'undefined') {
-        var tag = document.createElement('script');
-        tag.src = "https://www.youtube.com/iframe_api";
-        var firstScriptTag = document.getElementsByTagName('script')[0];
-        if(firstScriptTag && firstScriptTag.parentNode) firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-        else document.head.appendChild(tag);
-
-        window.onYouTubeIframeAPIReady = function() {
-            NF._createYtInstance();
-        };
-    } else {
-        NF._createYtInstance();
-    }
-
-    // Hook für das Hauptmenü, um den Trailer beim Öffnen der Leiste zu stoppen
-    if (window.openSysSidebar && !window._nfSidebarHooked) {
-      window._nfSidebarHooked = true;
-      var origOpenSysSidebar = window.openSysSidebar;
-      window.openSysSidebar = function() {
-        if(typeof NF !== 'undefined' && NF.stopTrailer) NF.stopTrailer();
-        return origOpenSysSidebar.apply(this, arguments);
-      };
-    }
-  },
-
-  _createYtInstance: function() {
-    var origin = (window.location && window.location.protocol && window.location.protocol.indexOf('http') === 0) ? window.location.origin : 'http://localhost';
-    NF._ytPlayer = new YT.Player('nf-yt-player', {
-        height: '100%',
-        width: '100%',
-        playerVars: {
-            'autoplay': 1,
-            'mute': 1,
-            'controls': 0,
-            'disablekb': 1,
-            'modestbranding': 1,
-            'playsinline': 1,
-            'origin': origin,
-            'rel': 0,
-            'showinfo': 0,
-            'iv_load_policy': 3
-        },
-        events: {
-            'onReady': function(event) {
-                NF._ytPlayerReady = true;
-                event.target.mute();
-                var iframe = document.getElementById('nf-yt-player');
-                // TV-Erlaubnis für lokales Autoplay setzen
-                if(iframe) iframe.setAttribute('allow', 'autoplay; encrypted-media');
-            },
-            'onStateChange': function(event) {
-                var cont = document.getElementById('nf-yt-container');
-                if (event.data === YT.PlayerState.PLAYING) {
-                    if(cont) cont.style.opacity = '1';
-                } else if (event.data === YT.PlayerState.ENDED) {
-                    if(cont) cont.style.opacity = '0';
-                    event.target.playVideo(); // Loop
-                }
-            },
-            'onError': function(e) {
-                Logger.warn('[Trailer] YT Player Error:', e.data);
-            }
-        }
-    });
-  },
-
-  stopTrailer: function() {
-    clearTimeout(NF._trailerTimer);
-    NF._trailerReqId++;
-    var ytContainer = document.getElementById('nf-yt-container');
-    if(ytContainer) ytContainer.style.opacity = '0';
-    if(NF._ytPlayerReady && NF._ytPlayer.stopVideo) {
-        try { NF._ytPlayer.stopVideo(); } catch(e){}
-    }
-  },
-
   load: async function() {
     NF.data=[]; NF.fullData=[]; NF.rowIdx=0; NF.colIdx=0;
     NF._hydrated={}; NF._rowPos={}; NF._rowState={};
@@ -309,7 +211,7 @@ var NF = {
   },
 
   _renderInfo: function(r,c) {
-    if(NF._phone()) return;                      // keine Beschreibung und kein Trailer am Handy
+    if(NF._phone()) return;                      // keine Beschreibung am Handy
     // Statt querySelectorAll: Nur den vorherigen Info-Container leeren
     if(NF._lastInfoRow !== undefined && NF._lastInfoRow !== r){
       var prev = $('nf-info-' + NF._lastInfoRow);
@@ -348,95 +250,8 @@ var NF = {
         }
       });
     }
-    NF._triggerTrailer(r, c);
   },
   
-  _triggerTrailer: function(r, c) {
-    NF.stopTrailer();
-    var currentReqId = NF._trailerReqId;
-
-    // Altlasten (iFrame-Löschung aus vorheriger Version) für sauberen Übergang behalten
-    var oldTrailer = document.getElementById('nf-active-trailer');
-    if(oldTrailer) {
-         oldTrailer.pause();
-         oldTrailer.removeAttribute('src');
-         oldTrailer.load(); // WICHTIG FÜR WEBOS: Hardware-Decoder zwingend freigeben!
-      if(oldTrailer.parentNode) oldTrailer.parentNode.removeChild(oldTrailer);
-    }
-
-    var s = NF.data[r] && NF.data[r].streams[c];
-    if(!s || S.tab === 'live') return;
-
-    // Timer: Trailer startet erst, wenn der Nutzer 2.5s auf der Karte verweilt
-    NF._trailerTimer = setTimeout(async function() {
-      if(currentReqId !== NF._trailerReqId) return; // User hat in der Zwischenzeit weitergescrollt
-
-      var state = NF._rowState[r];
-      if(!state || !state.cardEls[c]) return;
-      var cardEl = state.cardEls[c];
-      if(!cardEl.classList.contains('nf-focused')) return;
-
-      var ytId = s.youtube_trailer;
-
-      // TMDB API Suche, falls noch keine YouTube-ID gecacht wurde
-      if(!ytId && NF._tmdbApiKey && NF._tmdbApiKey !== 'DEIN_TMDB_API_KEY_HIER') {
-        try {
-          var title = (s.name || s.title || '').replace(/\s*\(\d{4}\)\s*/g, '').trim();
-          var type = (S.tab === 'series') ? 'tv' : 'movie';
-          
-          var searchUrl = 'https://api.themoviedb.org/3/search/' + type + '?api_key=' + NF._tmdbApiKey + '&query=' + encodeURIComponent(title) + '&language=de-DE';
-          var res = await fetch(searchUrl);
-          var data = await res.json();
-          
-          if(data && data.results && data.results.length > 0) {
-            var tmdbId = data.results[0].id;
-            var vidUrl = 'https://api.themoviedb.org/3/' + type + '/' + tmdbId + '/videos?api_key=' + NF._tmdbApiKey + '&language=de-DE';
-            var vidRes = await fetch(vidUrl);
-            var vidData = await vidRes.json();
-            
-            var findTrailer = function(vids) {
-              for(var i=0; i<vids.length; i++) if(vids[i].type === 'Trailer' && vids[i].site === 'YouTube') return vids[i];
-              for(var j=0; j<vids.length; j++) if(vids[j].site === 'YouTube') return vids[j];
-              return null;
-            };
-            
-            var trailer = (vidData && vidData.results) ? findTrailer(vidData.results) : null;
-
-            // Fallback auf Englisch, falls es keinen deutschen Trailer gibt
-            if(!trailer) {
-              var vidResEn = await fetch('https://api.themoviedb.org/3/' + type + '/' + tmdbId + '/videos?api_key=' + NF._tmdbApiKey);
-              var vidDataEn = await vidResEn.json();
-              if(vidDataEn && vidDataEn.results) trailer = findTrailer(vidDataEn.results);
-            }
-
-            if(trailer) {
-              ytId = trailer.key;
-              s.youtube_trailer = ytId; // YouTube-ID für spätere Scroll-Bewegungen speichern
-            }
-          }
-        } catch(e) { Logger.warn("[Trailer] TMDB API Fehler:", e); }
-      }
-
-      // Zweiter Sicherheits-Check: Ist die Karte nach dem Warten auf die API immer noch fokussiert?
-      if(currentReqId !== NF._trailerReqId || !cardEl.classList.contains('nf-focused')) return;
-
-      if(ytId && NF._ytPlayerReady) {
-        var ytContainer = document.getElementById('nf-yt-container');
-        if(ytContainer) {
-          var rect = cardEl.getBoundingClientRect();
-          var scale = Math.min(window.innerWidth / 1920, window.innerHeight / 1080) || 1;
-          ytContainer.style.left = (rect.left / scale) + 'px';
-          ytContainer.style.top = (rect.top / scale) + 'px';
-          ytContainer.style.width = (rect.width / scale) + 'px';
-          ytContainer.style.height = (rect.height / scale) + 'px';
-        }
-        try {
-          NF._ytPlayer.loadVideoById({videoId: ytId});
-        } catch(e) { Logger.warn('[Trailer] YT Load Error:', e); }
-      }
-    }, 2500);
-  },
-
   // Track-Position: alle Karten links der fokussierten sind 300px breit + 16gap
   // → Position der fokussierten Karte = PADDING_LEFT + focusCol * 316
   // → translateX = PEEK_OFFSET - PADDING_LEFT - focusCol * 316
@@ -573,7 +388,6 @@ var NF = {
 
   openSidebar: function() {
     if (this.sbOpen) return;
-    NF.stopTrailer();
     this.sbOpen = true;
     this.sbCursor = this.rowIdx;
     $('nf-sidebar').classList.add('open');
@@ -630,7 +444,6 @@ var NF = {
   select: function(){
     var row=NF.data[NF.rowIdx]; if(!row) return;
     var s=row.streams[NF.colIdx]; if(!s) return;
-    NF.stopTrailer();
     if(S.tab==='series') openSeries(s);
     else { S.currentStreamIdx=NF.colIdx; Player.play(API.streamUrl(s),s,S.tab); }
   },
@@ -644,18 +457,12 @@ var NF = {
     if($('nf-sidebar')) $('nf-sidebar').classList.remove('hidden');
     ng.innerHTML='<div class="loading-c"><div class="spinner"></div><span>Laden…</span></div>';
     if(!S._navTabHold) S.focusArea='netflix';
-    NF._initYtPlayer();
     await NF.load();
     NF.render();
   },
 
   leave: function(){
     NF._destroyObservers();
-    NF.stopTrailer();
-    var oldTrailer = document.getElementById('nf-active-trailer');
-    if(oldTrailer) {
-      if(oldTrailer.parentNode) oldTrailer.parentNode.removeChild(oldTrailer);
-    }
     NF._hydrated={}; NF._rowPos={}; NF._rowState={}; NF.sbOpen=false;
     NF.data=[]; NF.fullData=[];
     var ca=$('content-area'),ng=$('netflix-grid');

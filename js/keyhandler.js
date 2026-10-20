@@ -158,6 +158,11 @@ function handleBack(){
     }
   }
   if(S.seriesDetailOpen){ closeSeries(); return; }
+  // Netflix-Ansicht (TV): weit nach rechts gescrollt - erst zum ersten Titel der Reihe
+  // (von dort Links = Kategorien), beim nächsten Zurück ins Menü
+  if(S.focusArea==='netflix' && typeof NF !== 'undefined' && NF.colIdx > 0 && !document.documentElement.classList.contains('xc-phone')){
+    NF.focusCard(NF.rowIdx, 0); return;
+  }
   if(S.focusArea==='netflix' || S.focusArea==='nf-sidebar' || S.focusArea==='grid' || S.focusArea==='sidebar' || S.focusArea==='continue' || S.focusArea==='series_ep' || S.focusArea==='series_season' || S.screen === 'main' || S.screen === 'continue'){
     openSysSidebar(); return;
   }

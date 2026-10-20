@@ -305,7 +305,6 @@ async function showInCategory(s){
     if(c >= NF.MAX_PER_ROW) NF.data[r].limit = c + 1;   // Reihe zeigt sonst nur die ersten 50
     NF._rowPos[r] = c;
     NF._goRow(r, true);
-    NF.stopTrailer();
     S.focusArea = 'netflix';
   } else {
     var items = document.querySelectorAll('.cat-item'), catEl = null;

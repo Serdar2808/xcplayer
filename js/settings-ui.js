@@ -14,7 +14,6 @@ function openSettings(){
   if(S.screen === 'settings') return; // Sicherstellen, dass es nicht doppelt öffnet
 
   S.prevScreenForSettings = S.screen;
-  if(typeof NF !== 'undefined' && NF.stopTrailer) NF.stopTrailer(); // Trailer stoppen, statt das Grid komplett abzubauen
 
   S.settingsOpen=true;
   S.screen = 'settings';

@@ -73,7 +73,7 @@ function _centerEpgNow(box){
 }
 
 var Player = {
-  hls:null, vid:null, _osdTimer:null, _brTimer:null, _clockTimer:null, _bitrate:0,
+  hls:null, mpegts:null, vid:null, _osdTimer:null, _brTimer:null, _clockTimer:null, _bitrate:0,
   _lastPlayedId: null, _retriedLive: false, _suspended: false, _resumeStream: null, _resumeType: null,
   get _subPanelOpen() { return S.subPanelOpen; }, set _subPanelOpen(v) { S.subPanelOpen = v; },
   get _audioPanelOpen() { return S.audioPanelOpen; }, set _audioPanelOpen(v) { S.audioPanelOpen = v; },
@@ -178,7 +178,20 @@ var Player = {
         }
       }
     });
-    this.vid.addEventListener('ended',function(){ 
+    this.vid.addEventListener('ended',function(){
+      // webOS 26: der TV-Player hält Live-.ts nach wenigen Sekunden für "zu Ende" -
+      // ab dann auf diesem Gerät Live-.ts immer über mpegts.js abspielen
+      // (beendet der Anbieter die Verbindung unter mpegts.js, einfach neu verbinden)
+      var tsLive = S.playerType==='live' && S.currentStream && S.playerVisible && Player._src && /\.ts(\?|$)/.test(Player._src.url||'');
+      if(tsLive && (Player.mpegts || Player._mpegtsOk()) && (Player._mpRetries = (Player._mpRetries||0) + 1) <= 3){
+        if(!Player.mpegts){
+          Logger.info('[Player] Live-Stream endete im TV-Player, wechsle auf mpegts.js');
+          try { localStorage.setItem('xcp_ts_mse', '1'); } catch(e) {}
+        }
+        Player._keepPanels = true;
+        try { Player.play(API.liveUrl(S.currentStream), S.currentStream, 'live'); } finally { Player._keepPanels = false; }
+        return;
+      }
       Player._clearResume();
       if(S.playerType==='series'){
         if(S._bingeCancelled || !+Settings.bingeSecs) {
@@ -404,7 +417,7 @@ var Player = {
     _streamLoadStart = Date.now();
     if (this._lastPlayedId !== (stream.stream_id || stream.series_id)) {
        this._retriedLive = false; 
-       this._lastPlayedId = stream.stream_id || stream.series_id; this._vodRetryAt = -1;
+       this._lastPlayedId = stream.stream_id || stream.series_id; this._vodRetryAt = -1; this._mpRetries = 0;
     }
     S._bingeCancelled = false;
     
@@ -491,7 +504,9 @@ var Player = {
     var isHlsUrl=(url.indexOf('.m3u8')!==-1||url.indexOf('/live/')!==-1)&&!/\.ts(\?|$)/.test(url);   // .ts (Anbieter ohne m3u8) spielt der Geräteplayer
 
     var bufF = { short:0.5, normal:1, long:2 }[Settings.buffer] || 1;
-    if(isHlsUrl&&window.Hls&&Hls.isSupported()&&!Settings.nativePlayer&&!Settings.liveHls){
+    if(isLive&&!isHlsUrl&&this._useMpegts()){
+      this._playMpegts(url);
+    } else if(isHlsUrl&&window.Hls&&Hls.isSupported()&&!Settings.nativePlayer&&!Settings.liveHls){
       this.hls=new Hls({
         maxBufferLength:Math.round((isLive?10:30)*bufF),
         maxMaxBufferLength:Math.round((isLive?20:60)*bufF),
@@ -928,6 +943,7 @@ var Player = {
     this._resumeStream=S.currentStream;
     this._resumeType=S.playerType;
     if(this.hls){ this.hls.destroy(); this.hls=null; }
+    this._stopMpegts();
     // Video-Element komplett zerstören und neu erstellen — webOS Media Pipeline
     // läuft in einem separaten Prozess; removeAttribute('src') allein reicht nicht aus
     var old=this.vid;
@@ -939,6 +955,49 @@ var Player = {
     // Events über gemeinsame Methode neu binden
     this._bindVideoEvents();
     $('buf-overlay').classList.add('hidden');
+  },
+  // Live-.ts selbst entpacken (mpegts.js über MSE) statt den TV-Player zu nutzen: ab webOS 25
+  // (Chrome 120) und nach einem Fehlschlag des TV-Players, ältere TVs bleiben beim TV-Decoder
+  _mpegtsOk:function(){
+    return !!(window.mpegts && mpegts.getFeatureList && mpegts.getFeatureList().mseLivePlayback);
+  },
+  _useMpegts:function(){
+    if(!this._mpegtsOk()) return false;
+    try { if(localStorage.getItem('xcp_ts_mse') === '1') return true; } catch(e) {}
+    var m = /Chrome\/(\d+)/.exec(navigator.userAgent);
+    return !!(window.PalmSystem && m && +m[1] >= 120);
+  },
+  _playMpegts:function(url){
+    var self=this, mp=mpegts.createPlayer({ type:'mpegts', isLive:true, url:url },
+      { enableWorker:true, liveBufferLatencyChasing:false, autoCleanupSourceBuffer:true, lazyLoad:false });
+    this.mpegts=mp;
+    mp.on(mpegts.Events.ERROR, function(type, detail){
+      if(self.mpegts!==mp) return;
+      Logger.info('[Player] mpegts.js Fehler: ' + type + ' ' + detail);
+      // Abbruch: bis zu drei Neuversuche mit wachsendem Abstand, dann Fehlermeldung
+      self._mpRetries = (self._mpRetries||0) + 1;
+      if(self._mpRetries <= 3 && S.currentStream && S.playerVisible && S.playerType==='live'){
+        $('buf-overlay').classList.remove('hidden');
+        $('buf-info').textContent = 'Verbindung wird wiederhergestellt …';
+        setTimeout(function(){
+          if(self.mpegts!==mp || !S.playerVisible) return;
+          self._keepPanels = true;
+          try { self.play(API.liveUrl(S.currentStream), S.currentStream, 'live'); } finally { self._keepPanels = false; }
+        }, 1500 * self._mpRetries);
+      } else {
+        showStreamError(type===mpegts.ErrorTypes.NETWORK_ERROR ? 'Netzwerkfehler' : 'Stream-Fehler', String(detail||''));
+      }
+    });
+    // läuft das Bild wieder, zählen die Neuversuche von vorn
+    mp.on(mpegts.Events.STATISTICS_INFO, function(){ if(self.mpegts===mp && self.vid.currentTime>0) self._mpRetries=0; });
+    mp.attachMediaElement(this.vid);
+    mp.load();
+    var pr=mp.play(); if(pr && pr.catch) pr.catch(function(){});
+  },
+  _stopMpegts:function(){
+    var mp=this.mpegts; if(!mp) return;
+    this.mpegts=null;
+    try { mp.pause(); mp.unload(); mp.detachMediaElement(); mp.destroy(); } catch(e) {}
   },
   resume:function(){
     if(!this._suspended) return;
@@ -954,6 +1013,7 @@ var Player = {
   destroy:function(){
     clearInterval(this._osdTimer);
     if(this.hls){ this.hls.destroy(); this.hls=null; }
+    this._stopMpegts();
     this.vid.pause(); this.vid.removeAttribute('src'); this.vid.load();
     $('buf-overlay').classList.add('hidden');
   },

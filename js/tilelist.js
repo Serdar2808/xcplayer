@@ -295,11 +295,7 @@ var LiveUi = (function () {
     else if (opt && opt.id !== null) arr = arr.filter(function (s) { return String(s.category_id) === String(opt.id); });
     return applyVariantGrouping(arr);
   }
-  function currentCatIdx() {
-    var opts = buildCatOpts(), cid = S.currentStream ? String(S.currentStream.category_id) : null;
-    for (var i = 0; i < opts.length; i++) if (opts[i].id !== null && String(opts[i].id) === cid) return i;
-    return Math.max(0, Math.min(opts.length - 1, S.chListCatIdx || 0));
-  }
+  function currentCatIdx() { return zapCatIdx(); }   // z.B. Favoriten, wenn von dort gewählt
   function scrollIntoList(box, el, horizontal, instant) {
     if (!box || !el) return;
     if (horizontal) Motion.scroll(box, null, el.offsetLeft - box.clientWidth / 2 + el.offsetWidth / 2, instant);
@@ -382,6 +378,7 @@ var LiveUi = (function () {
     if (!stay) hide();
     S.filteredStreams = st.streams;            // Zappen läuft danach in dieser Kategorie
     S.chListCatIdx = st.catIdx;
+    setZapCat(st.catIdx);
     S.currentStreamIdx = i;
     saveLastStream(s);
     Player.play(API.liveUrl(s), s, 'live');     // zeigt die OSD-Leiste mit dem neuen Sender

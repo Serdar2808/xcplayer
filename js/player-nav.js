@@ -8,6 +8,7 @@ document.getElementById('ch-list-overlay-container').innerHTML = `
     <div id="clo-content-wrap" style="display:flex; flex:1; overflow:hidden;">
       <div id="clo-left-pane"></div>
       <div id="clo-list" style="flex:1;"></div>
+      <div id="clo-cat-grid"></div>
     </div>
     <div id="clo-hints">
       <span class="clo-hint"><span class="clo-hint-key">OK</span> Sender wählen</span>

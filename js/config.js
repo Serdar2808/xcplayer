@@ -141,7 +141,7 @@ var S = {
   currentEpsArray:[], currentEpIdx:0, currentSeriesStream:null,
   controlsTimer:null, chNumBuf:'', chNumTimer:null,
   chListCursor:0, chListCatIdx:0, chListFocusArea:'streams', chListSplitCatCursor:0,
-  chListRestoreIdx:-1, chListCatView:false, chListCatViewCursor:0,
+  chListRestoreIdx:-1, chListCatView:false, chListCatViewCursor:0, chListCatGrid:false, chListCatGridCursor:0,
   _gmCache:null, variants:[], variantIdx:0, variantTimer:null,
   settingsOpen:false, prevScreenForSettings:null,
   exitConfirm:false, exitTimer:null,
@@ -259,8 +259,11 @@ Object.defineProperty(S, 'settingsCatOpen', {
 });
 
 // App-Version (Anzeige unter Einstellungen > Über) - mit den Plattform-Dateien zusammen erhöhen
-var APP_VERSION = '0.2.8';
-var KEYS = { UP:38, DOWN:40, LEFT:37, RIGHT:39, ENTER:13, BACK:461, BACK2:10009, ESC:27, BKSP:8, RED:403, GREEN:404, YELLOW:405, BLUE:406, PLAY:415, PAUSE:19, CH_UP:427, CH_DOWN:428, NUM0:48, NUM9:57, NPAD0:96, NPAD9:105 };
+var APP_VERSION = '0.2.9';
+var KEYS = { UP:38, DOWN:40, LEFT:37, RIGHT:39, ENTER:13, BACK:461, BACK2:10009, ESC:27, BKSP:8, RED:403, GREEN:404, YELLOW:405, BLUE:406, PLAY:415, PAUSE:19, CH_UP:427, CH_DOWN:428, PG_UP:33, PG_DOWN:34, NUM0:48, NUM9:57, NPAD0:96, NPAD9:105 };
+// Programm-Tasten: Samsung meldet P+/P- als 427/428, LG als Bild-hoch/-runter (33/34)
+function isChUp(k){ return k===KEYS.CH_UP || k===KEYS.PG_UP; }
+function isChDown(k){ return k===KEYS.CH_DOWN || k===KEYS.PG_DOWN; }
 var GRID_LAYOUTS = ['default','list','hero','mini'];
 var GRID_LAYOUT_ICONS = {'default':'▦','list':'☰','hero':'▣','mini':'⠿'};
 var _gridLayoutIdx = 0;

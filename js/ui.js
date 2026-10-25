@@ -195,15 +195,10 @@ async function launchLiveTv(){
       } catch(e) { /* parse error */ }
     }
     
-    // Kategorie des letzten Senders auswählen
+    // Kategorie des letzten Senders auswählen - bzw. die, aus der er gewählt wurde (z.B. Favoriten)
     var opts = buildCatOpts();
-    var targetCatId = last ? last.category_id : null;
-    var foundIdx = 0;
-    if (targetCatId) {
-       for (var i=0; i<opts.length; i++) {
-          if (String(opts[i].id) === String(targetCatId)) { foundIdx = i; break; }
-       }
-    }
+    loadZapCat();
+    var foundIdx = last ? zapCatIdx(last) : 0;
     S.chListCatIdx = foundIdx;
     var opt = opts[foundIdx];
 

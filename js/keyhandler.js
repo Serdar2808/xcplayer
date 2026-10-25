@@ -118,6 +118,7 @@ function handleBack(){
     if(S.variantBarOpen){ closeVariantBar(); return; }
     // Handy: Senderliste (auch Kategorie-Ansicht) schließen und gleich das Menü öffnen - ein Zurück statt zwei
     if(S.chListOpen && S.playerType === 'live' && document.documentElement.classList.contains('xc-phone')){ Player.toggleChList(); Player.hideControls(); openSysSidebar(); return; }
+    if(S.chListCatGrid){ chListCatGridClose(); return; }
     if(S.chListCatView){ chListCatViewClose(); return; }
     if(S.chListOpen){ Player.toggleChList(); return; }
     if(S.epgOpen){ Player.toggleEpg(); return; }
@@ -297,6 +298,14 @@ window.addEventListener('keydown', function(e) {
       if(isPE && typeof manState !== 'undefined' && k===37 && fEl && fEl.closest('#man-stream-list')){
         if(manState.catId && SpatialNav.focusBySelector('#man-cat-list [data-man-id="'+manState.catId+'"]')) return;
       }
+      // Verwalten-Tab: Hoch/Runter bleibt in der eigenen Spalte - am Ende der
+      // Senderliste sprang die Geometrie-Suche sonst in die Kategorien links
+      if(isPE && (k===38 || k===40) && fEl && fEl.hasAttribute('data-man-id')){
+        var manSib = k===40 ? fEl.nextElementSibling : fEl.previousElementSibling;
+        while(manSib && !manSib.hasAttribute('data-man-id')) manSib = k===40 ? manSib.nextElementSibling : manSib.previousElementSibling;
+        if(manSib){ SpatialNav.focus(manSib); _manAutoPreview(); return; }
+        if(k===40){ Motion.bump(fEl.parentNode, 'd'); return; }   // ganz oben: weiter zu den Reitern
+      }
 
       // ── "Neue Regel"-Dialog: Pillen-Reihen statt <select> ────────────
       // Links/Rechts läuft innerhalb der Reihe von Pille zu Pille (DOM-
@@ -379,13 +388,14 @@ window.addEventListener('keydown', function(e) {
   if(S.playerVisible && S.epgOpen){ e.preventDefault(); if(k===38){ SpatialNav.move('up'); return; } if(k===40){ SpatialNav.move('down'); return; } if(k===13){ SpatialNav.select(); return; } if(k===KEYS.YELLOW||k===89||k===KEYS.BACK||k===KEYS.BACK2||k===27){ Player.toggleEpg(); return; } return; }
   if(S.playerVisible && S.chListOpen){
     if((k>=48&&k<=57)||(k>=96&&k<=105)){ e.preventDefault(); handleChSearchInList(k>=96?k-96:k-48); return; }
-    if(S.chListCatView){ e.preventDefault(); if(k===KEYS.CH_UP){ chListCatViewMove(-5); return; } if(k===KEYS.CH_DOWN){ chListCatViewMove(5); return; } if(k===38){ chListCatViewMove(-1); return; } if(k===40){ chListCatViewMove(1); return; } if(k===13){ chListCatViewSelect(); return; } if(k===KEYS.GREEN||k===71){ chListCatViewClose(); return; } return; }
+    if(S.chListCatGrid){ e.preventDefault(); if(isChUp(k)){ chListCatGridMove(0, -5); return; } if(isChDown(k)){ chListCatGridMove(0, 5); return; } if(k===38){ chListCatGridMove(0, -1); return; } if(k===40){ chListCatGridMove(0, 1); return; } if(k===37){ chListCatGridMove(-1, 0); return; } if(k===39){ chListCatGridMove(1, 0); return; } if(k===13){ chListCatGridSelect(); return; } return; }
+    if(S.chListCatView){ e.preventDefault(); if(isChUp(k)){ chListCatViewMove(-5); return; } if(isChDown(k)){ chListCatViewMove(5); return; } if(k===38){ chListCatViewMove(-1); return; } if(k===40){ chListCatViewMove(1); return; } if(k===13){ chListCatViewSelect(); return; } if(k===KEYS.GREEN||k===71){ chListCatViewClose(); return; } return; }
     if(Settings.splitList) {
-        if(S.chListFocusArea === 'cats') { e.preventDefault(); if(k===KEYS.CH_UP){ chListCatSplitMove(-5); return; } if(k===KEYS.CH_DOWN){ chListCatSplitMove(5); return; } if(k===38){ chListCatSplitMove(-1); return; } if(k===40){ chListCatSplitMove(1); return; } if(k===39){ S.chListFocusArea = 'streams'; _updateSplitCatFocus(); return; } if(k===13){ chListCatSplitSelect(); return; } return; } 
-        else { e.preventDefault(); if(k===KEYS.CH_UP){ chListMove(-VLIST_ROWS); return; } if(k===KEYS.CH_DOWN){ chListMove(VLIST_ROWS); return; } if(k===38){ chListMove(-1); return; } if(k===40){ chListMove(1); return; } if(k===37){ S.chListFocusArea = 'cats'; S.chListSplitCatCursor = S.chListCatIdx; _updateSplitCatFocus(); return; } if(k===13){ chListSelect(); return; } if(k===KEYS.YELLOW||k===89){ var sf=S.filteredStreams[S.chListCursor]; if(sf){ toggleFav(sf); renderChListOverlay(); } } return; }
+        if(S.chListFocusArea === 'cats') { e.preventDefault(); if(isChUp(k)){ chListCatSplitMove(-5); return; } if(isChDown(k)){ chListCatSplitMove(5); return; } if(k===38){ chListCatSplitMove(-1); return; } if(k===40){ chListCatSplitMove(1); return; } if(k===37){ chListCatGridOpen(); return; } if(k===39){ S.chListFocusArea = 'streams'; _updateSplitCatFocus(); return; } if(k===13){ chListCatSplitSelect(); return; } return; } 
+        else { e.preventDefault(); if(isChUp(k)){ chListMove(-VLIST_ROWS); return; } if(isChDown(k)){ chListMove(VLIST_ROWS); return; } if(k===38){ chListMove(-1); return; } if(k===40){ chListMove(1); return; } if(k===37){ S.chListFocusArea = 'cats'; S.chListSplitCatCursor = S.chListCatIdx; _updateSplitCatFocus(); return; } if(k===13){ chListSelect(); return; } if(k===KEYS.YELLOW||k===89){ var sf=S.filteredStreams[S.chListCursor]; if(sf){ toggleFav(sf); renderChListOverlay(); } } return; }
     }
     e.preventDefault();
-    if(k===KEYS.CH_UP){ chListMove(-VLIST_ROWS); return; } if(k===KEYS.CH_DOWN){ chListMove(VLIST_ROWS); return; } if(k===38){ chListMove(-1); return; } if(k===40){ chListMove(1); return; } if(k===37){ chListCatChange(-1); return; } if(k===39){ chListCatChange(1); return; } if(k===13){ chListSelect(); return; } if(k===KEYS.GREEN||k===71){ chListCatViewOpen(); return; } if(k===KEYS.YELLOW||k===89){ var sf2=S.filteredStreams[S.chListCursor]; if(sf2){ toggleFav(sf2); renderChListOverlay(); } return; }
+    if(isChUp(k)){ chListMove(-VLIST_ROWS); return; } if(isChDown(k)){ chListMove(VLIST_ROWS); return; } if(k===38){ chListMove(-1); return; } if(k===40){ chListMove(1); return; } if(k===37){ chListCatChange(-1); return; } if(k===39){ chListCatChange(1); return; } if(k===13){ chListSelect(); return; } if(k===KEYS.GREEN||k===71){ chListCatViewOpen(); return; } if(k===KEYS.YELLOW||k===89){ var sf2=S.filteredStreams[S.chListCursor]; if(sf2){ toggleFav(sf2); renderChListOverlay(); } return; }
     return;
   }
 
@@ -420,8 +430,8 @@ window.addEventListener('keydown', function(e) {
       if(k===412){ e.preventDefault(); if(S.playerType!=='live') progressiveSeek(-1); return; }
       if(k===417){ e.preventDefault(); if(S.playerType!=='live') progressiveSeek(1); return; }
       if(k===KEYS.RED||k===82){ e.preventDefault(); if(S.playerType==='live') Options.colorAction('Red'); else Player.close(); return; }
-      if(k===KEYS.CH_UP){ e.preventDefault(); Player.nextCh(); return; }
-      if(k===KEYS.CH_DOWN){ e.preventDefault(); Player.prevCh(); return; }
+      if(isChUp(k)){ e.preventDefault(); Player.nextCh(); return; }
+      if(isChDown(k)){ e.preventDefault(); Player.prevCh(); return; }
       if(k===13){ e.preventDefault(); if(typeof _seek !== 'undefined' && _seek.active) { commitSeek(); return; } if(S.playerType==='catchup'){ if(SpatialNav.focused && SpatialNav.focused.closest('#player-topbar')){ SpatialNav.select(); return; } Player.togglePP(); Player.showControls(); return; } if(SpatialNav.focused && SpatialNav.focused.closest('#player-topbar, #ctrl-vod')){ SpatialNav.select(); return; } if(S.epgOpen){ SpatialNav.select(); return; } if(S.variantBarOpen){ switchVariant(S.variantIdx); return; } if(S.playerType==='live' && (Date.now() - (typeof _catchupJustStarted !== 'undefined' ? _catchupJustStarted : 0)) > 400){ if(Settings.okAction==='osd' && !S.chListOpen && $('live-osd').classList.contains('fade')){ Player.showControls(); return; } Player.toggleChList(); } else Player.togglePP(); return; }
       if(k===38){ e.preventDefault(); if(S.playerType!=='live'){ var foc = SpatialNav.focused; if(foc && (foc.id === 'btn-audio' || foc.id === 'btn-sub' || foc.id === 'btn-aspect' || foc.id === 'btn-skip-intro')) { SpatialNav.focusBySelector('#btn-pp-vod'); return; } if(foc && foc.id === 'btn-pp-vod') { var nextEp = document.getElementById('btn-next-ep'); var restart = document.getElementById('btn-restart-vod'); if(nextEp && !nextEp.classList.contains('hidden') && nextEp.offsetWidth > 0){ SpatialNav.focus(nextEp); return; } if(restart && !restart.classList.contains('hidden') && restart.offsetWidth > 0){ SpatialNav.focus(restart); return; } SpatialNav.focusBySelector('.p-back'); return; } SpatialNav.move('up'); return; } Player.nextCh(); return; }
       if(k===40){ e.preventDefault(); if(S.playerType!=='live'){ var foc2 = SpatialNav.focused; if(foc2 && foc2.closest('#ctrl-vod') && foc2.id !== 'btn-pp-vod') return; /* unterste Reihe: nicht weiter nach unten */ if(foc2 && foc2.closest('#player-topbar')) { SpatialNav.focusBySelector('#btn-pp-vod'); return; } if(foc2 && foc2.id === 'btn-pp-vod') { var btnAudio = document.getElementById('btn-audio'); var btnSub = document.getElementById('btn-sub'); if(btnAudio && !btnAudio.classList.contains('hidden') && btnAudio.offsetWidth > 0) { SpatialNav.focus(btnAudio); return; } if(btnSub && !btnSub.classList.contains('hidden') && btnSub.offsetWidth > 0) { SpatialNav.focus(btnSub); return; } if(SpatialNav.focusBySelector('#btn-aspect')) return; } SpatialNav.move('down'); return; } Player.prevCh(); return; }

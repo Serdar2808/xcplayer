@@ -777,21 +777,14 @@ var Player = {
     S.chListOpen=!S.chListOpen;
     S.chListFocusArea = 'streams';
     S.chListCatView = false; // Kategorie-Ansicht beim Umschalten immer zurücksetzen
-    $('ch-list-overlay').classList.remove('cat-view');
+    S.chListCatGrid = false;
+    $('ch-list-overlay').classList.remove('cat-view', 'cat-grid');
         $('ch-list-overlay').classList.remove('focus-cats');
     $('ch-list-overlay').classList.toggle('compact', Settings.compactList);
     $('ch-list-overlay').classList.toggle('split-mode', Settings.splitList);
     if(S.chListOpen){
-      
-      var opts = buildCatOpts();
-      var targetCatId = S.currentStream ? S.currentStream.category_id : null;
-      var foundIdx = 0;
-      if(targetCatId) {
-         for(var i=0; i<opts.length; i++) {
-                if(String(opts[i].id) === String(targetCatId)) { foundIdx = i; break; }
-         }
-      }
-      
+      // Kategorie, aus der der Sender gewählt wurde (z.B. Favoriten) - sonst seine eigene
+      var foundIdx = zapCatIdx();
       if(S.chListCatIdx !== foundIdx) {
          S.chListCatIdx = foundIdx;
          initChListOverlay();
@@ -825,19 +818,18 @@ var Player = {
     if(!S.currentStream || S.playerType!=='live') return;
     if(!force && S.filteredStreams){
       for(var k=0; k<S.filteredStreams.length; k++){
-        if(S.filteredStreams[k].stream_id === S.currentStream.stream_id){ S.currentStreamIdx=k; return; }
+        if(S.filteredStreams[k].stream_id === S.currentStream.stream_id){
+          S.currentStreamIdx=k;
+          setZapCat(S.chListCatIdx);
+          return;
+        }
       }
     }
     if(S.streams && S.streams.length > 0) {
-      var targetCatId = S.currentStream.category_id;
       var opts = buildCatOpts();
-      var foundIdx = 0;
-      if(targetCatId) {
-        for(var r=0; r<opts.length; r++) {
-          if(String(opts[r].id) === String(targetCatId)) { foundIdx = r; break; }
-        }
-      }
+      var foundIdx = zapCatIdx();   // gewählte Kategorie (z.B. Favoriten) bleibt, solange der Sender darin ist
       S.chListCatIdx = foundIdx;
+      setZapCat(foundIdx);
       var restoreArr = S.streams;
       var opt = opts[foundIdx];
       if(opt && opt.id === 'fav') {
@@ -858,16 +850,18 @@ var Player = {
 
   nextCh:function(){
     if(S.playerType!=='live') return;
-    if(S.currentStreamIdx<S.filteredStreams.length-1){
-      S.currentStreamIdx++;
+    var n=S.filteredStreams.length;
+    if(S.currentStreamIdx<n-1 || (Settings.zapWrap && n>1)){
+      S.currentStreamIdx = S.currentStreamIdx<n-1 ? S.currentStreamIdx+1 : 0;   // Endlos zappen: nach dem letzten der erste
       var s=S.filteredStreams[S.currentStreamIdx];
       saveLastStream(s); this.play(API.liveUrl(s),s,'live');
     } else showToast('Letzter Sender');
   },
   prevCh:function(){
     if(S.playerType!=='live') return;
-    if(S.currentStreamIdx>0){
-      S.currentStreamIdx--;
+    var n=S.filteredStreams.length;
+    if(S.currentStreamIdx>0 || (Settings.zapWrap && n>1)){
+      S.currentStreamIdx = S.currentStreamIdx>0 ? S.currentStreamIdx-1 : n-1;
       var s=S.filteredStreams[S.currentStreamIdx];
       saveLastStream(s); this.play(API.liveUrl(s),s,'live');
     } else showToast('Erster Sender');
@@ -969,7 +963,8 @@ var Player = {
   },
   _playMpegts:function(url){
     var self=this, mp=mpegts.createPlayer({ type:'mpegts', isLive:true, url:url },
-      { enableWorker:true, liveBufferLatencyChasing:false, autoCleanupSourceBuffer:true, lazyLoad:false });
+      // ohne Startpuffer: Live-Daten gleich verarbeiten statt erst ~384 KB zu sammeln
+      { enableWorker:true, enableStashBuffer:false, liveBufferLatencyChasing:false, autoCleanupSourceBuffer:true, lazyLoad:false });
     this.mpegts=mp;
     mp.on(mpegts.Events.ERROR, function(type, detail){
       if(self.mpegts!==mp) return;

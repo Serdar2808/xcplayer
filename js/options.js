@@ -8,7 +8,7 @@ var OPTION_DEFS = {
   // Aussehen
   accent: '', fontScale: 'normal', focusStyle: 'lines', reduceMotion: false, clock: 'datetime', bgStyle: 'flat', startScreen: 'live',
   // Live TV
-  startChannel: 'last', osdTime: 6, chListStay: false, tileSize: 'm', zapCount: 5, favFirst: false, epgBar: true, dupPref: 'auto',
+  startChannel: 'last', osdTime: 6, chListStay: false, zapWrap: false, tileSize: 'm', zapCount: 5, favFirst: false, epgBar: true, dupPref: 'auto',
   // Filme & Serien
   showContinue: true, newRow: true, watchedPct: 95, gridLayout: 'default',
   // Wiedergabe
@@ -51,6 +51,7 @@ var OPTION_UI = [
     { key: 'startChannel', type: 'cycle', label: 'Sender beim Start von Live TV', opts: [['last', 'Letzter Sender'], ['first', 'Erster Sender der Liste'], ['fav', 'Erster Favorit']] },
     { key: 'osdTime', type: 'cycle', label: 'Senderinfo anzeigen für', opts: [[3, '3 Sekunden'], [6, '6 Sekunden'], [10, '10 Sekunden'], [20, '20 Sekunden']] },
     { key: 'chListStay', type: 'toggle', label: 'Senderliste nach der Wahl offen lassen' },
+    { key: 'zapWrap', type: 'toggle', label: 'Endlos zappen', sub: 'Nach dem letzten Sender der Kategorie geht es mit dem ersten weiter (und umgekehrt)' },
     { key: 'zapCount', type: 'cycle', label: 'Letzte Sender (Taste 0)', opts: [[3, '3 Sender'], [5, '5 Sender'], [10, '10 Sender']] },
     { key: 'favFirst', type: 'toggle', label: 'Favoriten als erste Kategorie' }
   ]},

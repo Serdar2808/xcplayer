@@ -40,7 +40,7 @@ function _updateSplitCatFocus() {
 function chListCatSplitMove(dir) {
   var opts = buildCatOpts();
   var next = S.chListSplitCatCursor + dir;
-  if(next < 0 || next >= opts.length){ Motion.bump($('clo-split-cats') || $('ch-list-overlay'), dir < 0 ? 'u' : 'd'); return; }
+  if(next < 0 || next >= opts.length){ Motion.bump($('clo-left-pane'), dir < 0 ? 'u' : 'd'); return; }
   S.chListSplitCatCursor = next;
   S.chListCatIdx = next;
   chListCatChange(0); // Load streams
@@ -54,6 +54,63 @@ function chListCatSplitSelect() {
   if(S.filteredStreams.length === 0) S.chListFocusArea = 'cats';
   _updateSplitCatFocus();
   _updateVlistFocus();
+}
+
+// ── ALLE KATEGORIEN (mehrspaltig) - aus der zweispaltigen Liste per LINKS ──
+var CLO_GRID_COLS = 3;
+function chListCatGridOpen(){
+  S.chListCatGrid = true;
+  S.chListCatGridCursor = S.chListSplitCatCursor;
+  $('ch-list-overlay').classList.add('cat-grid');
+  renderChListCatGrid();
+}
+function chListCatGridClose(){
+  S.chListCatGrid = false;
+  $('ch-list-overlay').classList.remove('cat-grid');
+  var opts = buildCatOpts();
+  $('clo-group-name').textContent = opts[S.chListCatIdx] ? opts[S.chListCatIdx].name : '';
+  _updateSplitCatFocus();
+}
+function chListCatGridMove(dx, dy){
+  var n = buildCatOpts().length, cur = S.chListCatGridCursor, col = cur % CLO_GRID_COLS, next;
+  if(dx){ next = cur + dx; if(col + dx < 0 || col + dx >= CLO_GRID_COLS || next >= n){ Motion.bump($('clo-cat-grid'), dx < 0 ? 'l' : 'r'); return; } }
+  else {
+    next = cur + dy * CLO_GRID_COLS;
+    if(next < 0) next = dy < -1 ? col : -1;                     // seitenweise: bis in die erste Reihe
+    if(next >= n) next = dy > 1 || Math.floor(cur / CLO_GRID_COLS) < Math.floor((n - 1) / CLO_GRID_COLS) ? n - 1 : -1;
+    if(next < 0 || next === cur){ Motion.bump($('clo-cat-grid'), dy < 0 ? 'u' : 'd'); return; }
+  }
+  S.chListCatGridCursor = next;
+  _markCatGrid();
+}
+function chListCatGridSelect(idx){
+  if(idx !== undefined) S.chListCatGridCursor = idx;
+  S.chListSplitCatCursor = S.chListCatIdx = S.chListCatGridCursor;
+  S.chListCatGrid = false;
+  $('ch-list-overlay').classList.remove('cat-grid');
+  chListCatChange(0);
+  chListCatSplitSelect();                                       // gleich in die Sender (leer: in den Kategorien)
+}
+function renderChListCatGrid(){
+  var opts = buildCatOpts(), counts = {}, arr = S.streams || [], html = '', i;
+  for(i=0; i<arr.length; i++){ var c = String(arr[i].category_id); counts[c] = (counts[c] || 0) + 1; }
+  for(i=0; i<opts.length; i++){
+    var id = opts[i].id, cnt = id === null ? arr.length : id === 'fav' ? S.favs.live.length : (counts[String(id)] || 0);
+    html += '<div class="clo-cg-item' + (i === S.chListCatIdx ? ' clo-active' : '') + '" id="clcg-' + i + '" onclick="chListCatGridSelect(' + i + ')">'
+          + '<span class="clo-cg-name">' + esc(opts[i].name) + '</span><span class="clo-cg-count">' + cnt + '</span></div>';
+  }
+  $('clo-cat-grid').innerHTML = '<div class="clo-cg-inner">' + html + '</div>';
+  $('clo-group-name').textContent = 'Kategorien (' + opts.length + ')';
+  _markCatGrid();
+}
+function _markCatGrid(){
+  var box = $('clo-cat-grid'), old = box.querySelector('.clo-focused'), el = $('clcg-' + S.chListCatGridCursor);
+  if(old) old.classList.remove('clo-focused');
+  if(!el) return;
+  el.classList.add('clo-focused');
+  var top = el.offsetTop, bot = top + el.offsetHeight;
+  if(top < box.scrollTop + 16) box.scrollTop = Math.max(0, top - 16);
+  else if(bot > box.scrollTop + box.clientHeight - 16) box.scrollTop = bot - box.clientHeight + 16;
 }
 
 // ── SENDERLISTE ──────────────────────────────────────────────────
@@ -75,6 +132,7 @@ function chListMove(dir){
 function chListSelect(){
   var s=S.filteredStreams[S.chListCursor]; if(!s) return;
   S.currentStreamIdx=S.chListCursor;
+  setZapCat(S.chListCatIdx);   // z.B. Favoriten: Liste öffnet sich später wieder dort
   saveLastStream(s);
   // Einstellung "Liste offen lassen": Player.play lässt sie dann stehen (kein Schließen/OSD-Blinken)
   if(Settings.chListStay && S.playerVisible && S.playerType === 'live'){
@@ -178,6 +236,40 @@ async function chListCatChange(dir){
     renderChListOverlay();
     if(Settings.splitList) renderChListSplitCats(); // Refresh active status
   }catch(e){ Logger.warn('[chListCatChange] error:', e.message); showToast('Fehler beim Laden'); }
+}
+
+// Gewählte Kategorie merken (pro Profil, übersteht einen Neustart)
+function setZapCat(idx){
+  var o = buildCatOpts()[idx]; S.zapCatId = o ? o.id : undefined;
+  try { var p = Profiles.getActive(); localStorage.setItem('xcp_zapcat_' + (p ? p.id : 'default'), JSON.stringify(o ? o.id : null)); } catch(e) { /* localStorage voll */ }
+}
+function loadZapCat(){
+  try { var p = Profiles.getActive(), v = localStorage.getItem('xcp_zapcat_' + (p ? p.id : 'default')); S.zapCatId = v === null ? undefined : JSON.parse(v); }
+  catch(e) { S.zapCatId = undefined; }
+}
+// Kategorie der Zapp-Liste: die, aus der der Sender gewählt wurde (z.B. Favoriten),
+// solange er dort noch enthalten ist - sonst seine eigene Kategorie
+function _catHasStream(opt, cur){
+  if(!opt || opt.id === null) return true;
+  var base = Settings.groupVariants ? _baseName(cur.name) : null, arr = S.streams || [];
+  for(var i=0; i<arr.length; i++){
+    var x = arr[i];
+    if(opt.id === 'fav' ? S.favs.live.indexOf(x.stream_id) === -1 : String(x.category_id) !== String(opt.id)) continue;
+    if(x.stream_id === cur.stream_id || (base !== null && _baseName(x.name) === base)) return true;
+  }
+  return false;
+}
+function zapCatIdx(cur){
+  var opts = buildCatOpts(), i;
+  cur = cur || S.currentStream;
+  if(!cur) return Math.max(0, Math.min(opts.length - 1, S.chListCatIdx || 0));
+  if(S.zapCatId !== undefined){
+    for(i=0; i<opts.length; i++) if(String(opts[i].id) === String(S.zapCatId)){ if(_catHasStream(opts[i], cur)) return i; break; }
+  }
+  if(cur.category_id){
+    for(i=0; i<opts.length; i++) if(opts[i].id !== null && String(opts[i].id) === String(cur.category_id)) return i;
+  }
+  return 0;
 }
 
 function buildCatOpts(){

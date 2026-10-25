@@ -100,6 +100,9 @@ html.theme-light .clo-bar-wrap { background: rgba(0,0,0,0.08); }
 html.theme-light #clo-left-pane { background: rgba(0,0,0,0.03); }
 html.theme-light .clo-split-cat.clo-active { background: rgba(0,0,0,0.05); color: var(--hi); }
 html.theme-light .clo-split-cat.clo-focused { background: rgba(107,114,128,0.15); border-color: transparent; color: var(--hi); }
+html.theme-light #clo-cat-grid { background: rgb(var(--lpanel-rgb)); }
+html.theme-light .clo-cg-item.clo-active { background: rgba(0,0,0,0.05); }
+html.theme-light .clo-cg-item.clo-focused { background: rgba(107,114,128,0.15); color: var(--hi); }
 html.theme-light .clo-cat-row:hover { background: rgba(0,0,0,0.03); }
 html.theme-light .clo-cat-row.clo-focused { background: rgba(107,114,128,0.15); border-color: var(--accent); }
 html.theme-light #epg-panel { background: linear-gradient(rgba(var(--lpanel-rgb),0.85),rgba(var(--lpanel-rgb),0.99)); }
@@ -872,6 +875,25 @@ html.theme-light #ch-list-overlay.compact.split-mode #clo-left-pane {
  #ch-list-overlay.compact.split-mode.focus-cats #clo-list {
   opacity: 0.15; transform: translateX(260px); pointer-events: none;
 }
+
+/* Alle Kategorien mehrspaltig (aus der zweispaltigen Liste per LINKS) */
+#clo-content-wrap{position:relative}
+#clo-cat-grid{display:none;position:absolute;top:0;left:0;right:0;bottom:0;z-index:60;overflow:hidden;padding:16px 20px;
+  background:rgb(var(--osd-rgb))}
+#ch-list-overlay.cat-grid #clo-cat-grid{display:block}
+#ch-list-overlay.compact.cat-grid{width:1300px}
+#ch-list-overlay.split-mode.cat-grid #hint-split-lr{display:none !important}
+.clo-cg-inner{overflow:hidden}
+.clo-cg-item{float:left;width:33.333%;height:74px;box-sizing:border-box;padding:0 22px;display:flex;align-items:center;
+  position:relative;border-radius:10px;cursor:pointer;color:var(--mid);font-size:var(--fs-md);
+  transition:background var(--dur) var(--ease), transform var(--dur) var(--ease)}
+.clo-cg-name{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.clo-cg-count{flex-shrink:0;margin-left:12px;color:var(--lo);font-size:var(--fs-sm);font-variant-numeric:tabular-nums}
+.clo-cg-item.clo-active{color:var(--hi);font-weight:600;background:rgba(var(--accent-rgb),.07)}
+.clo-cg-item.clo-focused{background:rgba(var(--accent-rgb),.14);color:white;transform:scale(1.03);box-shadow:0 0 30px var(--glow);z-index:10}
+.clo-cg-item.clo-focused::before, .clo-cg-item.clo-focused::after{content:'';position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),var(--accent2),transparent);pointer-events:none}
+.clo-cg-item.clo-focused::before{top:0}
+.clo-cg-item.clo-focused::after{bottom:0}
 
 /* Kategorienansicht-Modus */
 #ch-list-overlay.cat-view #clo-list{padding:10px}
